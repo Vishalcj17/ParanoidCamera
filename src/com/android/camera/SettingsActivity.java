@@ -212,6 +212,11 @@ public class SettingsActivity extends PreferenceActivity {
                 if (pref.getKey().equals(SettingsManager.KEY_MULTI_CAMERA_MODE)){
                     recreate();
                 }
+
+                if(pref.getKey().equals(SettingsManager.KEY_VIDEO_QUALITY) ||
+                   pref.getKey().equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)){
+                    updateEISPreference();
+                }
             }
         }
     };
@@ -1224,6 +1229,7 @@ public class SettingsActivity extends PreferenceActivity {
         updatePictureSizePreferenceButton();
         updateVideoHDRPreference();
         updateFormatPreference();
+        updateEISPreference();
         updateStoragePreference();
         initializePhysicalPreferences();
         updatePhysicalPreferences();
@@ -1354,6 +1360,20 @@ public class SettingsActivity extends PreferenceActivity {
         if ( sceneMode != null && picturePref != null ){
             int sceneModeInt = Integer.parseInt(sceneMode);
             picturePref.setEnabled(sceneModeInt != SettingsManager.SCENE_MODE_DUAL_INT);
+        }
+    }
+
+    private void updateEISPreference() {
+        ListPreference eisPref = (ListPreference)findPreference(
+                SettingsManager.KEY_EIS_VALUE);
+        if (eisPref != null) {
+            if (!mSettingsManager.isEISSupported(mSettingsManager.getVideoSize(),
+                    mSettingsManager.getVideoFPS())){
+                eisPref.setValue("disable");
+                eisPref.setEnabled(false);
+            } else {
+                eisPref.setEnabled(true);
+            }
         }
     }
 

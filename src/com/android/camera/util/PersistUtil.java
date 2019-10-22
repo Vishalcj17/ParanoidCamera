@@ -139,10 +139,20 @@ public class PersistUtil {
             get("persist.sys.camera.display.umax", "");
     private static final String PERSIST_DISPLAY_LMAX =
             get("persist.sys.camera.display.lmax", "");
+    private static final boolean PERSIST_VIDEO_LIVESHOT =
+            getBoolean("persist.sys.camera.video.liveshot",false);
+    private static final boolean PERSIST_VIDEO_EIS =
+            getBoolean("persist.sys.camera.video.eis",false);
     private static final int PERSIST_BURST_PREVIEW_REQUEST_NUMS =
             getInt("persist.sys.camera.burst.preview.nums", 0);
     private static final boolean PERSIST_SSM_ENABLE =
             getBoolean("persist.sys.camera.ssm.enable", false);
+
+    private static final boolean PERSIST_CAM_FD_SUPPORTED =
+            getBoolean("persist.sys.camera.isCamFDSupported", false);
+    private static final boolean PERSIST_FD_RENDERING_SUPPORTED =
+            getBoolean("persist.sys.camera.isFDRenderingSupported", false);
+    
 
     public static int getMemoryLimit() {
         return PERSIST_MEMORY_LIMIT;
@@ -398,6 +408,14 @@ public class PersistUtil {
         return PERSIST_YV_12_FORMAT_ENABLED;
     }
 
+    public static boolean isPersistVideoLiveshot(){
+        return PERSIST_VIDEO_LIVESHOT;
+    }
+
+    public static boolean isPersistVideoEis(){
+        return PERSIST_VIDEO_EIS;
+    }
+
     public static String getDisplayUMax() {
         return PERSIST_DISPLAY_UMAX;
     }
@@ -413,4 +431,8 @@ public class PersistUtil {
     public static boolean isSSMEnabled() {
         return PERSIST_SSM_ENABLE;
     }
+
+    public static boolean isFDRENDERINGSUPPORTED() {return PERSIST_FD_RENDERING_SUPPORTED; }
+
+    public static boolean isCameraFDSupported() {return PERSIST_CAM_FD_SUPPORTED; }
 }
