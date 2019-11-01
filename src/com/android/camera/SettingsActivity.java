@@ -159,8 +159,8 @@ public class SettingsActivity extends PreferenceActivity {
                 SettingsManager.Values values = map.get(state.key);
                 boolean enabled = values.overriddenValue == null;
                 Preference pref = findPreference(state.key);
+                if (pref == null) continue;
                 Log.i(TAG, "onsettingschange:" + pref.getKey());
-                if (pref == null) return;
 
                 pref.setEnabled(enabled);
 
