@@ -800,6 +800,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mZoomSwitch != null) {
             mZoomSwitch.setVisibility(View.VISIBLE);
         }
+        if(mFilterMenuStatus == FILTER_MENU_ON){
+            hideZoomSeekBar();
+        }
     }
 
     public void updateZoomSeekBar(float zoomValue) {
