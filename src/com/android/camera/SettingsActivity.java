@@ -965,6 +965,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FACIAL_CONTOUR);
                 add(SettingsManager.KEY_ZSL);
                 add(SettingsManager.KEY_TONE_MAPPING);
+                add(SettingsManager.KEY_BURST_LIMIT);
             }
         };
         final ArrayList<String> proModeOnlyList = new ArrayList<String>() {

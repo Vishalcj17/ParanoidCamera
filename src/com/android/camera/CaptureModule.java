@@ -517,6 +517,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final CaptureRequest.Key<Integer> livePreview =
             new CaptureRequest.Key<>("com.qti.chi.livePreview.enable", Integer.class);
 
+    public static CaptureResult.Key<Integer> multiframe_burst_enable =
+            new CaptureResult.Key<>("org.quic.camera.MultiFrame.MultiframeBurstEnable", Integer.class);
+
+
     private TouchTrackFocusRenderer mT2TFocusRenderer;
     private boolean mIsDepthFocus = false;
     private boolean[] mTakingPicture = new boolean[MAX_NUM_CAM];
@@ -594,6 +598,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private long SECONDARY_SERVER_MEM;
     private boolean mLongshotActive = false;
     private long mLastLongshotTimestamp = 0;
+    private boolean mBurstLimit = false;
     private CameraCharacteristics mMainCameraCharacteristics;
     private int mDisplayRotation;
     private int mDisplayOrientation;
@@ -3132,6 +3137,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     return;
                 }
                 Log.d(TAG, "captureStillPictureForLongshot onCaptureCompleted: " + mNumFramesArrived.get() + " " + mShotNum);
+
                 if (mLongshotActive) {
                     checkAndPlayShutterSound(getMainCameraId());
                     mActivity.runOnUiThread(new Runnable() {
@@ -3142,6 +3148,33 @@ public class CaptureModule implements CameraModule, PhotoController,
                     });
                 }
                 mLongshoting = false;
+            }
+
+            @Override
+            public void onCaptureProgressed(CameraCaptureSession session,
+                                            CaptureRequest request, CaptureResult partialResult) {
+                if (DEBUG)
+                    Log.d(TAG," onCaptureProgressed");
+                if (mBurstLimit) {
+                    boolean burst_limit = "capture-limit".equals(String.valueOf(request.getTag()));
+                    int burst_enable = -1;
+                    try{
+                        burst_enable = partialResult.get(CaptureModule.multiframe_burst_enable);
+                        if (DEBUG)
+                            Log.d(TAG,"burst_enable ="+burst_enable);
+                    } catch (IllegalArgumentException | NullPointerException e){
+                    }
+                    if (burst_limit && burst_enable == 1) {
+                        try{
+                            session.capture(request,this,mCaptureCallbackHandler);
+                            if (DEBUG){
+                                Log.d(TAG,"burst_limit send one request");
+                            }
+                        } catch (CameraAccessException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
             }
 
             @Override
@@ -3214,17 +3247,23 @@ public class CaptureModule implements CameraModule, PhotoController,
         };
 
     private void captureStillPictureForLongshot(CaptureRequest.Builder captureBuilder, int id) throws CameraAccessException{
-        List<CaptureRequest> burstList = new ArrayList<>();
-        int burstShotFpsNums = PersistUtil.isBurstShotFpsNums();
-        for (int i = 0; i < PersistUtil.getLongshotShotLimit(); i++) {
-            for (int j = 0; j < burstShotFpsNums; j++) {
-                mPreviewRequestBuilder[id].setTag("preview");
-                burstList.add(mPreviewRequestBuilder[id].build());
+        mBurstLimit = "1".equals(mSettingsManager.getValue(SettingsManager.KEY_BURST_LIMIT));
+        if (!mBurstLimit) {
+            List<CaptureRequest> burstList = new ArrayList<>();
+            int burstShotFpsNums = PersistUtil.isBurstShotFpsNums();
+            for (int i = 0; i < PersistUtil.getLongshotShotLimit(); i++) {
+                for (int j = 0; j < burstShotFpsNums; j++) {
+                    mPreviewRequestBuilder[id].setTag("preview");
+                    burstList.add(mPreviewRequestBuilder[id].build());
+                }
+                captureBuilder.setTag("capture");
+                burstList.add(captureBuilder.build());
             }
-            captureBuilder.setTag("capture");
-            burstList.add(captureBuilder.build());
+            mCaptureSession[id].captureBurst(burstList, mLongshotCallBack, mCaptureCallbackHandler);
+        } else {
+            captureBuilder.setTag("capture-limit");
+            mCaptureSession[id].capture(captureBuilder.build(),mLongshotCallBack,mCaptureCallbackHandler);
         }
-        mCaptureSession[id].captureBurst(burstList, mLongshotCallBack, mCaptureCallbackHandler);
         mActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
