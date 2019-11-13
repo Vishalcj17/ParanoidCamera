@@ -2019,12 +2019,15 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                         mHighSpeedFPSRange);
             }
-            addPreviewSurface(mVideoRecordRequestBuilder, surfaces, cameraId);
+            surfaces.add(mVideoPreviewSurface);
+            surfaces.add(mMediaRecorderSurface);
+            mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
             setUpVideoCaptureRequestBuilder(mVideoRecordRequestBuilder, cameraId);
             mPreviewRequestBuilder[cameraId] = mVideoRecordRequestBuilder;
             mIsPreviewingVideo = true;
             if (ApiHelper.isAndroidPOrHigher()) {
                 if (isHighSpeedRateCapture()) {
+                    mVideoRecordRequestBuilder.addTarget(mMediaRecorderSurface);
                     CaptureRequest initialRequest = mVideoRecordRequestBuilder.build();
                     int optionMode = isSSMEnabled() ? STREAM_CONFIG_SSM : SESSION_HIGH_SPEED;
                     buildConstrainedCameraSession(mCameraDevice[cameraId], optionMode,
@@ -5389,6 +5392,18 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             mUI.clearFocus();
             mUI.hideUIwhileRecording();
+            if (isHighSpeedRateCapture()) {
+                List<CaptureRequest> slowMoRequests  = mSuperSlomoCapture ?
+                        createSSMBatchRequest(mVideoRecordRequestBuilder) :
+                        ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession).
+                                createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
+                mCurrentSession.setRepeatingBurst(slowMoRequests, mCaptureCallback,
+                        mCameraHandler);
+            } else {
+                mVideoRecordRequestBuilder.addTarget(mMediaRecorderSurface);
+                mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
+                        mCaptureCallback, mCameraHandler);
+            }
             mCameraHandler.removeMessages(CANCEL_TOUCH_FOCUS, mCameraId[cameraId]);
             if (!mFrameProcessor.isFrameListnerEnabled() && !startMediaRecorder() ||
                     !mIsRecordingVideo) {
@@ -5427,6 +5442,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (NullPointerException e) {
             e.printStackTrace();
             quitRecordingWithError("NullPointException");
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+            quitRecordingWithError("CameraAccessException");
         }
         mStartRecPending = false;
         return true;
