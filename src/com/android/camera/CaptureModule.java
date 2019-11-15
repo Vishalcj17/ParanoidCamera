@@ -3206,6 +3206,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                                            TotalCaptureResult result) {
                 String requestTag = String.valueOf(request.getTag());
                 if (requestTag.equals("preview")) {
+                    updateT2tTrackerView(result);
                     return;
                 }
                 Log.d(TAG, "captureStillPictureForLongshot onCaptureCompleted: " + mNumFramesArrived.get() + " " + mShotNum);
