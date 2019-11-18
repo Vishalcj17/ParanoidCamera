@@ -147,12 +147,11 @@ public class PersistUtil {
             getInt("persist.sys.camera.burst.preview.nums", 1);
     private static final boolean PERSIST_SSM_ENABLE =
             getBoolean("persist.sys.camera.ssm.enable", false);
+    private static final boolean PERSIST_FD_RENDERING_SUPPORTED =
+            getBoolean("persist.sys.camera.isFDRenderingSupported", false);
 
     private static final boolean PERSIST_CAM_FD_SUPPORTED =
             getBoolean("persist.sys.camera.isCamFDSupported", false);
-    private static final boolean PERSIST_FD_RENDERING_SUPPORTED =
-            getBoolean("persist.sys.camera.isFDRenderingSupported", false);
-    
 
     public static int getMemoryLimit() {
         return PERSIST_MEMORY_LIMIT;

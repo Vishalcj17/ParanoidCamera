@@ -387,6 +387,16 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.available_video_hdr_modes.video_hdr_values", Integer.class);
+    public static CameraCharacteristics.Key<int[]> max_preview_size =
+            new CameraCharacteristics.Key<>("org.quic.camera.MaxPreviewSize.MaxPreviewSize", int[].class);
+    public static CameraCharacteristics.Key<Byte> is_burstshot_supported =
+            new CameraCharacteristics.Key<>("org.quic.camera.BurstFPS.isBurstShotSupported", Byte.class);
+    public static CameraCharacteristics.Key<Integer> max_burstshot_fps =
+            new CameraCharacteristics.Key<>("org.quic.camera.BurstFPS.MaxBurstShotFPS", int.class);
+    public static CameraCharacteristics.Key<Byte> is_liveshot_size_same_as_video =
+            new CameraCharacteristics.Key<>("org.quic.camera.LiveshotSize.isLiveshotSizeSameAsVideoSize", Byte.class);
+    public static CameraCharacteristics.Key<Byte> is_FD_Rendering_In_Video_UI_Supported =
+            new CameraCharacteristics.Key<>("org.quic.camera.FDRendering.isFDRenderingInVideoUISupported", Byte.class);
 
     public static CameraCharacteristics.Key<Byte> bsgcAvailable =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.stats.bsgc_available", Byte.class);
@@ -504,10 +514,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             "org.quic.camera2.VideoConfigurations.info.VideoConfigurationsTable",int[].class);
     public static final CameraCharacteristics.Key<Byte> is_camera_fd_supported = new CameraCharacteristics.Key<>(
             "org.quic.camera.FDRendering.isFDRenderingInCameraUISupported",byte.class);
-    public static CameraCharacteristics.Key<int[]> max_preview_size =
-            new CameraCharacteristics.Key<>("org.quic.camera.MaxPreviewSize.MaxPreviewSize", int[].class);
-    public static CameraCharacteristics.Key<Byte> is_FD_Rendering_In_Video_UI_Supported =
-            new CameraCharacteristics.Key<>("org.quic.camera.FDRendering.isFDRenderingInVideoUISupported", Byte.class);
 
     public static final CaptureRequest.Key<Byte> sensor_mode_fs =
             new CaptureRequest.Key<>("org.quic.camera.SensorModeFS", byte.class);
@@ -3360,18 +3366,45 @@ public class CaptureModule implements CameraModule, PhotoController,
 
                 }
 
-                mLongshoting = false;
-                mNumFramesArrived.getAndSet(0);
-                unlockFocus(getMainCameraId());
+                if (mNumFramesArrived.get() < mShotNum && mLongshotActive) {
+                    captureStillPicture(CURRENT_ID);
+                }else {
+                    mLongshoting = false;
+                    mNumFramesArrived.getAndSet(0);
+                    unlockFocus(getMainCameraId());
+                }
             }
         };
+
+    private int calculateMaxFps(){
+        int maxFps = mSettingsManager.getmaxBurstShotFPS();
+        if(maxFps > 0) {
+            double size = mPictureSize.getWidth() * mPictureSize.getHeight();
+            double maxsizefloat = mSupportedMaxPictureSize.getWidth() * mSupportedMaxPictureSize.getHeight();
+            maxFps = (int)Math.round((maxsizefloat * maxFps) / size);
+            if (DEBUG) {
+                Log.i(TAG, "maxsize:" + mSupportedMaxPictureSize.getWidth() + ",height:" + mSupportedMaxPictureSize.getHeight() + "maxsize:" + maxsizefloat);
+                Log.i(TAG, "size:" + mPictureSize.getWidth() + ",height:" + mPictureSize.getHeight() + ",size:" + size);
+                Log.i(TAG,"maxFps:" + maxFps);
+            }
+            maxFps = maxFps > 30 ? 30 : maxFps;
+        }
+        return maxFps;
+    }
 
     private void captureStillPictureForLongshot(CaptureRequest.Builder captureBuilder, int id) throws CameraAccessException{
         mBurstLimit = "1".equals(mSettingsManager.getValue(SettingsManager.KEY_BURST_LIMIT));
         if (!mBurstLimit) {
             List<CaptureRequest> burstList = new ArrayList<>();
-            int burstShotFpsNums = PersistUtil.isBurstShotFpsNums();
-            for (int i = 0; i < PersistUtil.getLongshotShotLimit(); i++) {
+            int burstShotFpsNums = 0;
+            if(calculateMaxFps() > 0){
+                burstShotFpsNums = (int)(30/calculateMaxFps()) - 1;
+            }
+            burstShotFpsNums = PersistUtil.isBurstShotFpsNums() > 1 ? PersistUtil.isBurstShotFpsNums() : burstShotFpsNums;
+            int totalNums = (int)(PersistUtil.getLongshotShotLimit()/(burstShotFpsNums + 1));
+            if(totalNums < 60) totalNums = totalNums *2;
+            if (DEBUG) Log.i(TAG,"burstShotFpsNums:" + burstShotFpsNums + ",totalNums:" + totalNums);
+            for (int i = 0; i < totalNums; i++) {
                 for (int j = 0; j < burstShotFpsNums; j++) {
                     mPreviewRequestBuilder[id].setTag("preview");
                     burstList.add(mPreviewRequestBuilder[id].build());
@@ -5854,7 +5887,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         Size[] prevSizes = mSettingsManager.getSupportedOutputSize(getMainCameraId(),
                 MediaRecorder.class);
         mVideoPreviewSize = getOptimalVideoPreviewSize(mVideoSize, prevSizes);
-
         Point previewSize = PersistUtil.getCameraPreviewSize();
         if (previewSize != null) {
             mVideoPreviewSize = new Size(previewSize.x, previewSize.y);
@@ -5869,6 +5901,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoSnapshotSize = getMaxPictureSizeLiveshot();
         }
 
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+            mVideoSnapshotSize = mVideoSize;
+        }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
         String[] sourceStrArray = videoSnapshot.split("x");
         if (sourceStrArray != null && sourceStrArray.length >= 2) {

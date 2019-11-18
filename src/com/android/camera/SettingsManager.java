@@ -608,6 +608,46 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return supportted;
     }
 
+    public boolean isBurstShotSupported(){
+        boolean isBurstShotSupported = false;
+        try {
+            isBurstShotSupported = mCharacteristics.get(mCameraId).get(CaptureModule.is_burstshot_supported) == 1 ? true : false;
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "isBurstShotSupported no vendor tag");
+        }
+        return isBurstShotSupported;
+    }
+
+    public int getmaxBurstShotFPS(){
+        int maxBurstShotFPS = 0;
+        try {
+            maxBurstShotFPS = mCharacteristics.get(mCameraId).get(CaptureModule.max_burstshot_fps);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "getmaxBurstShotFPS no vendorTag maxBurstShotFPS:");
+        }
+        return maxBurstShotFPS;
+    }
+
+    public int[] getMaxPreviewSize(){
+        int[] maxPreviewSize = null;
+        try {
+            maxPreviewSize = mCharacteristics.get(mCameraId).get(CaptureModule.max_preview_size);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "getMaxPreviewSize no vendorTag max_preview_size:");
+        }
+        return maxPreviewSize;
+    }
+
+    public boolean isLiveshotSizeSameAsVideoSize(){
+        boolean isLiveshotSizeSameAsVideoSize = false;
+        try {
+            isLiveshotSizeSameAsVideoSize = mCharacteristics.get(mCameraId).get(CaptureModule.is_liveshot_size_same_as_video) == 1 ? true : false;
+        } catch (IllegalArgumentException | NullPointerException e) {
+            Log.e(TAG, "isLiveshotSizeSameAsVideoSize no vendorTag isLiveshotSizeSameAsVideoSize:");
+        }
+        return isLiveshotSizeSameAsVideoSize;
+    }
+
     private Size parseSize(String value) {
         int indexX = value.indexOf('x');
         int width = Integer.parseInt(value.substring(0, indexX));
@@ -1288,8 +1328,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
 
         if (faceDetection != null) {
-            if (!isFaceDetectionSupported(cameraId) ||
-            !isCameraFDSupported()) {
+            if (!isFaceDetectionSupported(cameraId) || !isCameraFDSupported()) {
                 removePreference(mPreferenceGroup, KEY_FACE_DETECTION);
             }
         }
@@ -2934,16 +2973,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
             return config.isEISSupported();
         }
         return true;
-    }
-
-    public int[] getMaxPreviewSize(){
-        int[] maxPreviewSize = null;
-        try {
-            maxPreviewSize = mCharacteristics.get(mCameraId).get(CaptureModule.max_preview_size);
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "getMaxPreviewSize no vendorTag max_preview_size:");
-        }
-        return maxPreviewSize;
     }
 
     public int getVideoFPS(){
