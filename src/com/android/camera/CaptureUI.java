@@ -271,6 +271,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     int mPreviewHeight;
     private boolean mIsVideoUI = false;
     private boolean mIsSceneModeLabelClose = false;
+    private LinearLayout mGridLineView;
 
     private void previewUIReady() {
         if((mSurfaceHolder != null && mSurfaceHolder.getSurface().isValid())) {
@@ -349,6 +350,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mSurfaceHolderMono = mSurfaceViewMono.getHolder();
         mSurfaceHolderMono.addCallback(callbackMono);
 
+        mGridLineView = (LinearLayout) mRootView.findViewById(R.id.grid_line);
         mProgressBar = (ProgressBar) mRootView.findViewById(R.id.progress_bar);
         mRenderOverlay = (RenderOverlay) mRootView.findViewById(R.id.render_overlay);
         mShutterButton = (ShutterButton) mRootView.findViewById(R.id.shutter_button);
@@ -2251,6 +2253,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mSurfaceView.setAspectRatio(mPreviewHeight, mPreviewWidth);
         mSurfaceView.setVisibility(View.VISIBLE);
         mIsVideoUI = false;
+    }
+    public void hideGridLineView() {
+        mGridLineView.setVisibility(View.INVISIBLE);
+    }
+
+    public void updateGridLine(){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_GRIDLINE);
+        if (value != null && value.equals("on")){
+            mGridLineView.setVisibility(View.VISIBLE);
+            int height = getScreenWidth() * mPreviewWidth / mPreviewHeight;
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(getScreenWidth(), height);
+            mGridLineView.setLayoutParams(params);
+            mGridLineView.setY(mSurfaceView.getTop());
+        }
     }
 
     public boolean setPreviewSize(int width, int height) {

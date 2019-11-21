@@ -1806,6 +1806,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                             initializePreviewConfiguration(id);
                             setDisplayOrientation();
                             updateFaceDetection();
+                            mActivity.runOnUiThread(new Runnable() {
+                                public void run() {
+                                    mUI.updateGridLine();
+                                }
+                            });
                             try {
                                 if (isBackCamera() && getCameraMode() == DUAL_MODE) {
                                     linkBayerMono(id);
@@ -4334,6 +4339,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mActivity.onModuleSelected(ModuleSwitcher.PANOCAPTURE_MODULE_INDEX);
             }
         }
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                mUI.hideGridLineView();
+            }
+        });
     }
 
     private void checkRTBCameraId() {
