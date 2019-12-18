@@ -125,9 +125,9 @@ public class SettingsActivity extends PreferenceActivity {
             if (key.equals(SettingsManager.KEY_VIDEO_QUALITY)) {
                 updatePreference(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE);
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER);
-            }else if ( key.equals(SettingsManager.KEY_VIDEO_ENCODER) ) {
+            } else if (key.equals(SettingsManager.KEY_VIDEO_ENCODER) ) {
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER_PROFILE);
-            } else if ( key.equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE) ) {
+            } else if (key.equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)) {
                 value = ((ListPreference) p).getValue();
                 if (!value.equals("off")) {
                     int fpsRate = Integer.parseInt(value.substring(3));
@@ -307,9 +307,17 @@ public class SettingsActivity extends PreferenceActivity {
                         editor.putString(SettingsManager.KEY_MANUAL_ISO_VALUE, iso);
                         editor.apply();
                     } else {
+                        editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                        editor.apply();
                         RotateTextToast.makeText(SettingsActivity.this, "Invalid ISO",
                                 Toast.LENGTH_SHORT).show();
                     }
+                }
+            });
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                    editor.apply();
                 }
             });
             alert.show();
@@ -340,9 +348,17 @@ public class SettingsActivity extends PreferenceActivity {
                         editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE_VALUE, expTime);
                         editor.apply();
                     } else {
+                        editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                        editor.apply();
                         RotateTextToast.makeText(SettingsActivity.this, "Invalid exposure time",
                                 Toast.LENGTH_SHORT).show();
                     }
+                }
+            });
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                    editor.apply();
                 }
             });
             alert.show();
@@ -395,9 +411,17 @@ public class SettingsActivity extends PreferenceActivity {
                         editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE_VALUE, expTime);
                         editor.apply();
                     } else {
+                        editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                        editor.apply();
                         RotateTextToast.makeText(SettingsActivity.this, "Invalid exposure time",
                                 Toast.LENGTH_SHORT).show();
                     }
+                }
+            });
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                    editor.apply();
                 }
             });
             alert.show();
@@ -437,9 +461,17 @@ public class SettingsActivity extends PreferenceActivity {
                     editor.putFloat(SettingsManager.KEY_MANUAL_GAINS_VALUE, newGain);
                     editor.apply();
                 } else {
+                    editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                    editor.apply();
                     RotateTextToast.makeText(SettingsActivity.this, "Invalid GAINS",
                             Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog,int id) {
+                editor.putString(SettingsManager.KEY_MANUAL_EXPOSURE, "off");
+                editor.apply();
             }
         });
         alert.show();
@@ -610,6 +642,11 @@ public class SettingsActivity extends PreferenceActivity {
                         RotateTextToast.makeText(SettingsActivity.this, "Invalid CCT",
                                 Toast.LENGTH_SHORT).show();
                     }
+                }
+            });
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    dialog.cancel();
                 }
             });
             alert.show();
