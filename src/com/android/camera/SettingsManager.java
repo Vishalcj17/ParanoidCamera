@@ -146,6 +146,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_FRONT_REAR_SWITCHER_VALUE = "pref_camera2_switcher_key";
     public static final String KEY_FORCE_AUX = "pref_camera2_force_aux_key";
     public static final String KEY_SWITCH_CAMERA = "pref_camera2_switch_camera_key";
+    public static final String KEY_PHYSICAL_CAMERA = "pref_camera2_physical_camera_key";
+    public static final String KEY_PHYSICAL_YUV_CALLBACK ="pref_camera2_physical_yuv_key";
+    public static final String KEY_PHYSICAL_RAW_CALLBACK ="pref_camera2_physical_raw_key";
+    public static final String KEY_PHYSICAL_HDR ="pref_camera2_physical_hdr_key";
+    public static final String KEY_PHYSICAL_MFNR ="pref_camera2_physical_mfnr_key";
+    public static final String KEY_PHYSICAL_SIZE ="pref_camera2_physical_size_key";
     public static final String KEY_PICTURE_SIZE = "pref_camera2_picturesize_key";
     public static final String KEY_PICTURE_FORMAT = "pref_camera2_picture_format_key";
     public static final String KEY_ISO = "pref_camera2_iso_key";
@@ -779,6 +785,43 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return String.valueOf(mCameraId) + String.valueOf(CaptureModule.CURRENT_MODE);
     }
 
+    public Set<String> getPhysicalCameraId() {
+        String ids  = getValue(KEY_PHYSICAL_CAMERA);
+        if (ids == null || "".equals(ids)){
+            return null;
+        } else {
+            if (ids.contains("logical;")){
+                ids = ids.replace("logical;","");
+                if ("".equals(ids))
+                    return null;
+            }
+
+            String[] physical_ids = ids.split(";");
+            List<String> idList = Arrays.asList(physical_ids);
+            return new HashSet<>(Arrays.asList(physical_ids));
+        }
+
+    }
+
+    public Set<String> getPhysicalFeatureEnableId(String key) {
+        String ids  = getValue(key);
+        if (ids == null || "".equals(ids)){
+            return null;
+        } else {
+            String[] physical_ids = ids.split(";");
+            return new HashSet<>(Arrays.asList(physical_ids));
+        }
+    }
+
+    public boolean isLogicalEnable(){
+        String ids  = getValue(KEY_PHYSICAL_CAMERA);
+        if (ids == null){
+            return true;
+        } else {
+            return ids.contains("logical");
+        }
+    }
+
     public String getValue(String key) {
         if (mValuesMap == null) return null;
         Values values = mValuesMap.get(key);
@@ -963,6 +1006,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference bsgc = mPreferenceGroup.findPreference(KEY_BSGC_DETECTION);
         ListPreference faceDetectionMode = mPreferenceGroup.findPreference(KEY_FACE_DETECTION_MODE);
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
+        ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1169,6 +1213,52 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
+        if (physicalCamera != null) {
+            if (!buildPhysicalCamera(cameraId,physicalCamera)){
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMERA);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_YUV_CALLBACK);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_RAW_CALLBACK);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_HDR);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_MFNR);
+            } else{
+                CharSequence[] fullEntryValues = physicalCamera.getEntryValues();
+                CharSequence[] fullEntries = physicalCamera.getEntries();
+                ListPreference physicalYuvCalllback = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_YUV_CALLBACK);
+                if (physicalYuvCalllback != null){
+                    physicalYuvCalllback.setEntries(fullEntries);
+                    physicalYuvCalllback.setEntryValues(fullEntryValues);
+                }
+                ListPreference physicalRawCalllback = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_RAW_CALLBACK);
+                if (physicalRawCalllback != null){
+                    physicalRawCalllback.setEntries(fullEntries);
+                    physicalRawCalllback.setEntryValues(fullEntryValues);
+                }
+                ListPreference physicalHDR = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_HDR);
+                if (physicalHDR != null){
+                    physicalHDR.setEntries(fullEntries);
+                    physicalHDR.setEntryValues(fullEntryValues);
+                }
+                ListPreference physicalMFNR = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_MFNR);
+                if (physicalMFNR != null){
+                    physicalMFNR.setEntries(fullEntries);
+                    physicalMFNR.setEntryValues(fullEntryValues);
+                }
+                CharSequence[] newEntries = new CharSequence[fullEntries.length+1];
+                CharSequence[] newEntryValues = new CharSequence[fullEntryValues.length+1];
+                newEntries[0] = "logical id: "+cameraId;
+                newEntryValues[0] = "logical";
+                System.arraycopy(fullEntries,0,newEntries,1,fullEntries.length);
+                System.arraycopy(fullEntryValues,0,newEntryValues,1,
+                        fullEntryValues.length);
+                physicalCamera.setEntries(newEntries);
+                physicalCamera.setEntryValues(newEntryValues);
+            }
+        }
+
     }
 
     private void runTimeUpdateDependencyOptions(ListPreference pref) {
@@ -1183,6 +1273,28 @@ public class SettingsManager implements ListMenu.SettingsListener {
         } else if (pref.getKey().equals(KEY_PICTURE_FORMAT)) {
             filterHeifSizeOptions();
         }
+    }
+
+    private boolean buildPhysicalCamera(int cameraId,ListPreference listPreference) {
+        boolean ret = false;
+        Set<String> physical_ids = mCharacteristics.get(cameraId).getPhysicalCameraIds();
+        if (physical_ids != null && physical_ids.size() != 0){
+            int i = 0;
+            int size = physical_ids.size();
+            CharSequence[] fullEntryValues = new CharSequence[size];
+            CharSequence[] fullEntries = new CharSequence[size];
+            for (String id : physical_ids){
+                fullEntries[i] = "physical id : " + id;
+                fullEntryValues[i] = id;
+                Log.d(TAG,"buildPhysicalCamera fullEntries[i]" + fullEntries[i]+
+                        " fullEntryValues[i]="+fullEntryValues[i]);
+                i++;
+            }
+            listPreference.setEntries(fullEntries);
+            listPreference.setEntryValues(fullEntryValues);
+            ret = true;
+        }
+        return ret;
     }
 
     private void buildExposureCompensation(int cameraId) {

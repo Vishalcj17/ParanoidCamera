@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Arrays;
 
+import static com.android.camera.CaptureModule.CameraMode.SAT;
 import static com.android.camera.CaptureModule.CameraMode.VIDEO;
 
 public class SettingsActivity extends PreferenceActivity {
@@ -928,6 +929,7 @@ public class SettingsActivity extends PreferenceActivity {
         PreferenceGroup photoPre = (PreferenceGroup) findPreference("photo");
         PreferenceGroup videoPre = (PreferenceGroup) findPreference("video");
         PreferenceScreen parentPre = getPreferenceScreen();
+
         CaptureModule.CameraMode mode =
                 (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
 
@@ -966,6 +968,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_BSGC_DETECTION);
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
+                        videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     addDeveloperOptions(developer, videoAddList);
@@ -1056,6 +1059,11 @@ public class SettingsActivity extends PreferenceActivity {
         updatePreference(SettingsManager.KEY_ZOOM);
         updatePreference(SettingsManager.KEY_VIDEO_DURATION);
         updatePreference(SettingsManager.KEY_SWITCH_CAMERA);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_HDR);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_MFNR);
         updatePreference(SettingsManager.KEY_TONE_MAPPING);
         updateMultiPreference(SettingsManager.KEY_STATS_VISUALIZER_VALUE);
         updatePictureSizePreferenceButton();
