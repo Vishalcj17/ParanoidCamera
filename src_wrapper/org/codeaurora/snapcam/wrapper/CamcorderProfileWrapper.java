@@ -54,8 +54,6 @@ public class CamcorderProfileWrapper extends Wrapper{
             getField(CamcorderProfile.class, "QUALITY_HIGH_SPEED_4KDCI"), -1);
     public static final int QUALITY_QHD = getFieldValue(
             getField(CamcorderProfile.class, "QUALITY_QHD"), -1);
-    public final static int QUALITY_2k = getFieldValue(
-            getField(CamcorderProfile.class, "QUALITY_2k"), -1);
     public final static int QUALITY_8KUHD = getFieldValue(
             getField(CamcorderProfile.class, "QUALITY_8KUHD"), -1);
 }

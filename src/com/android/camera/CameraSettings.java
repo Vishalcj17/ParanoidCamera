@@ -321,9 +321,6 @@ public class CameraSettings {
         if ( CamcorderProfileWrapper.QUALITY_QHD != -1 ) {
             VIDEO_QUALITY_TABLE.put("2560x1440", CamcorderProfileWrapper.QUALITY_QHD);
         }
-        if ( CamcorderProfileWrapper.QUALITY_2k != -1 ) {
-            VIDEO_QUALITY_TABLE.put("2048x1080", CamcorderProfileWrapper.QUALITY_2k);
-        }
         VIDEO_QUALITY_TABLE.put("1920x1080", CamcorderProfile.QUALITY_1080P);
         VIDEO_QUALITY_TABLE.put("1280x720",  CamcorderProfile.QUALITY_720P);
         VIDEO_QUALITY_TABLE.put("720x480",   CamcorderProfile.QUALITY_480P);
