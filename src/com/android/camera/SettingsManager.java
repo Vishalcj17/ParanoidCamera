@@ -1299,6 +1299,19 @@ public class SettingsManager implements ListMenu.SettingsListener {
         CharSequence[] fullEntryValues = new CharSequence[numOfCameras + 1];
         CharSequence[] fullEntries = new CharSequence[numOfCameras + 1];
         for(int i = 0; i < numOfCameras ; i++) {
+            int[] capabilities = mCharacteristics.get(i).get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            boolean foundDepth = false;
+            for (int capability : capabilities) {
+                if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT) {
+                    Log.d(TAG, "Found depth camera with id " + i);
+                    foundDepth = true;
+                }
+            }
+            if(foundDepth) {
+                fullEntries[i] = "disable";
+                fullEntryValues[i] = "" + -1;
+                continue;
+            }
             int facing = mCharacteristics.get(i).get(CameraCharacteristics.LENS_FACING);
             String cameraIdString = "camera " + i +" facing:" +
                     (facing == CameraCharacteristics.LENS_FACING_FRONT ? "front" : "back");

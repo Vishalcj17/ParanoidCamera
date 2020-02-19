@@ -2310,7 +2310,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         for (int i = 0; i < cameraIdList.length; i++) {
             String cameraId = cameraIdList[i];
-            mCameraId[i] = cameraId;
             CameraCharacteristics characteristics;
             try {
                 characteristics = manager.getCameraCharacteristics(cameraId);
@@ -2318,6 +2317,19 @@ public class CaptureModule implements CameraModule, PhotoController,
                 e.printStackTrace();
                 continue;
             }
+            int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            boolean foundDepth = false;
+            for (int capability : capabilities) {
+                if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT) {
+                    Log.d(TAG, "Found depth camera with id " + cameraId);
+                    foundDepth = true;
+                }
+            }
+            if(foundDepth) {
+                mCameraId[i] = "-1";
+                continue;
+            }
+            mCameraId[i] = cameraId;
             isFirstDefault = setUpLocalMode(i, characteristics, removeList,
                     isFirstDefault, cameraId);
         }
@@ -3240,6 +3252,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
 
                 if(foundDepth) {
+                    mCameraId[i] = "-1";
                     continue;
                 }
                 if(i == getMainCameraId()) {
