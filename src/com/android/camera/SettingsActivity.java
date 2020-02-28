@@ -255,21 +255,22 @@ public class SettingsActivity extends PreferenceActivity {
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
         ListPreference mfnrPref = (ListPreference) findPreference(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
         SwitchPreference selfiePref = (SwitchPreference) findPreference(SettingsManager.KEY_SELFIEMIRROR);
+
         if (formatPref == null)
             return;
-
+        String sceneMode = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if((ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())) ||
-                (selfiePref != null && selfiePref.isChecked())){
+                (sceneMode != null && Integer.valueOf(sceneMode) == SettingsManager.SCENE_MODE_HDR_INT) ||
+                (selfiePref != null && selfiePref.isChecked())) {
             formatPref.setValue("0");
             formatPref.setEnabled(false);
         } else {
             formatPref.setEnabled(true);
         }
 
-        if (mfnrPref == null)
-            return;
-
-        if((ZSLPref != null &&"app-zsl".equals(ZSLPref.getValue())) ||
+        if (ZSLPref ==null)
+                return;
+        if("app-zsl".equals(ZSLPref.getValue()) ||
                 (selfiePref != null && selfiePref.isChecked())){
             if (mfnrPref != null) {
                 mfnrPref.setEnabled(false);
