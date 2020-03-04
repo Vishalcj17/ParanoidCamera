@@ -564,6 +564,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
         filterHeifSizeOptions();
     }
 
+    public boolean isT2TSupported() {
+        boolean supportted = true;
+        try {
+            supportted =
+                    (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
+        } catch (IllegalArgumentException e) {
+            Log.d(TAG, "isT2TSupported no vendor tag");
+            supportted = true;
+        }
+        return supportted;
+    }
+
     private Size parseSize(String value) {
         int indexX = value.indexOf('x');
         int width = Integer.parseInt(value.substring(0, indexX));

@@ -1005,7 +1005,8 @@ public class SettingsActivity extends PreferenceActivity {
         CaptureModule.CameraMode mode =
                 (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
 
-        if (mSettingsManager.getInitialCameraId() == CaptureModule.FRONT_ID) {
+        boolean isSupportedT2T = mSettingsManager.isT2TSupported();
+        if (mSettingsManager.getInitialCameraId() == CaptureModule.FRONT_ID || !isSupportedT2T) {
             removePreference(SettingsManager.KEY_TOUCH_TRACK_FOCUS, photoPre);
             removePreference(SettingsManager.KEY_TOUCH_TRACK_FOCUS, videoPre);
         }
