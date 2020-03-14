@@ -37,6 +37,10 @@ public class PersistUtil {
 
     public static final int CAMERA2_DEBUG_DUMP_IMAGE = 1;
     public static final int CAMERA2_DEBUG_DUMP_LOG = 2;
+    public static final int CAMERA2_DEBUG_AUDIO = 3;
+    public static final int CAMERA2_DEBUG_VIDEO = 4;
+    public static final int CAMERA2_DEBUG_MEDIACODEC = 5;
+
     public static final int CAMERA2_DEBUG_DUMP_ALL = 100;
     public static final int CAMERA2_DEV_OPTION_ALL = 100;
 
@@ -330,6 +334,10 @@ public class PersistUtil {
 
     public static int getPreviewFlip() {
         return PREVIEW_FLIP_VALUE;
+    }
+
+    public static boolean enableMediaRecorder() {
+        return SystemProperties.getBoolean("persist.sys.cameraapp.debug.mediarecorder", false);
     }
 
     public static int getVideoFlip() {

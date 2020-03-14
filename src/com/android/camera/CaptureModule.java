@@ -55,20 +55,24 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.Capability;
 import android.location.Location;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioRecord;
 import android.media.CamcorderProfile;
 import android.media.CameraProfile;
 import android.media.EncoderCapabilities;
 import android.media.EncoderCapabilities.VideoEncoderCap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
-import android.media.MediaRecorder;
+import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaCodecList;
+import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaMuxer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
@@ -78,7 +82,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Range;
@@ -134,6 +137,7 @@ import org.codeaurora.snapcam.R;
 import org.codeaurora.snapcam.filter.ClearSightImageProcessor;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -153,6 +157,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executor;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeoutException;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import androidx.heifwriter.HeifWriter;
 
@@ -277,6 +285,12 @@ public class CaptureModule implements CameraModule, PhotoController,
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_DUMP_LOG) ||
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_DUMP_ALL);
 
+    private static final boolean DEBUG_MEDIACODEC_AUDIO =
+            (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_AUDIO);
+    private static final boolean DEBUG_MEDIACODEC_VIDEO =
+            (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_VIDEO);
+    private static final boolean DEBUG_MEDIACODEC =
+            (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_MEDIACODEC);
     private static final boolean BSGC_DEBUG = PersistUtil.getBsgcebug();
     private static final String BSGC_TAG = "BSGC";
 
@@ -533,6 +547,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean mPaused = true;
     private boolean mIsSupportedQcfa = false;
     private Semaphore mSurfaceReadyLock = new Semaphore(1);
+    private final Object mVideoStateLock = new Object();
+    private VideoState mVideoState;
     private boolean mSurfaceReady = true;
     private boolean[] mCameraOpened = new boolean[MAX_NUM_CAM];
     private CameraDevice[] mCameraDevice = new CameraDevice[MAX_NUM_CAM];
@@ -555,6 +571,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         RTB,
         SAT,
         PRO_MODE
+    }
+    private enum VideoState {
+        VIDEO_INIT,
+        VIDEO_PREVIEW,
+        VIDEO_START,
+        VIDEO_PAUSE,
+        VIDEO_RESUME,
+        VIDEO_STOP
     }
     private View mRootView;
     private CaptureUI mUI;
@@ -666,11 +690,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size mVideoSnapshotSize;
     private Size mPictureThumbSize;
     private Size mVideoSnapshotThumbSize;
-
     private MediaRecorder mMediaRecorder;
-    private boolean mIsRecordingVideo;
-    private boolean mIsPreviewingVideo;
-    private boolean mNeedSetupMediaRecorder;
+    private boolean mIsRecordingVideo = false;
+    private boolean mIsPreviewingVideo = false;
     // The video duration limit. 0 means no limit.
     private int mMaxVideoDurationInMs;
     private boolean mIsMute = false;
@@ -682,10 +704,13 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final int UPDATE_RECORD_TIME = 5;
     private ContentValues mCurrentVideoValues;
     private String mVideoFilename;
-    private boolean mMediaRecorderPausing = false;
-    private boolean mMediaRecorderStarted = false;
+    private boolean mRecordingPausing = false;
+    private boolean mRecordingStarted = false;
     private long mRecordingStartTime;
     private long mRecordingTotalTime;
+    private long mRecordingPauseTime;
+    private long mRecordingPausingTime;
+    private long mMaxDurationForCodec;
     private boolean mRecordingTimeCountsDown = false;
     private ImageReader mVideoSnapshotImageReader;
     private ImageReader[] mPhysicalSnapshotImageReaders = new ImageReader[PHYSICAL_CAMERA_COUNT];
@@ -700,7 +725,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private CaptureRequest.Builder mVideoRecordRequestBuilder;
     private CaptureRequest.Builder mVideoPreviewRequestBuilder;
     private Surface mVideoPreviewSurface;
-    private Surface mMediaRecorderSurface;
+    private Surface mVideoRecordingSurface;
     private boolean mCameraModeSwitcherAllowed = true;
 
     private static final int STATS_DATA = 768;
@@ -1750,7 +1775,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     private CaptureRequest.Builder getRequestBuilder(int templateType,int id, Set<String> physicalIds)
             throws CameraAccessException{
         CaptureRequest.Builder builder = null;
-        Log.d(TAG, "id is " + id);
         if (physicalIds != null){
             builder = mCameraDevice[id].createCaptureRequest(
                     templateType,physicalIds);
@@ -2185,11 +2209,26 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void createSessionForVideo(final int cameraId) {
-        mNeedSetupMediaRecorder = false;
-        mVideoRecordRequestBuilder = null;
         try {
-            setUpMediaRecorder(cameraId);
+            mVideoRecordRequestBuilder = null;
+            setVideoState(VideoState.VIDEO_INIT);
+            setupRecordingCommonSettings(cameraId);
             setUpPhysicalMediaRecorder();
+            if (PersistUtil.enableMediaRecorder()) {
+                setUpMediaRecorder(cameraId);
+            } else {
+                mOnlyVideoEncoder = true;
+                if (!mCaptureTimeLapse && (!mHighSpeedCapture || mHighSpeedRecordingMode)
+                        && !mSuperSlomoCapture) {
+                    mOnlyVideoEncoder = false;
+                    setupMediaCodecAudio();
+                    setupAudioRecorder();
+                }
+                setupMediaCodecVideo(cameraId);
+                Bundle myExtras = mActivity.getIntent().getExtras();
+                setVideoOutputFile(myExtras);
+                setOrientationHint(cameraId);
+            }
             mCameraHandler.removeMessages(CANCEL_TOUCH_FOCUS, mCameraId[cameraId]);
             mState[cameraId] = STATE_PREVIEW;
             mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO;
@@ -2228,97 +2267,33 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             mVideoPreviewSurface = surface;
             mFrameProcessor.setOutputSurface(surface);
-            mMediaRecorderSurface = mMediaRecorder.getSurface();
-            mFrameProcessor.setVideoOutputSurface(mMediaRecorderSurface);
             createVideoSnapshotImageReader();
             createPhysicalVideoSnapshotImageReader();
-            setUpVideoCaptureRequestBuilder(cameraId);
+            if (PersistUtil.enableMediaRecorder()) {
+                mVideoRecordingSurface = mMediaRecorder.getSurface();
+            } else {
+                mVideoRecordingSurface = mVideoEncoder.createInputSurface();
+                mVideoEncoder.start();
+            }
+
+            mFrameProcessor.setVideoOutputSurface(mVideoRecordingSurface);
             surfaces.add(mVideoPreviewSurface);
-            surfaces.add(mMediaRecorderSurface);
+            surfaces.add(mVideoRecordingSurface);
+            setUpVideoCaptureRequestBuilder(cameraId);
+            mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
+            mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
             mPreviewRequestBuilder[cameraId] = mVideoRecordRequestBuilder;
             mIsPreviewingVideo = true;
-            if (ApiHelper.isAndroidPOrHigher()) {
-                if (isHighSpeedRateCapture()) {
-                    mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
-                    mVideoRecordRequestBuilder.addTarget(mMediaRecorderSurface);
-                    CaptureRequest initialRequest = mVideoRecordRequestBuilder.build();
-                    int optionMode = isSSMEnabled() ? STREAM_CONFIG_SSM : SESSION_HIGH_SPEED;
-                    buildConstrainedCameraSession(mCameraDevice[cameraId], optionMode,
-                            surfaces, mSessionListener, mCameraHandler, mVideoRecordRequestBuilder);
-                } else {
-                    configureCameraSessionWithParameters(cameraId, surfaces,
-                            mSessionListener, mCameraHandler, mVideoRecordRequestBuilder);
-                }
+            if (isHighSpeedRateCapture()) {
+                int optionMode = isSSMEnabled() ? STREAM_CONFIG_SSM : SESSION_HIGH_SPEED;
+                buildConstrainedCameraSession(mCameraDevice[cameraId], optionMode,
+                        surfaces, mSessionListener, mCameraHandler, mVideoRecordRequestBuilder);
             } else {
-                if (isHighSpeedRateCapture()) {
-                    mCameraDevice[cameraId].createConstrainedHighSpeedCaptureSession(surfaces, new
-                            CameraConstrainedHighSpeedCaptureSession.StateCallback() {
-
-                                @Override
-                                public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                                    setCameraModeSwitcherAllowed(true);
-                                    mCurrentSession = cameraCaptureSession;
-                                    mCaptureSession[cameraId] = cameraCaptureSession;
-                                    CameraConstrainedHighSpeedCaptureSession session =
-                                            (CameraConstrainedHighSpeedCaptureSession) mCurrentSession;
-                                    updateFaceDetection();
-                                    try {
-                                        List list = CameraUtil
-                                                .createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
-                                        session.setRepeatingBurst(list, mCaptureCallback, mCameraHandler);
-                                    } catch (CameraAccessException e) {
-                                        Log.e(TAG, "Failed to start high speed video recording "
-                                                + e.getMessage());
-                                        e.printStackTrace();
-                                    } catch (IllegalArgumentException e) {
-                                        Log.e(TAG, "Failed to start high speed video recording "
-                                                + e.getMessage());
-                                        e.printStackTrace();
-                                    } catch (IllegalStateException e) {
-                                        Log.e(TAG, "Failed to start high speed video recording "
-                                                + e.getMessage());
-                                        e.printStackTrace();
-                                    }
-                                }
-
-                                @Override
-                                public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-                                    setCameraModeSwitcherAllowed(true);
-                                    Toast.makeText(mActivity, "Failed", Toast.LENGTH_SHORT).show();
-                                }
-                            }, mCameraHandler);
-                } else {
-                    surfaces.add(mVideoSnapshotImageReader.getSurface());
-                    String zzHDR = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_HDR_VALUE);
-                    boolean zzHdrStatue = zzHDR.equals("1");
-                    // if enable ZZHDR mode, don`t call the setOpModeForVideoStream method.
-                    if (!zzHdrStatue) {
-                        setOpModeForVideoStream(cameraId);
-                    }
-                    String value = mSettingsManager.getValue(SettingsManager.KEY_FOVC_VALUE);
-                    if (value != null && Boolean.parseBoolean(value)) {
-                        mStreamConfigOptMode = mStreamConfigOptMode | STREAM_CONFIG_MODE_FOVC;
-                    }
-                    if (zzHdrStatue) {
-                        mStreamConfigOptMode = STREAM_CONFIG_MODE_ZZHDR;
-                    }
-                    if (DEBUG) {
-                        Log.v(TAG, "createCustomCaptureSession mStreamConfigOptMode :"
-                                + mStreamConfigOptMode);
-                    }
-                    if(mStreamConfigOptMode == 0) {
-                        mCameraDevice[cameraId].createCaptureSession(surfaces, mCCSSateCallback, mCameraHandler);
-                    } else {
-                        List<OutputConfiguration> outConfigurations = new ArrayList<>(surfaces.size());
-                        for (Surface sface : surfaces) {
-                            outConfigurations.add(new OutputConfiguration(sface));
-                        }
-                        mCameraDevice[cameraId].createCustomCaptureSession(null, outConfigurations,
-                                mStreamConfigOptMode, mCCSSateCallback, mCameraHandler);
-                    }
-                }
+                configureCameraSessionWithParameters(cameraId, surfaces,
+                        mSessionListener, mCameraHandler, mVideoRecordRequestBuilder);
             }
-        } catch (CameraAccessException | IOException | IllegalArgumentException | NullPointerException | IllegalStateException e) {
+        } catch (CameraAccessException | IOException | IllegalArgumentException |
+                NullPointerException | IllegalStateException e) {
             e.printStackTrace();
             quitVideoToPhotoWithError(e.getMessage());
         }
@@ -3644,7 +3619,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                     setUpPhysicalOutput();
                 }
             }
-            mMediaRecorder = new MediaRecorder();
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder = new MediaRecorder();
+            }
             mAutoFocusRegionSupported = mSettingsManager.isAutoFocusRegionSupported(getMainCameraId());
             mAutoExposureRegionSupported = mSettingsManager.isAutoExposureRegionSupported(getMainCameraId());
         } catch (CameraAccessException e) {
@@ -4141,10 +4118,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             closePhysicalImageReaders();
 
             mIsLinked = false;
-
-            if (null != mMediaRecorder) {
-                mMediaRecorder.release();
-                mMediaRecorder = null;
+            if (PersistUtil.enableMediaRecorder()) {
+                releaseMediaRecorder();
+            } else {
+                stopCodecThreads();
+                releaseMediaCodec();
             }
 
             if (null != mVideoSnapshotImageReader) {
@@ -4429,7 +4407,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mIsPreviewingVideo && !mIsRecordingVideo) {
             exitVideoModule();
         }
-        mIsPreviewingVideo = false;
         if (mSoundPlayer != null) {
             mSoundPlayer.release();
             mSoundPlayer = null;
@@ -5624,6 +5601,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             // 1 minute = 60000ms
             mMaxVideoDurationInMs = 60000 * minutes;
         }
+        mMaxDurationForCodec = mMaxVideoDurationInMs;
+        if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
+            mMaxDurationForCodec = mMaxDurationForCodec * mHighSpeedCaptureRate / 30;
+        }
     }
 
     public void updateDeepZoomIndex(float zoom) {
@@ -5654,11 +5635,11 @@ public class CaptureModule implements CameraModule, PhotoController,
     private List<CaptureRequest> createSSMBatchRequest(CaptureRequest.Builder requestBuilder) {
         List<CaptureRequest> ssmRequests = new ArrayList<CaptureRequest>();
         requestBuilder.removeTarget(mVideoPreviewSurface);
-        requestBuilder.removeTarget(mMediaRecorderSurface);
+        requestBuilder.removeTarget(mVideoRecordingSurface);
         requestBuilder.addTarget(mVideoPreviewSurface);
         ssmRequests.add(requestBuilder.build());
         requestBuilder.removeTarget(mVideoPreviewSurface);
-        requestBuilder.addTarget(mMediaRecorderSurface);
+        requestBuilder.addTarget(mVideoRecordingSurface);
         int mSSMBatchSize = CameraUtil.getHighSpeedVideoConfigsLists(getMainCameraId());
         if (DEBUG) {
             Log.d(TAG, "mSSMBatchSize is " + mSSMBatchSize);
@@ -5673,7 +5654,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             .StateCallback() {
         @Override
         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-            Log.d(TAG, "StartRecordingVideo session onConfigured");
+            Log.d(TAG, "recordingVideo session onConfigured");
             setCameraModeSwitcherAllowed(true);
             int cameraId = getMainCameraId();
             mCurrentSession = cameraCaptureSession;
@@ -5688,7 +5669,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
-            if (!mFrameProcessor.isFrameListnerEnabled() && !startMediaRecorder()) {
+            if (!mFrameProcessor.isFrameListnerEnabled() && !startVideoRecording()) {
                 startRecordingFailed();
                 return;
             }
@@ -5716,26 +5697,27 @@ public class CaptureModule implements CameraModule, PhotoController,
             List<CaptureRequest> slowMoRequests = null;
             try {
                 setUpVideoCaptureRequestBuilder(cameraId);
-                int deviceSocId = mSettingsManager.getDeviceSocId();
-                if (deviceSocId == SettingsManager.TALOS_SOCID ||
-                        deviceSocId == SettingsManager.MOOREA_SOCID ||
-                        deviceSocId == SettingsManager.SAIPAN_SOCID ||
-                        deviceSocId == SettingsManager.SM6250_SOCID) {
-                    List list = CameraUtil
-                            .createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
-                    mCurrentSession.setRepeatingBurst(list,mCaptureCallback, mCameraHandler);
+                if (isHighSpeedRateCapture()) {
+                    slowMoRequests = mSuperSlomoCapture ?
+                            createSSMBatchRequest(mVideoRecordRequestBuilder) :
+                            ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession).
+                            createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
+                    mCurrentSession.setRepeatingBurst(slowMoRequests, mCaptureCallback,
+                            mCameraHandler);
                 } else {
-                    if (isHighSpeedRateCapture()) {
-                        slowMoRequests = mSuperSlomoCapture ?
-                                createSSMBatchRequest(mVideoRecordRequestBuilder) :
-                                ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession).
-                                createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
-                        mCurrentSession.setRepeatingBurst(slowMoRequests, mCaptureCallback,
-                                mCameraHandler);
-                    } else {
-                        mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
-                                mCaptureCallback, mCameraHandler);
+                    mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
+                            mCaptureCallback, mCameraHandler);
+                }
+                setVideoState(VideoState.VIDEO_PREVIEW);
+                if (PersistUtil.enableMediaRecorder()) {
+                    enableVideoButton(true);
+                } else {
+                    //start threads of MediaCodec
+                    if (!mOnlyVideoEncoder){
+                        startAudioDecoder();
+                        startAudioEncoder();
                     }
+                    startVideoEncoder();
                 }
             } catch (CameraAccessException e) {
                 e.printStackTrace();
@@ -5798,7 +5780,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 outConfigurations.add(new OutputConfiguration(mUI.getPhysicalSurfaces().get(0)));
                 outConfigurations.add(new OutputConfiguration(
                         mVideoSnapshotImageReader.getSurface()));
-                outConfigurations.add(new OutputConfiguration(mMediaRecorderSurface));
+                outConfigurations.add(new OutputConfiguration(mVideoRecordingSurface));
 
             }
             List<Surface> previewSurfaces = mUI.getPhysicalSurfaces();
@@ -5904,26 +5886,25 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private boolean startRecordingVideo(final int cameraId) {
+    private boolean triggerVideoRecording(final int cameraId) {
         if (null == mCameraDevice[cameraId]) {
             return false;
         }
         mStartRecordingTime = System.currentTimeMillis();
-        Log.d(TAG, "StartRecordingVideo " + cameraId);
-        mStartRecPending = true;
-        mIsRecordingVideo = true;
-        mMediaRecorderPausing = false;
-        mIsPreviewingVideo = false;
-        mSSMCaptureCompleteFlag = false;
+        mRecordingPausingTime = 0;
+        Log.d(TAG, "triggerVideoRecording " + cameraId);
 
-        checkAndPlayRecordSound(cameraId, true);
         mActivity.updateStorageSpaceAndHint();
         if (mActivity.getStorageSpaceBytes() <= Storage.LOW_STORAGE_THRESHOLD_BYTES) {
             Log.w(TAG, "Storage issue, ignore the start request");
-            mStartRecPending = false;
-            mIsRecordingVideo = false;
             return false;
         }
+        mStartRecPending = true;
+        mIsRecordingVideo = true;
+        mRecordingPausing = false;
+        mIsPreviewingVideo = false;
+        mSSMCaptureCompleteFlag = false;
+        checkAndPlayRecordSound(cameraId, true);
 
         try {
             mUI.clearFocus();
@@ -5938,7 +5919,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else {
                 if (mSettingsManager.getPhysicalCameraId() != null){
                     if (mSettingsManager.isLogicalEnable()){
-                        mVideoRecordRequestBuilder.addTarget(mMediaRecorderSurface);
+                        mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                     }
                     int i =0;
                     for (MediaRecorder recorder:mPhysicalMediaRecorders){
@@ -5949,23 +5930,15 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
 
                 } else {
-                    mVideoRecordRequestBuilder.addTarget(mMediaRecorderSurface);
+                    mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                 }
                 mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
                         mCaptureCallback, mCameraHandler);
             }
             mCameraHandler.removeMessages(CANCEL_TOUCH_FOCUS, mCameraId[cameraId]);
-            if (!mFrameProcessor.isFrameListnerEnabled() && !startMediaRecorder() ||
+            if (!mFrameProcessor.isFrameListnerEnabled() && !startVideoRecording() ||
                     !mIsRecordingVideo) {
-                releaseMediaRecorder();
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mUI.showUIafterRecording();
-                        mFrameProcessor.setVideoOutputSurface(null);
-                        restartSession(true);
-                    }
-                });
+                startRecordingFailed();
                 return false;
             }
             mHandler.post(new Runnable() {
@@ -6001,7 +5974,12 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void startRecordingFailed() {
-        releaseMediaRecorder();
+        if (PersistUtil.enableMediaRecorder()) {
+            releaseMediaRecorder();
+        } else {
+            stopCodecThreads();
+            releaseMediaCodec();
+        }
         mHandler.post(new Runnable() {
              @Override
              public void run() {
@@ -6017,11 +5995,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         setCameraModeSwitcherAllowed(true);
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
-                Toast.makeText(mActivity,"Could not start media recorder.\n " +
+                Toast.makeText(mActivity,"Could not start video record.\n " +
                         msg, Toast.LENGTH_LONG).show();
             }
         });
-        releaseMediaRecorder();
+        if (PersistUtil.enableMediaRecorder()) {
+            releaseMediaRecorder();
+        } else {
+            stopCodecThreads();
+            releaseMediaCodec();
+        }
         releaseAudioFocus();
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
@@ -6031,9 +6014,14 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void quitRecordingWithError(String msg) {
-        Toast.makeText(mActivity,"Could not start media recorder.\n " +
+        Toast.makeText(mActivity,"Could not start recording.\n " +
                 msg, Toast.LENGTH_LONG).show();
-        releaseMediaRecorder();
+        if (PersistUtil.enableMediaRecorder()) {
+            releaseMediaRecorder();
+        } else {
+            stopCodecThreads();
+            releaseMediaCodec();
+        }
         releaseAudioFocus();
         mStartRecPending = false;
         mIsRecordingVideo = false;
@@ -6042,13 +6030,23 @@ public class CaptureModule implements CameraModule, PhotoController,
         restartSession(true);
     }
 
-    private boolean startMediaRecorder() {
-        if (mUnsupportedResolution == true ) {
-            Log.v(TAG, "Unsupported Resolution according to target");
-            mStartRecPending = false;
-            mIsRecordingVideo = false;
+    private boolean sendSSMRequestBuilder() {
+        try {
+            mVideoRecordRequestBuilder.set(ssmInterpFactor, mInterpFactor);
+            mVideoRecordRequestBuilder.set(ssmCaptureStart, 1);
+            mCurrentSession.captureBurst(createSSMBatchRequest(mVideoRecordRequestBuilder),
+                    mCaptureCallback, mCameraHandler);
+            mVideoRecordRequestBuilder.set(ssmCaptureStart, 0);
+            mCurrentSession.setRepeatingBurst(createSSMBatchRequest(mVideoRecordRequestBuilder),
+                    mCaptureCallback, mCameraHandler);
+        } catch (CameraAccessException | IllegalArgumentException e) {
+            e.printStackTrace();
             return false;
         }
+        return true;
+    }
+
+    private boolean startMediaRecorder() {
         if (mMediaRecorder == null) {
             Log.e(TAG, "Fail to initialize media recorder");
             mStartRecPending = false;
@@ -6056,15 +6054,14 @@ public class CaptureModule implements CameraModule, PhotoController,
             return false;
         }
 
-        requestAudioFocus();
         try {
             mMediaRecorder.start(); // Recording is now started
             startPhysicalRecorder();
-            mMediaRecorderStarted = true;
+            mRecordingStarted = true;
             Log.d(TAG, "StartRecordingVideo done. Time=" +
                     (System.currentTimeMillis() - mStartRecordingTime) + "ms");
         } catch (RuntimeException e) {
-            Toast.makeText(mActivity,"Could not start media recorder.\n " +
+            Toast.makeText(mActivity, "Could not start recording.\n " +
                     "Can't start video recording.", Toast.LENGTH_LONG).show();
             releaseMediaRecorder();
             releaseAudioFocus();
@@ -6072,28 +6069,33 @@ public class CaptureModule implements CameraModule, PhotoController,
             mIsRecordingVideo = false;
             return false;
         }
-        if (isSSMEnabled()) {
-            try {
-                mVideoRecordRequestBuilder.set(ssmInterpFactor, mInterpFactor);
-                mVideoRecordRequestBuilder.set(ssmCaptureStart, 1);
-                mCurrentSession.captureBurst(createSSMBatchRequest(mVideoRecordRequestBuilder),
-                        mCaptureCallback, mCameraHandler);
-                mVideoRecordRequestBuilder.set(ssmCaptureStart, 0);
-                mCurrentSession.setRepeatingBurst(createSSMBatchRequest(mVideoRecordRequestBuilder),
-                        mCaptureCallback, mCameraHandler);
-            } catch (CameraAccessException | IllegalArgumentException e) {
-                e.printStackTrace();
-                quitRecordingWithError("SSM starts failed");
-                return false;
-            }
+        if (isSSMEnabled() && !sendSSMRequestBuilder()) {
+            return false;
         }
         return true;
     }
 
-    public void startMediaRecording() {
-        if (!startMediaRecorder()) {
-            startRecordingFailed();
+    public boolean startVideoRecording() {
+        if (mUnsupportedResolution == true ) {
+            Log.v(TAG, "Unsupported Resolution according to target");
+            mStartRecPending = false;
+            mIsRecordingVideo = false;
+            return false;
         }
+        requestAudioFocus();
+        if (PersistUtil.enableMediaRecorder()) {
+            if (!startMediaRecorder()) {
+                startRecordingFailed();
+                return false;
+            }
+        } else {
+            mMuxer.start();
+            mMuxerStart = true;
+            Log.d(TAG, "Muxer Started");
+            setVideoState(VideoState.VIDEO_START);
+        }
+        mRecordingStarted = true;
+        return true;
     }
 
     private void startPhysicalRecorder(){
@@ -6170,6 +6172,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void setUpVideoCaptureRequestBuilder(int cameraId) throws CameraAccessException{
         if(mVideoRecordRequestBuilder == null){
+            Log.d(TAG, "mVideoRecordRequestBuilder is null.");
             mVideoRecordRequestBuilder = getRequestBuilder(CameraDevice.TEMPLATE_RECORD,
                     cameraId,mSettingsManager.getPhysicalCameraId());
         }
@@ -6326,7 +6329,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyVideoFlash(mVideoPreviewRequestBuilder);
         CaptureRequest captureRequest = null;
         try {
-            if (mMediaRecorderPausing) {
+            if (mRecordingPausing) {
                 captureRequest = mVideoPreviewRequestBuilder.build();
             } else {
                 captureRequest = mVideoRecordRequestBuilder.build();
@@ -6402,7 +6405,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (!mIsRecordingVideo) {
             return;
         }
-        if (mMediaRecorderPausing) {
+        if (mRecordingPausing) {
             return;
         }
 
@@ -6453,8 +6456,9 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void pauseVideoRecording() {
         Log.v(TAG, "pauseVideoRecording");
-        mMediaRecorderPausing = true;
-        mRecordingTotalTime += SystemClock.uptimeMillis() - mRecordingStartTime;
+        mRecordingPausing = true;
+        mRecordingPauseTime = SystemClock.uptimeMillis();
+        mRecordingTotalTime += mRecordingPauseTime - mRecordingStartTime;
         String value = mSettingsManager.getValue(SettingsManager.KEY_EIS_VALUE);
         boolean noNeedEndofStreamWhenPause = value != null && value.equals("V3");
         // As EIS is not supported for HFR case (>=120 )
@@ -6463,7 +6467,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         boolean noNeedEndOfStreamInHFR = mHighSpeedCapture &&
                 ((int)mHighSpeedFPSRange.getUpper() >= HIGH_SESSION_MAX_FPS);
         if (noNeedEndofStreamWhenPause || noNeedEndOfStreamInHFR) {
-            mMediaRecorder.pause();
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder.pause();
+            } else {
+                setVideoState(VideoState.VIDEO_PAUSE);
+            }
         } else {
             setEndOfStream(false, false);
         }
@@ -6471,20 +6479,28 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void resumeVideoRecording() {
         Log.v(TAG, "resumeVideoRecording");
-        mMediaRecorderPausing = false;
+        mRecordingPausing = false;
         mRecordingStartTime = SystemClock.uptimeMillis();
+        mRecordingPausingTime += mRecordingStartTime - mRecordingPauseTime;
+        if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
+            mRecordingPausingTime = mRecordingPausingTime * mHighSpeedCaptureRate / 30;
+        }
         updateRecordingTime();
         setEndOfStream(true, false);
-        if (!ApiHelper.HAS_RESUME_SUPPORTED){
-            mMediaRecorder.start();
-            Log.d(TAG, "StartRecordingVideo done.");
-        } else {
-            try {
-                Method resumeRec = Class.forName("android.media.MediaRecorder").getMethod("resume");
-                resumeRec.invoke(mMediaRecorder);
-            } catch (Exception e) {
-                Log.v(TAG, "resume method not implemented");
+        if (PersistUtil.enableMediaRecorder()) {
+            if (!ApiHelper.HAS_RESUME_SUPPORTED) {
+                mMediaRecorder.start();
+                Log.d(TAG, "resumeVideoRecording done.");
+            } else {
+                try {
+                    Method resumeRec = Class.forName("android.media.MediaRecorder").getMethod("resume");
+                    resumeRec.invoke(mMediaRecorder);
+                } catch (Exception e) {
+                    Log.v(TAG, "resume method not implemented");
+                }
             }
+        } else {
+            setVideoState(VideoState.VIDEO_RESUME);
         }
     }
 
@@ -6503,7 +6519,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
             } else {
                 // is pause or stopRecord
-                if ((mMediaRecorderPausing || mStopRecPending) && (mCurrentSession != null)) {
+                if ((mRecordingPausing || mStopRecPending) && (mCurrentSession != null)) {
                     mCurrentSession.stopRepeating();
                     try {
                         mVideoRecordRequestBuilder.set(CaptureModule.recording_end_stream, (byte) 0x01);
@@ -6525,7 +6541,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
                 if (!isStopRecord) {
                     //is pause record
-                    mMediaRecorder.pause();
+                    if (PersistUtil.enableMediaRecorder()) {
+                        mMediaRecorder.pause();
+                    } else {
+                        setVideoState(VideoState.VIDEO_PAUSE);
+                    }
                     captureRequestBuilder = mVideoPreviewRequestBuilder;
                     applyVideoCommentSettings(captureRequestBuilder, getMainCameraId());
                 }
@@ -6591,14 +6611,21 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void exitVideoModule(){
         Log.d(TAG, "exitVideoModule ");
-        if (!mIsPreviewingVideo) {
-            return;
+        if (mVideoEncoder != null) {
+            mVideoEncoder.signalEndOfInputStream();
         }
         mFrameProcessor.setVideoOutputSurface(null);
         mFrameProcessor.onClose();
         closePreviewSession();
+        mIsRecordingVideo = false;
+        mIsPreviewingVideo = false;
         // release media recorder
-        releaseMediaRecorder();
+        if (PersistUtil.enableMediaRecorder()) {
+            releaseMediaRecorder();
+        } else {
+            stopCodecThreads();
+            releaseMediaCodec();
+        }
         releaseAudioFocus();
         mIsPreviewingVideo = false;
     }
@@ -6612,17 +6639,22 @@ public class CaptureModule implements CameraModule, PhotoController,
                 warningToast("Super Slow Motion is not finished");
             }
         }
+        if (mVideoEncoder != null) {
+            mVideoEncoder.signalEndOfInputStream();
+        }
+        checkAndPlayRecordSound(cameraId, false);
         mStopRecPending = true;
+        mRecordingPausing = false;
+        mIsRecordingVideo = false;
+        mIsPreviewingVideo = false;
         boolean shouldAddToMediaStoreNow = false;
         // Stop recording
-        checkAndPlayRecordSound(cameraId, false);
         setEndOfStream(false, true);
         mFrameProcessor.setVideoOutputSurface(null);
         mFrameProcessor.onClose();
         if (mLiveShotInitHeifWriter != null) {
             mLiveShotInitHeifWriter.close();
         }
-        mIsRecordingVideo = false;
         if (isEISDisable() && isAbortCapturesEnable() && mCurrentSession != null) {
             try {
                 mCurrentSession.abortCaptures();
@@ -6634,31 +6666,43 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (!mPaused && !isAbortCapturesEnable()) {
             closePreviewSession();
         }
-        mMediaRecorderStarted = false;
-        try {
-            mMediaRecorder.setOnErrorListener(null);
-            mMediaRecorder.setOnInfoListener(null);
-            mMediaRecorder.stop();
+        mRecordingStarted = false;
+
+        if (PersistUtil.enableMediaRecorder()) {
+            try {
+                mMediaRecorder.setOnErrorListener(null);
+                mMediaRecorder.setOnInfoListener(null);
+                mMediaRecorder.stop();
+                stopPhysicalRecorder();
+                shouldAddToMediaStoreNow = true;
+                mMediaRecorder.reset();
+            } catch (RuntimeException e) {
+                Log.w(TAG, "MediaRecoder stop fail", e);
+                if (mVideoFilename != null) deleteVideoFile(mVideoFilename);
+                for (int i=0;i<mPhysicalFileName.length;i++){
+                    if (mPhysicalFileName[i] != null) deleteVideoFile(mPhysicalFileName[i]);
+                }
+            }
+        } else {
+            setVideoState(VideoState.VIDEO_STOP);
+            stopCodecThreads();
             stopPhysicalRecorder();
             shouldAddToMediaStoreNow = true;
-            Log.d(TAG, "stopRecordingVideo done. Time=" +
-                    (System.currentTimeMillis() - mStopRecordingTime) + "ms");
-            AccessibilityUtils.makeAnnouncement(mUI.getVideoButton(),
-                    mActivity.getString(R.string.video_recording_stopped));
-            mMediaRecorder.reset();
-        } catch (RuntimeException e) {
-            Log.w(TAG, "MediaRecoder stop fail",  e);
-            if (mVideoFilename != null) deleteVideoFile(mVideoFilename);
-            for (int i=0;i<mPhysicalFileName.length;i++){
-                if (mPhysicalFileName[i] != null) deleteVideoFile(mPhysicalFileName[i]);
-            }
         }
+        Log.d(TAG, "stopRecordingVideo done. Time=" +
+                (System.currentTimeMillis() - mStopRecordingTime) + "ms");
+        AccessibilityUtils.makeAnnouncement(mUI.getVideoButton(),
+                mActivity.getString(R.string.video_recording_stopped));
         if (shouldAddToMediaStoreNow) {
             saveVideo();
         }
         keepScreenOnAwhile();
         // release media recorder
-        releaseMediaRecorder();
+        if (PersistUtil.enableMediaRecorder()) {
+            releaseMediaRecorder();
+        } else {
+            releaseMediaCodec();
+        }
         releaseAudioFocus();
         mUI.showRecordingUI(false, false);
         mUI.enableShutter(true);
@@ -6806,7 +6850,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                             Log.d(TAG, "updateBitrate type is " + type + " " + info.getName());
                             int maxBitRate = videoCapabilities.getBitrateRange().getUpper().intValue();
                             Log.d(TAG, "maxBitRate is " + maxBitRate + ", profileBitRate is " + bitRate);
-                            mMediaRecorder.setVideoEncodingBitRate(Math.min(bitRate, maxBitRate));
+                            if (PersistUtil.enableMediaRecorder()) {
+                                mMediaRecorder.setVideoEncodingBitRate(Math.min(bitRate, maxBitRate));
+                            } else {
+                                mVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, Math.min(bitRate, maxBitRate));
+                            }
                             return;
                         }
                     } catch (IllegalArgumentException e) {
@@ -6816,7 +6864,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         }
         Log.i(TAG, "updateBitrate video bitrate: "+ bitRate);
-        mMediaRecorder.setVideoEncodingBitRate(bitRate);
+        if (PersistUtil.enableMediaRecorder()) {
+            mMediaRecorder.setVideoEncodingBitRate(bitRate);
+        } else {
+            mVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
+        }
     }
 
     private void setUpPhysicalMediaRecorder() throws IOException {
@@ -6867,39 +6919,767 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private void setUpMediaRecorder(int cameraId) throws IOException {
-        Log.d(TAG, "setUpMediaRecorder");
+    private void setupRecordingCommonSettings(int cameraId) {
+        enableVideoButton(false);
         String videoSize = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_QUALITY);
         int size = CameraSettings.VIDEO_QUALITY_TABLE.get(videoSize);
+
         Intent intent = mActivity.getIntent();
         if (intent.hasExtra(MediaStore.EXTRA_VIDEO_QUALITY)) {
             int extraVideoQuality =
                     intent.getIntExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0);
             if (extraVideoQuality > 0) {
                 size = CamcorderProfile.QUALITY_HIGH;
-            } else {  // 0 is mms.
+            } else {
                 size = CamcorderProfile.QUALITY_LOW;
             }
         }
         if (mCaptureTimeLapse) {
             size = CameraSettings.getTimeLapseQualityFor(size);
         }
-
-        Bundle myExtras = intent.getExtras();
-
-        if (mMediaRecorder == null) mMediaRecorder = new MediaRecorder();
-        mMediaRecorder.reset();
-
-        updateHFRSetting();
-        boolean hfr = mHighSpeedCapture && !mHighSpeedRecordingMode;
-
+        closeVideoFileDescriptor();
         if (CamcorderProfile.hasProfile(cameraId, size)) {
             mProfile = CamcorderProfile.get(cameraId, size);
         } else {
             warningToast(R.string.error_app_unsupported_profile);
             throw new IllegalArgumentException("error_app_unsupported_profile");
         }
+        mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+        updateHFRSetting();
+    }
 
+    private void isSupportedResolution(int videoEncoder) {
+        //check if codec supports the resolution, otherwise throw toast
+        int videoWidth = mProfile.videoFrameWidth;
+        int videoHeight = mProfile.videoFrameHeight;
+        List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
+        for (VideoEncoderCap videoEnc: videoEncoders) {
+            if (videoEnc.mCodec == videoEncoder) {
+                if (videoWidth > videoEnc.mMaxFrameWidth ||
+                        videoWidth < videoEnc.mMinFrameWidth ||
+                        videoHeight > videoEnc.mMaxFrameHeight ||
+                        videoHeight < videoEnc.mMinFrameHeight) {
+                    Log.e(TAG, "Selected codec " + videoEncoder +
+                            " does not support "+ videoWidth + "x" + videoHeight
+                            + " resolution");
+                    Log.e(TAG, "Codec capabilities: " +
+                            "mMinFrameWidth = " + videoEnc.mMinFrameWidth + " , " +
+                            "mMinFrameHeight = " + videoEnc.mMinFrameHeight + " , " +
+                            "mMaxFrameWidth = " + videoEnc.mMaxFrameWidth + " , " +
+                            "mMaxFrameHeight = " + videoEnc.mMaxFrameHeight);
+                    mUnsupportedResolution = true;
+                    warningToast(R.string.error_app_unsupported);
+                    return;
+                }
+                break;
+            }
+        }
+    }
+
+    private void setMaxFileSize(long requestLimit) {
+        long maxFileSize = mActivity.getStorageSpaceBytes() - Storage.LOW_STORAGE_THRESHOLD_BYTES;
+        if (requestLimit > 0 && requestLimit < maxFileSize) {
+            maxFileSize = requestLimit;
+        }
+
+        if (Storage.isSaveSDCard() && maxFileSize > SDCARD_SIZE_LIMIT) {
+            maxFileSize = SDCARD_SIZE_LIMIT;
+        }
+
+        try {
+            if (PersistUtil.enableMediaRecorder()) {
+                Log.i(TAG, "MediaRecorder setMaxFileSize: " + maxFileSize);
+                mMediaRecorder.setMaxFileSize(maxFileSize);
+            } else {
+                //CODEC:
+            }
+        } catch (RuntimeException exception) {
+            // We are going to ignore failure of setMaxFileSize here, as
+            // a) The composer selected may simply not support it, or
+            // b) The underlying media framework may not handle 64-bit range
+            // on the size restriction.
+        }
+    }
+
+    private void setOrientationHint(int cameraId) {
+        int rotation = CameraUtil.getJpegRotation(cameraId, mOrientation);
+        String videoRotation = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ROTATION);
+        if (videoRotation != null) {
+            rotation += Integer.parseInt(videoRotation);
+            rotation = rotation % 360;
+        }
+        if(mFrameProcessor.isFrameFilterEnabled()) {
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder.setOrientationHint(0);
+            } else {
+                mMuxer.setOrientationHint(0);
+            }
+        } else {
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder.setOrientationHint(rotation);
+            } else {
+                mMuxer.setOrientationHint(rotation);
+            }
+        }
+    }
+
+    private void setLocation() {
+        Location loc = mLocationManager.getCurrentLocation();
+        if (loc != null) {
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder.setLocation((float) loc.getLatitude(),
+                        (float) loc.getLongitude());
+            } else {
+                mMuxer.setLocation((float) loc.getLatitude(),
+                        (float) loc.getLongitude());
+            }
+        }
+    }
+
+    private synchronized void setVideoState(VideoState state) {
+        synchronized (mVideoStateLock) {
+            mVideoState = state;
+        }
+    }
+
+    //---------------------MediaCodec related start--------------------------
+
+    private AudioRecord mAudioRecord;
+    private MediaCodec mVideoEncoder, mAudioEncoder;
+    private MediaFormat mAudioFormat, mVideoFormat;
+    private MediaMuxer mMuxer;
+    private int mNumTracksAdded = 0;
+    private int mTrackAudioIndex = 0;
+    private int mTrackVideoIndex = 0;
+    private int mAudioBufferSize = 0;
+    private final int TOTAL_NUM_TRACKS = 2;
+    //private final int SAMPLES_PER_FRAME = 1024; // AAC
+    private static final int IFRAME_INTERVAL = 1;
+    private int mAudioFormatNumber = AudioFormat.ENCODING_PCM_16BIT;
+    private static final int TIMEOUT_USEC = 10000;
+    private boolean mMuxerStart = false;
+    private boolean mMuxerVideoStop = false;
+    private boolean mMuxerAudioStop = false;
+    private boolean mOnlyVideoEncoder = false;
+    private Thread mVideoEncodeThread;
+    private Thread mAudioEncodeThread;
+    private Thread mAudioDecodeThread;
+    private JSONArray dynamicSettingsArray;
+    private class DynamicSetting {
+        public int frameNumber;
+        public String name;
+        public String type;
+        public String value;
+    }
+    private ArrayList<DynamicSetting> mDynamicSettings;
+
+    private void applyVideoSettings() {
+        JSONArray jsonArray = mSettingsManager.getVideoSettings();
+        mDynamicSettings.clear();
+        if (jsonArray == null)return;
+        try {
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jb = jsonArray.getJSONObject(i);
+                boolean isStatic = jb.getBoolean("StaticTag");
+                String name = jb.getString("Name");
+                String type = jb.getString("Type");
+                DynamicSetting ds = new DynamicSetting();
+                switch (type) {
+                    case "Integer":
+                        int iValue = jb.getInt("Value");
+                        if (isStatic) {
+                            mVideoFormat.setInteger(name, iValue);
+                            Log.d(TAG + "_videoformat", "set " + name + " " + iValue);
+                        } else {
+                            ds.value = String.valueOf(iValue);
+                        }
+                        break;
+                    case "String":
+                        String sValue = jb.getString("Value");
+                        if (isStatic) {
+                            mVideoFormat.setString(name, sValue);
+                            Log.d(TAG + "_videoformat", "set " + name + " " + sValue);
+                        } else {
+                            ds.value = sValue;
+                        }
+                        break;
+                    case "Float":
+                        String fValue = jb.getString("Value");
+                        if (isStatic) {
+                            mVideoFormat.setFloat(name, Float.parseFloat(fValue));
+                            Log.d(TAG + "_videoformat", "set " + name + " " + fValue);
+                        } else {
+                            ds.value = fValue;
+                        }
+                        break;
+                    case "Long":
+                        Long lValue = jb.getLong("Value");
+                        if (isStatic) {
+                            mVideoFormat.setLong(name, lValue);
+                            Log.d(TAG + "_videoformat", "set " + name + " " + lValue);
+                        } else {
+                            ds.value = String.valueOf(lValue);
+                        }
+                        break;
+                    default:
+                        Log.d(TAG, "No matched type of video format");
+                        break;
+                }
+                if (!isStatic) {
+                    ds.frameNumber = jb.getInt("FrameNum");
+                    ds.type = type;
+                    ds.name = name;
+                    mDynamicSettings.add(ds);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void startAudioEncoder() {
+        mAudioEncodeThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.v(TAG, "Encording audio thread starts");
+                // Feed encoder output into the muxer until recording stops.
+                doAudioEncoding();
+                Log.v(TAG, "Encording audio thread completes");
+                return;
+            }
+        }, "AudioEncoder Thread");
+        mAudioEncodeThread.start();
+    }
+
+    private void startAudioDecoder() {
+        mAudioDecodeThread = new Thread(new Runnable() {
+            public void run() {
+                Log.v(TAG, "Decoding audio thread starts");
+                doAudioDecoding();
+                Log.v(TAG, "Decoding Audio thread completes");
+                return;
+            }
+        }, "AudioDecorder Thread");
+        mAudioDecodeThread.start();
+    }
+
+    private void startVideoEncoder() {
+        mVideoEncodeThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.v(TAG, "Encording video thread starts");
+                doVideoEncoding();
+                Log.v(TAG, "Encording video thread completes");
+                return;
+            }
+        }, "VideoEncorder Thread");
+        mVideoEncodeThread.start();
+    }
+
+    private synchronized void stopCodecThreads() {
+        // Wait until recording thread stop
+        try {
+            if (mAudioDecodeThread != null)
+                mAudioDecodeThread.join();
+            if (mAudioEncodeThread != null)
+                mAudioEncodeThread.join();
+            if (mVideoEncodeThread != null)
+                mVideoEncodeThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Stop recording failed", e);
+        }
+        if ((mMuxerAudioStop || mOnlyVideoEncoder) && mMuxerVideoStop) {
+            releaseMuxer();
+        }
+    }
+
+    private void releaseMuxer() {
+        Log.v(TAG, "releasing muxer");
+        if (mMuxer != null) {
+            if (mMuxerStart) mMuxer.stop();
+            mMuxer.release();
+            mMuxerStart = false;
+            mMuxer = null;
+        }
+        cleanupEmptyFile();
+    }
+
+    private String getEncoderForamtVideo(String encoderSelected) {
+        if(encoderSelected.equals("h263")) {
+            return MediaFormat.MIMETYPE_VIDEO_H263;
+        } else if (encoderSelected.equals("h264")) {
+            return  MediaFormat.MIMETYPE_VIDEO_AVC;
+        } else if (encoderSelected.equals("h265")) {
+            return MediaFormat.MIMETYPE_VIDEO_HEVC;
+        } else if (encoderSelected.equals("mpeg-4-sp")) {
+            return MediaFormat.MIMETYPE_VIDEO_MPEG4;
+        } else if (encoderSelected.equals("vp8")) {
+            return MediaFormat.MIMETYPE_VIDEO_VP8;
+        } else
+            return MediaFormat.MIMETYPE_VIDEO_AVC;
+    }
+
+    private String getEncoderFormatAudio(String encoderSelected) {
+        if (encoderSelected.equals("aac")) {
+            return MediaFormat.MIMETYPE_AUDIO_AAC;
+        } else if (encoderSelected.equals("aac-eld")){
+            return MediaFormat.MIMETYPE_AUDIO_AAC;
+        } else if (encoderSelected.equals("he-aac")){
+            return MediaFormat.MIMETYPE_AUDIO_AAC;
+        } else if (encoderSelected.equals("amr-nb")) {
+            return  MediaFormat.MIMETYPE_AUDIO_AMR_NB;
+        } else if (encoderSelected.equals("amr-wb")) {
+            return MediaFormat.MIMETYPE_AUDIO_AMR_WB;
+        } else if (encoderSelected.equals("vorbis")) {
+            return MediaFormat.MIMETYPE_AUDIO_VORBIS;
+        } else
+            return MediaFormat.MIMETYPE_AUDIO_AAC;
+    }
+
+    private void setupMediaCodecVideo(int cameraId) throws IOException {
+        mNumTracksAdded = 0;
+        mDynamicSettings = new ArrayList<>();
+        String sVideoEncoder = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ENCODER);
+        int iVideoEncoder = SettingTranslation.getVideoEncoder(sVideoEncoder);
+        String encoder = getEncoderForamtVideo(sVideoEncoder);
+        mVideoFormat = MediaFormat.createVideoFormat(encoder, mProfile.videoFrameWidth,
+                mProfile.videoFrameHeight);
+        mVideoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        if (!mHighSpeedCapture) {
+            updateBitrateForNonHFR(iVideoEncoder, mProfile.videoBitRate, mProfile.videoFrameHeight,
+                    mProfile.videoFrameWidth);
+        }
+        isSupportedResolution(iVideoEncoder);
+        if (isVideoEncoderProfileSupported()
+                && VendorTagUtil.isHDRVideoModeSupported(mCameraDevice[cameraId])) {
+            int videoEncoderProfile = SettingTranslation.getVideoEncoderProfile(
+                    mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ENCODER_PROFILE));
+            Log.d(TAG, "setVideoEncodingProfileLevel: " + videoEncoderProfile + " " +
+                    MediaCodecInfo.CodecProfileLevel.HEVCMainTierLevel1);
+            final Bundle params = new Bundle();
+            mVideoFormat.setInteger(MediaFormat.KEY_PROFILE, videoEncoderProfile);
+            mVideoFormat.setInteger(MediaFormat.KEY_LEVEL,
+                    MediaCodecInfo.CodecProfileLevel.HEVCMainTierLevel1);
+        }
+        mVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, mProfile.videoFrameRate);
+        Log.i(TAG, "Profile video frame rate: "+ mProfile.videoFrameRate);
+        if (mCaptureTimeLapse) {
+            float fps = 1000 / (float) mTimeBetweenTimeLapseFrameCaptureMs;
+            mVideoFormat.setFloat(MediaFormat.KEY_CAPTURE_RATE, fps);
+        }  else if (mHighSpeedCapture) {
+            mHighSpeedFPSRange = new Range(mHighSpeedCaptureRate, mHighSpeedCaptureRate);
+            int fps = (int) mHighSpeedFPSRange.getUpper();
+            int targetRate = mSuperSlomoCapture ? 30 : (mHighSpeedRecordingMode ? fps : 30);
+            mVideoFormat.setInteger(MediaFormat.KEY_CAPTURE_RATE, mSuperSlomoCapture ? 30 : fps);
+            mVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, targetRate);
+            Log.i(TAG, "Capture rate: "+fps+", Target rate: "+targetRate);
+            int scaledBitrate = mSettingsManager.getHighSpeedVideoEncoderBitRate(mProfile, targetRate, fps);
+            Log.i(TAG, "Scaled video bitrate : " + scaledBitrate);
+            mVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, scaledBitrate);
+        }
+        if (mCaptureTimeLapse) {
+            mVideoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL - 1);
+        } else {
+            mVideoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+        }
+        applyVideoSettings();
+        mVideoEncoder = MediaCodec.createEncoderByType(encoder);
+        mVideoEncoder.configure(mVideoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+    }
+
+    private void doVideoEncoding() {
+        boolean notDone = true;
+        long startPtsUs = 0;
+        long prevPtsUs = 0;
+        long frameGap = 0;
+        int frameNumber = 0;
+        int endCounter = 0;
+        MediaFormat originalFormat = null;
+        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+        while (notDone) {
+            if (!mIsRecordingVideo && !mIsPreviewingVideo) {
+                if (endCounter < 5){
+                    endCounter++;
+                    //wait 100ms one time
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    mMuxerVideoStop = true;
+                    notDone = false;
+                }
+            }
+            int encoderStatus = mVideoEncoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC);
+            if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
+
+            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                /**
+                 * should happen before receiving buffers, and should only
+                 * happen once
+                 */
+                if (mMuxerStart) {
+                    throw new IllegalStateException("video format changed twice");
+                }
+                MediaFormat newFormat = mVideoEncoder.getOutputFormat();
+                if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                    Log.v(TAG + "_video", "encoder output format changed: " + newFormat);
+                }
+                if (originalFormat == null) {
+                    mTrackVideoIndex = mMuxer.addTrack(newFormat);
+                    originalFormat = newFormat;
+                    mNumTracksAdded++;
+                    mMuxerVideoStop = false;
+                    Log.d(TAG + "_video", "mNumTracksAdded is " + mNumTracksAdded);
+                } else if (!originalFormat.equals(newFormat)) {
+                    Log.w(TAG + "_video", "video format changed again, ignoring it");
+                }
+                if (mOnlyVideoEncoder || (mNumTracksAdded == TOTAL_NUM_TRACKS))  {
+                    enableVideoButton(true);
+                }
+            } else if (encoderStatus < 0) {
+                if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                    Log.w(TAG + "_video", "unexpected result from OutputBuffer: "+ encoderStatus);
+                }
+            } else {
+                // Normal flow: get output encoded buffer, send to muxer.
+                ByteBuffer encodedData = mVideoEncoder.getOutputBuffer(encoderStatus);
+                if (encodedData == null) {
+                    throw new RuntimeException("encoderOutputBuffer " + encoderStatus);
+                }
+                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                    /**
+                     * The codec config data was pulled out and fed to the muxer
+                     * when we got the INFO_OUTPUT_FORMAT_CHANGED status. Ignore
+                     * it.
+                     */
+                    if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                        Log.v(TAG + "_video", "ignoring BUFFER_FLAG_CODEC_CONFIG");
+                    }
+                    bufferInfo.size = 0;
+                }
+
+                if (mIsRecordingVideo && !mRecordingPausing && mMuxerStart
+                        && bufferInfo.size != 0) {
+                    /**
+                     * It's usually necessary to adjust the ByteBuffer values to
+                     * match BufferInfo.
+                     */
+                    if (bufferInfo.presentationTimeUs > 0 && startPtsUs == 0) {
+                        startPtsUs = bufferInfo.presentationTimeUs + 1;
+                    }
+                    if (mRecordingPausingTime > 0) {
+                        bufferInfo.presentationTimeUs -= mRecordingPausingTime*1000;
+                    }
+                    frameNumber++;
+                    if (mDynamicSettings.size() > 0) {
+                        String name, value;
+                        for (int i = 0; i < mDynamicSettings.size(); i++) {
+                            if (mDynamicSettings.get(i).frameNumber == frameNumber) {
+                                name = mDynamicSettings.get(i).name;
+                                value = mDynamicSettings.get(i).value;
+                                final Bundle bundle = new Bundle();
+                                switch (mDynamicSettings.get(i).type) {
+                                    case "Integer":
+                                        Log.d(TAG + "_videoformat", "dynamic set " + name + " " + value);
+                                        bundle.putInt(name, Integer.parseInt(value));
+                                        mVideoEncoder.setParameters(bundle);
+                                        break;
+                                    case "String":
+                                        Log.d(TAG + "_videoformat", "dynamic set " + name + " " + value);
+                                        bundle.putString(name, value);
+                                        mVideoEncoder.setParameters(bundle);
+                                        break;
+                                    case "Float":
+                                        Log.d(TAG + "_videoformat", "dynamic set " + name + " " + value);
+                                        bundle.putFloat(name, Float.parseFloat(value));
+                                        mVideoEncoder.setParameters(bundle);
+                                        break;
+                                    case "Long":
+                                        Log.d(TAG + "_videoformat", "dynamic set " + name + " " + value);
+                                        bundle.putLong(name, Long.parseLong(value));
+                                        mVideoEncoder.setParameters(bundle);
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                    if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_video", "prevPts is " + prevPtsUs);
+                    }
+                    if (bufferInfo.presentationTimeUs > prevPtsUs) {
+                        frameGap = bufferInfo.presentationTimeUs - prevPtsUs;
+                        prevPtsUs = bufferInfo.presentationTimeUs;
+                    }
+                    if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_video", "presPts is " + prevPtsUs + ",gap is " + frameGap
+                                + ",maxduration is " + mMaxDurationForCodec + ",nowduration is "
+                                + (bufferInfo.presentationTimeUs - startPtsUs));
+                    }
+                    if ((mMaxDurationForCodec != 0) && (bufferInfo.presentationTimeUs - startPtsUs
+                            >= mMaxDurationForCodec*1000)) {
+                        // stop video
+                        mActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                stopRecordingVideo(getMainCameraId());
+                            }
+                        });
+                    }
+                    encodedData.position(bufferInfo.offset);
+                    encodedData.limit(bufferInfo.offset + bufferInfo.size);
+                    mMuxer.writeSampleData(mTrackVideoIndex, encodedData, bufferInfo);
+                    if (DEBUG_MEDIACODEC_VIDEO || DEBUG_MEDIACODEC) {
+                        Log.v(TAG + "_video", "sent " + bufferInfo.size +
+                                " bytes to muxer, timestamp is " + bufferInfo.presentationTimeUs);
+                    }
+                }
+                mVideoEncoder.releaseOutputBuffer(encoderStatus, false);
+
+                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    Log.v(TAG + "_video", "end of video stream reached");
+                    mMuxerVideoStop = true;
+                    notDone = false;
+                }
+            }
+        }
+    }
+
+    private void setupMediaCodecAudio() throws IOException {
+        String encoderSelected = mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER);
+        mProfile.audioCodec  = SettingTranslation.getAudioEncoder(encoderSelected);
+        if (mProfile.audioCodec == MediaRecorder.AudioEncoder.AMR_NB) {
+            mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP;
+        }
+        String encoder = getEncoderFormatAudio(encoderSelected);
+        mAudioFormat = MediaFormat.createAudioFormat(encoder, mProfile.audioSampleRate,
+                mProfile.audioChannels);
+        if (encoderSelected.equals("aac-eld")) {
+            mAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                    MediaCodecInfo.CodecProfileLevel.AACObjectELD);
+        } else if (encoderSelected.equals("he-aac")) {
+            mAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                    MediaCodecInfo.CodecProfileLevel.AACObjectHE);
+        } else if (encoderSelected.equals("aac")) {
+            mAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                    MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        }
+        mAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, mProfile.audioBitRate);
+        //mAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096);
+        mAudioEncoder = MediaCodec.createEncoderByType(encoder);
+        mAudioEncoder.configure(mAudioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mAudioEncoder.start();
+    }
+
+    private void doAudioEncoding() {
+        boolean notDone = true;
+        long prevPtsUs = 0;
+        long frameGap = 0;
+        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+        while(notDone){
+            int encoderStatus = mAudioEncoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC);
+            if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
+
+            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                MediaFormat newFormat = mAudioEncoder.getOutputFormat();
+                if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                    Log.d(TAG + "_audio", "received output format: " + newFormat);
+                }
+                // should happen before receiving buffers, and should only happen once
+                mTrackAudioIndex = mMuxer.addTrack(newFormat);
+                mNumTracksAdded++;
+                mMuxerAudioStop = false;
+                Log.d(TAG + "_audio", "mNumTracksAdded is " + mNumTracksAdded);
+                if (mNumTracksAdded == TOTAL_NUM_TRACKS) {
+                    enableVideoButton(true);
+                }
+            } else if (encoderStatus < 0) {
+                if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                    Log.w(TAG + "_audio", "unexpected result from encoder.dequeueOutputBuffer: "
+                            + encoderStatus);
+                }
+            } else {
+                ByteBuffer encodedData;
+                encodedData = mAudioEncoder.getOutputBuffer(encoderStatus);
+                if (encodedData == null) {
+                    throw new RuntimeException("audio encoderOutputBuffer " + encoderStatus);
+                }
+
+                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                    // The codec config data was pulled out and fed to the muxer when we got
+                    // the INFO_OUTPUT_FORMAT_CHANGED status. Ignore it.
+                    if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_audio", "ignoring BUFFER_FLAG_CODEC_CONFIG");
+                    }
+                    bufferInfo.size = 0;
+                }
+                if (mIsRecordingVideo && !mRecordingPausing && mMuxerStart
+                        && bufferInfo.size != 0) {
+                    //bufferInfo.presentationTimeUs = System.nanoTime()/1000;
+                    if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_audio", "prevPts is " + prevPtsUs);
+                    }
+                    if (mRecordingPausingTime > 0) {
+                        bufferInfo.presentationTimeUs -= mRecordingPausingTime * 1000;
+                    }
+                    if ((bufferInfo.presentationTimeUs - prevPtsUs) > 0 ) {
+                        frameGap = bufferInfo.presentationTimeUs - prevPtsUs;
+                        prevPtsUs = bufferInfo.presentationTimeUs;
+                        if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                            Log.d(TAG + "_audio", "presPts is " + prevPtsUs + ",gap is " + frameGap);
+                        }
+                        // adjust the ByteBuffer values to match BufferInfo (not needed?)
+                        encodedData.position(bufferInfo.offset);
+                        encodedData.limit(bufferInfo.offset + bufferInfo.size);
+                        mMuxer.writeSampleData(mTrackAudioIndex, encodedData, bufferInfo);
+                        if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                            Log.d(TAG + "_audio", "sent " + bufferInfo.size +
+                                    " bytes to muxer, ts=" + bufferInfo.presentationTimeUs);
+                        }
+                    }
+                }
+                mAudioEncoder.releaseOutputBuffer(encoderStatus, false);
+
+                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    // reached EOS
+                    if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_audio", "end of audio stream reached");
+                    }
+                    mMuxerAudioStop = true;
+                    notDone = false;
+                }
+            }
+        }
+    }
+
+    private void setupAudioRecorder() {
+        mAudioBufferSize = AudioRecord.getMinBufferSize(mProfile.audioSampleRate,
+                mProfile.audioChannels, mAudioFormatNumber);
+        //int iBufferSize = SAMPLES_PER_FRAME * FRAMES_PER_BUFFER;
+        // Ensure buffer is adequately sized for the AudioRecord
+        // object to initialize
+        //if (iBufferSize < iMinBufferSize)
+        //    iBufferSize = ((iMinBufferSize / SAMPLES_PER_FRAME) + 1) * SAMPLES_PER_FRAME * 2;
+        if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+            Log.d(TAG + "_audio", "setupAudioRecorder: buffer size=" + mAudioBufferSize +
+                    ",audioChannels=" + mProfile.audioChannels + ",audioSampleRate="
+                    + mProfile.audioSampleRate);
+        }
+
+        mAudioRecord =  new AudioRecord.Builder()
+                .setAudioFormat((new AudioFormat.Builder().setChannelMask(AudioFormat.CHANNEL_IN_MONO))
+                        .setSampleRate(mProfile.audioSampleRate)
+                        .setEncoding(mAudioFormatNumber)
+                        .build())
+                .setAudioSource(MediaRecorder.AudioSource.MIC)
+                .setBufferSizeInBytes(mAudioBufferSize*2)
+                .build();
+        mAudioRecord.startRecording();
+
+    }
+
+    private void doAudioDecoding() {
+        boolean endOfStream = false;
+        // finished recording -> send it to the encoder
+        while (!endOfStream) {
+            ByteBuffer inputBuffer;
+            byte[] mTempBuffer = new byte[mAudioBufferSize];
+            int iReadResult = mAudioRecord.read(mTempBuffer, 0, mAudioBufferSize);
+            if (iReadResult == AudioRecord.ERROR_BAD_VALUE
+                    || iReadResult == AudioRecord.ERROR_INVALID_OPERATION) {
+                if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                    Log.d(TAG + "_audioinput", "audio buffer read error: " + iReadResult);
+                }
+                continue;
+            }
+            endOfStream = !mIsRecordingVideo && !mIsPreviewingVideo;
+            try {
+                int inputBufferIndex = mAudioEncoder.dequeueInputBuffer(-1);
+                if (inputBufferIndex >= 0) {
+                    inputBuffer = mAudioEncoder.getInputBuffer(inputBufferIndex);
+                    inputBuffer.clear();
+                    inputBuffer.put(mTempBuffer);
+                    if (DEBUG_MEDIACODEC_AUDIO || DEBUG_MEDIACODEC) {
+                        Log.d(TAG + "_audio", "decode length:" + mTempBuffer.length + ",limit:"
+                                + inputBuffer.limit() + ",timestamp:" + System.nanoTime()/1000);
+                    }
+                    mAudioEncoder.queueInputBuffer(inputBufferIndex, 0, mTempBuffer.length,
+                            System.nanoTime()/1000,
+                            endOfStream ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0);
+                }
+            } catch (Throwable t) {
+                Log.e(TAG + "_audio", "sendFrameToAudioEncoder exception");
+                t.printStackTrace();
+            }
+        }
+    };
+
+    private void createMediaMuxer(FileDescriptor fd) {
+        /**
+         * Create a MediaMuxer. We can't add the video track and start() the
+         * muxer until the encoder starts and notifies the new media format.
+         */
+        try {
+            mMuxer = new MediaMuxer(fd, mProfile.fileFormat);
+            mMuxerStart = false;
+        } catch (IOException ioe) {
+            throw new IllegalStateException("MediaMuxer create failed", ioe);
+        }
+    }
+
+    private void createMediaMuxer(String outputFileName) {
+        /**
+         * Create a MediaMuxer. We can't add the video track and start() the
+         * muxer until the encoder starts and notifies the new media format.
+         */
+        try {
+            mMuxer = new MediaMuxer(outputFileName, mProfile.fileFormat);
+            mMuxerStart = false;
+        } catch (IOException ioe) {
+            throw new IllegalStateException("MediaMuxer create failed", ioe);
+        }
+    }
+
+    private void releaseMediaCodec() {
+        // Release encoder
+        if (mAudioRecord != null) {
+            Log.v(TAG, "releasing audio recorder");
+            mAudioRecord.stop();
+            mAudioRecord.release();
+            mAudioRecord = null;
+        }
+        if (mVideoEncoder != null) {
+            Log.v(TAG, "releasing video encoder");
+            try {
+                mVideoEncoder.stop();
+                mVideoEncoder.release();
+            } catch (MediaCodec.CodecException e) {
+                Log.w(TAG, "releasing video encoder has exception.");
+            }
+            if (mVideoRecordingSurface != null) {
+                mVideoRecordingSurface.release();
+                mVideoRecordingSurface = null;
+            }
+            mVideoEncoder = null;
+        }
+        if (mAudioEncoder != null) {
+            Log.v(TAG, "releasing audio encoder");
+            mAudioEncoder.stop();
+            mAudioEncoder.release();
+            mAudioEncoder = null;
+        }
+    }
+    //------------------------------------------end-----------------------------------------
+    private void setUpMediaRecorder(int cameraId) throws IOException {
+        Log.d(TAG, "setUpMediaRecorder");
+        Bundle myExtras = mActivity.getIntent().getExtras();
+        if (mMediaRecorder == null) mMediaRecorder = new MediaRecorder();
+        mMediaRecorder.reset();
+
+        //updateHFRSetting();
+        boolean hfr = mHighSpeedCapture && !mHighSpeedRecordingMode;
         int videoWidth = mProfile.videoFrameWidth;
         int videoHeight = mProfile.videoFrameHeight;
         mUnsupportedResolution = false;
@@ -6932,17 +7712,12 @@ public class CaptureModule implements CameraModule, PhotoController,
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
 
         mMediaRecorder.setOutputFormat(mProfile.fileFormat);
-        closeVideoFileDescriptor();
-        setMediaRecorderOutputFile(myExtras);
+        setVideoOutputFile(myExtras);
         mMediaRecorder.setVideoFrameRate(mProfile.videoFrameRate);
         if (!mHighSpeedCapture) {
             updateBitrateForNonHFR(videoEncoder, mProfile.videoBitRate, videoHeight, videoWidth);
         }
-        if(mFrameProcessor.isFrameFilterEnabled()) {
-            mMediaRecorder.setVideoSize(mProfile.videoFrameHeight, mProfile.videoFrameWidth);
-        } else {
-            mMediaRecorder.setVideoSize(mProfile.videoFrameWidth, mProfile.videoFrameHeight);
-        }
+        mMediaRecorder.setVideoSize(mProfile.videoFrameWidth, mProfile.videoFrameHeight);
         mMediaRecorder.setVideoEncoder(videoEncoder);
         if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture && (-1 != audioEncoder)) {
             mMediaRecorder.setAudioEncodingBitRate(mProfile.audioBitRate);
@@ -6972,65 +7747,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (isVideoCaptureIntent() && myExtras != null) {
             requestedSizeLimit = myExtras.getLong(MediaStore.EXTRA_SIZE_LIMIT);
         }
-        //check if codec supports the resolution, otherwise throw toast
-        List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
-        for (VideoEncoderCap videoEnc: videoEncoders) {
-            if (videoEnc.mCodec == videoEncoder) {
-                if (videoWidth > videoEnc.mMaxFrameWidth ||
-                        videoWidth < videoEnc.mMinFrameWidth ||
-                        videoHeight > videoEnc.mMaxFrameHeight ||
-                        videoHeight < videoEnc.mMinFrameHeight) {
-                    Log.e(TAG, "Selected codec " + videoEncoder +
-                            " does not support "+ videoWidth + "x" + videoHeight
-                            + " resolution");
-                    Log.e(TAG, "Codec capabilities: " +
-                            "mMinFrameWidth = " + videoEnc.mMinFrameWidth + " , " +
-                            "mMinFrameHeight = " + videoEnc.mMinFrameHeight + " , " +
-                            "mMaxFrameWidth = " + videoEnc.mMaxFrameWidth + " , " +
-                            "mMaxFrameHeight = " + videoEnc.mMaxFrameHeight);
-                    mUnsupportedResolution = true;
-                    warningToast(R.string.error_app_unsupported);
-                    return;
-                }
-                break;
-            }
-        }
-
-        // Set maximum file size.
-        long maxFileSize = mActivity.getStorageSpaceBytes() - Storage.LOW_STORAGE_THRESHOLD_BYTES;
-        if (requestedSizeLimit > 0 && requestedSizeLimit < maxFileSize) {
-            maxFileSize = requestedSizeLimit;
-        }
-
-        if (Storage.isSaveSDCard() && maxFileSize > SDCARD_SIZE_LIMIT) {
-            maxFileSize = SDCARD_SIZE_LIMIT;
-        }
-        Log.i(TAG, "MediaRecorder setMaxFileSize: " + maxFileSize);
-        try {
-            mMediaRecorder.setMaxFileSize(maxFileSize);
-        } catch (RuntimeException exception) {
-            // We are going to ignore failure of setMaxFileSize here, as
-            // a) The composer selected may simply not support it, or
-            // b) The underlying media framework may not handle 64-bit range
-            // on the size restriction.
-        }
-
-        Location loc = mLocationManager.getCurrentLocation();
-        if (loc != null) {
-            mMediaRecorder.setLocation((float) loc.getLatitude(),
-                    (float) loc.getLongitude());
-        }
-        int rotation = CameraUtil.getJpegRotation(cameraId, mOrientation);
-        String videoRotation = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ROTATION);
-        if (videoRotation != null) {
-            rotation += Integer.parseInt(videoRotation);
-            rotation = rotation % 360;
-        }
-        if(mFrameProcessor.isFrameFilterEnabled()) {
-            mMediaRecorder.setOrientationHint(0);
-        } else {
-            mMediaRecorder.setOrientationHint(rotation);
-        }
+        setMaxFileSize(requestedSizeLimit);
+        setOrientationHint(cameraId);
         prepareMediaRecorder();
         mMediaRecorder.setOnErrorListener(this);
         mMediaRecorder.setOnInfoListener(this);
@@ -7046,7 +7764,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private void setMediaRecorderOutputFile(Bundle myExtras) {
+    private void setVideoOutputFile(Bundle myExtras) {
         if (mIntentMode == CaptureModule.INTENT_MODE_VIDEO && myExtras != null) {
             Uri saveUri = (Uri) myExtras.getParcelable(MediaStore.EXTRA_OUTPUT);
             if (saveUri != null) {
@@ -7059,16 +7777,28 @@ public class CaptureModule implements CameraModule, PhotoController,
                     // invalid uri
                     Log.e(TAG, ex.toString());
                 }
-                mMediaRecorder.setOutputFile(mVideoFileDescriptor.getFileDescriptor());
+                if (PersistUtil.enableMediaRecorder()) {
+                    mMediaRecorder.setOutputFile(mVideoFileDescriptor.getFileDescriptor());
+                } else {
+                    createMediaMuxer(mVideoFileDescriptor.getFileDescriptor());
+                }
             } else {
                 String fileName = generateVideoFilename(mProfile.fileFormat);
                 Log.v(TAG, "New video filename: " + fileName);
-                mMediaRecorder.setOutputFile(fileName);
+                if (PersistUtil.enableMediaRecorder()) {
+                    mMediaRecorder.setOutputFile(fileName);
+                } else {
+                    createMediaMuxer(fileName);
+                }
             }
         } else {
             String fileName = generateVideoFilename(mProfile.fileFormat);
             Log.v(TAG, "New video filename: " + fileName);
-            mMediaRecorder.setOutputFile(fileName);
+            if (PersistUtil.enableMediaRecorder()) {
+                mMediaRecorder.setOutputFile(fileName);
+            } else {
+                createMediaMuxer(fileName);
+            }
         }
     }
 
@@ -7076,12 +7806,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (!isRecorderReady() || getCameraMode() == DUAL_MODE) return;
 
         if (!mIsRecordingVideo) {
-            if (!startRecordingVideo(getMainCameraId())) {
+            if (!triggerVideoRecording(getMainCameraId())) {
                 // Show ui when start recording failed.
                 mUI.showUIafterRecording();
-                releaseMediaRecorder();
+                if (PersistUtil.enableMediaRecorder()) {
+                    releaseMediaRecorder();
+                } else {
+                    stopCodecThreads();
+                    releaseMediaCodec();
+                }
             }
-        } else if (mMediaRecorderStarted) {
+        } else if (mRecordingStarted) {
             stopRecordingVideo(getMainCameraId());
         }
     }
