@@ -261,6 +261,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private static final String TAG = "SnapCam_SettingsManager";
 
     private static SettingsManager sInstance;
+    private CaptureModule mCaptureModule;
     private ArrayList<CameraCharacteristics> mCharacteristics;
     private ArrayList<Listener> mListeners;
     private Map<String, Values> mValuesMap;
@@ -386,6 +387,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public static SettingsManager getInstance() {
         return sInstance;
+    }
+
+    public void createCaptureModule(CaptureModule captureModule){
+        mCaptureModule = captureModule;
+    }
+
+    public void destroyCaptureModule(){
+        if (mCaptureModule != null) {
+            mCaptureModule = null;
+        }
     }
 
     public void destroyInstance() {
@@ -3125,6 +3136,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public void restoreSettings() {
         clearPerCameraPreferences();
+        mValuesMap.clear();
+        if(mValuesMap != null) mValuesMap = null;
+        mCaptureModule.restoreCameraIds();
         init();
     }
 
