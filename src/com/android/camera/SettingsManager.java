@@ -83,6 +83,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1876,7 +1877,11 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private List<String> getSupportedVideoSize(int cameraId) {
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Size[] sizes = map.getOutputSizes(MediaRecorder.class);
+        Size[] outRes = map.getOutputSizes(MediaRecorder.class);
+        Size[] highRes = map.getHighResolutionOutputSizes(ImageFormat.PRIVATE);
+        Size[] sizes = new Size[outRes.length+highRes.length];
+        System.arraycopy(highRes,0,sizes,0,highRes.length);
+        System.arraycopy(outRes,0,sizes,highRes.length,outRes.length);
         boolean isHeifEnabled = getSavePictureFormat() == HEIF_FORMAT;
         VideoCapabilities heifCap = null;
         if (isHeifEnabled) {
