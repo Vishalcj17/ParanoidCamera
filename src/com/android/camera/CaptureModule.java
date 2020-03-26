@@ -4444,6 +4444,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mIsRecordingVideo) {
             stopRecordingVideo(getMainCameraId());
         } else if (!mIsCloseCamera){
+            if (mIsPreviewingVideo && !mIsRecordingVideo) {
+                setVideoFlashOff();
+            }
             if (mCurrentSession != null) {
                 try {
                     mCurrentSession.abortCaptures();
@@ -6715,6 +6718,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         }
         if (!mPaused && !isAbortCapturesEnable()) {
+            setVideoFlashOff();
             closePreviewSession();
         }
         mRecordingStarted = false;
@@ -6778,8 +6782,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         mStopRecPending = false;
     }
 
-    private void closePreviewSession() {
-        Log.d(TAG, "closePreviewSession: currentsession:" +mCurrentSession + ",currentclosed:" + mCurrentSessionClosed );
+    private void setVideoFlashOff() {
+        Log.d(TAG, "setVideoFlashOff: currentsession:" +mCurrentSession +
+                ",currentclosed:" + mCurrentSessionClosed );
         if (mCurrentSession == null || mCurrentSessionClosed) {
             return;
         }
@@ -6801,6 +6806,13 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void closePreviewSession() {
+        Log.d(TAG, "closePreviewSession: currentsession:" +mCurrentSession + ",currentclosed:" + mCurrentSessionClosed );
+        if (mCurrentSession == null || mCurrentSessionClosed) {
+            return;
         }
         //if have this, video switch to photo, photo will have no preview
         //mCurrentSession.close();
