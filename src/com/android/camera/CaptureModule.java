@@ -3309,7 +3309,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             captureBuilder.set(CaptureRequest.JPEG_THUMBNAIL_SIZE, mVideoSnapshotThumbSize);
             captureBuilder.set(CaptureRequest.JPEG_THUMBNAIL_QUALITY, (byte)80);
             applyVideoSnapshot(captureBuilder, id);
-            applyZoom(captureBuilder, id);
+            if (mUI.getZoomFixedSupport()) {
+                applyZoomRatio(captureBuilder, mZoomValue, id);
+            } else {
+                applyZoom(captureBuilder, id);
+            }
             if (mHighSpeedCapture) {
                 captureBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                         mHighSpeedFPSRange);
@@ -4279,7 +4283,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyIso(builder);
         applyColorEffect(builder);
         applySceneMode(builder);
-        applyZoom(builder, id);
+        if (mUI.getZoomFixedSupport()) {
+            applyZoomRatio(builder, mZoomValue, id);
+        } else {
+            applyZoom(builder, id);
+        }
         applyInstantAEC(builder);
         applySaturationLevel(builder);
         applyAntiBandingLevel(builder);
@@ -6192,7 +6200,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyColorEffect(builder);
         applyVideoFlash(builder);
         applyFaceDetection(builder);
-        applyZoom(builder, cameraId);
+        if (mUI.getZoomFixedSupport()) {
+            applyZoomRatio(builder, mZoomValue, cameraId);
+        } else {
+            applyZoom(builder, cameraId);
+        }
         applyVideoEncoderProfile(builder);
         applyVideoEIS(builder);
         applyVideoHDR(builder);
@@ -7247,6 +7259,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         return mCropRegion[id];
     }
 
+    private void applyZoomRatio(CaptureRequest.Builder request, float zoomValue, int id) {
+        try {
+            cropRegionForZoom(id);
+            request.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomValue);
+        } catch(IllegalArgumentException e) {
+            Log.v(TAG, " there is no vendorTag CONTROL_ZOOM_RATIO");
+        } catch (NoSuchFieldError e) {
+            Log.v(TAG, "applyZoomRatio NoSuchFieldError CONTROL_ZOOM_RATIO");
+        }
+    }
+
     private void applyZoom(CaptureRequest.Builder request, int id) {
         if (!mSupportZoomCapture) return;
         request.set(CaptureRequest.SCALER_CROP_REGION, cropRegionForZoom(id));
@@ -7619,7 +7642,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mState[id] == STATE_PREVIEW) {
             cancelTouchFocus(id);
         }
-        applyZoom(mPreviewRequestBuilder[id], id);
+        if (mUI.getZoomFixedSupport()) {
+            applyZoomRatio(mPreviewRequestBuilder[id], mZoomValue, id);
+        } else {
+            applyZoom(mPreviewRequestBuilder[id], id);
+        }
         try {
             if(id == MONO_ID && !canStartMonoPreview()) {
                 mCaptureSession[id].capture(mPreviewRequestBuilder[id]
@@ -9168,13 +9195,26 @@ public class CaptureModule implements CameraModule, PhotoController,
             restartAll();
         }
         updateZoomSeekBarVisible();
-        mUI.updateZoomSeekBar(1.0f);
         return 1;
     }
 
     public void updateZoomSeekBarVisible() {
         if (mCurrentSceneMode.mode == CameraMode.PRO_MODE ||
                 mCurrentSceneMode.mode == CameraMode.RTB || mIsRTBCameraId) {
+            if (mCurrentSceneMode.mode == CameraMode.RTB) {
+                float[] zoomRatioRange = mSettingsManager.getSupportedBokenRatioZoomRange(
+                        getMainCameraId());
+                if (zoomRatioRange != null && zoomRatioRange[0] == zoomRatioRange[1]) {
+                    mZoomValue = zoomRatioRange[0];
+                    Log.v(TAG, "updateZoomSeekBarVisible mZoomValue :" + mZoomValue);
+                    mUI.hideZoomSeekBar();
+                    return;
+                } else if (zoomRatioRange != null && zoomRatioRange[0] != zoomRatioRange[1]) {
+                    mUI.showZoomSeekBar();
+                    Log.v(TAG, "updateZoomSeekBarVisible showZoomSeekBar");
+                    return;
+                }
+            }
             mUI.hideZoomSeekBar();
         } else {
             mUI.showZoomSeekBar();

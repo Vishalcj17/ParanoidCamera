@@ -88,7 +88,10 @@ public class ZoomRenderer extends OverlayRenderer
     public void setZoomMax(float zoomMax) {
         mCamera2 = true;
         mZoomMaxValue = zoomMax;
-        mZoomMinValue = 1f;
+    }
+
+    public void setZoomMin(float zoomMin) {
+        mZoomMinValue = zoomMin;
     }
 
     public void setZoom(int index) {
