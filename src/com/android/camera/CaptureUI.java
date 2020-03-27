@@ -1400,7 +1400,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mFilterModeSwitcher.setVisibility(View.VISIBLE);
                 mSceneModeSwitcher.setVisibility(View.VISIBLE);
                 mVideoButton.setVisibility(View.INVISIBLE);
-                mFlashButton.setVisibility(View.INVISIBLE);
+                if(!CaptureModule.MCXMODE) mFlashButton.setVisibility(View.INVISIBLE);
                 mMuteButton.setVisibility(View.INVISIBLE);
                 mPauseButton.setVisibility(View.INVISIBLE);
                 if (!DEV_LEVEL_ALL) {

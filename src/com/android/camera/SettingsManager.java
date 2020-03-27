@@ -1961,8 +1961,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public boolean isFlashSupported(int id) {
         return mCharacteristics.get(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) &&
                 mValuesMap.get(KEY_FLASH_MODE) != null &&
-                CaptureModule.CURRENT_MODE != CaptureModule.CameraMode.RTB &&
-                CaptureModule.CURRENT_MODE != CaptureModule.CameraMode.SAT;
+                isSupportedForMode();
+    }
+
+	private boolean isSupportedForMode(){
+        if((CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
+                CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT)){
+            if (CaptureModule.MCXMODE){
+                return true;
+            }
+            return false;
+        }
+        return true;
     }
 
     private List<String> getSupportedPictureSize(int cameraId) {
