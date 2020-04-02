@@ -478,8 +478,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.quic.camera.eis3enable.EISV3Enable", byte.class);
     public static final CaptureRequest.Key<Byte> recording_end_stream =
             new CaptureRequest.Key<>("org.quic.camera.recording.endOfStream", byte.class);
+
+    // Session Parameters vendorTag
     public static final CaptureRequest.Key<Integer> earlyPCR =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.numPCRsBeforeStreamOn", Integer.class);
+
     private static final CaptureResult.Key<Byte> is_depth_focus =
             new CaptureResult.Key<>("org.quic.camera.isDepthFocus.isDepthFocus", byte.class);
     private static final CaptureRequest.Key<Byte> capture_burst_fps =
@@ -488,7 +491,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.quic.camera.CustomNoiseReduction.CustomNoiseReduction", byte.class);
 
     public static final CaptureRequest.Key<Byte> sensor_mode_fs =
-            new CaptureRequest.Key<>("org.quic.camera.SensorModeFS ", byte.class);
+            new CaptureRequest.Key<>("org.quic.camera.SensorModeFS", byte.class);
     public static CameraCharacteristics.Key<Byte> fs_mode_support =
             new CameraCharacteristics.Key<>("org.quic.camera.SensorModeFS.isFastShutterModeSupported", Byte.class);
 
@@ -2962,7 +2965,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
 
             CaptureRequest.Builder captureBuilder = getRequestBuilder(
-                    CameraDevice.TEMPLATE_STILL_CAPTURE,id,mSettingsManager.getPhysicalCameraId());
+                CameraDevice.TEMPLATE_STILL_CAPTURE, id, mSettingsManager.getPhysicalCameraId());
 
             if (mSettingsManager.isZSLInHALEnabled() || isActionImageCapture()) {
                 captureBuilder.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
@@ -4275,6 +4278,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(selectMode != null && selectMode.equals("rtb")){
             builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_CONTINUOUS);
         }
+        applySHDR(builder);
     }
 
     private void applyCommonSettings(CaptureRequest.Builder builder, int id) {
@@ -8285,6 +8289,18 @@ public class CaptureModule implements CameraModule, PhotoController,
             VendorTagUtil.setToneMappingDisableMode(request);
         }
         Log.i(TAG,"applyToneMapping, mode:" + mode + ",currentDarkBoostValue:" + currentDarkBoostValue + ",currentFourthToneValue:" + currentFourthToneValue);
+    }
+
+    private void applySHDR(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_SHDR);
+        if (value != null ) {
+            Log.v(TAG, " applySHDR value :" + value);
+            if (value.equals("shdr")) {
+                VendorTagUtil.setSHDRMode(request, 1);
+            } else if (value.equals("mfhdr")) {
+                VendorTagUtil.setMFHDRMode(request, 1);
+            }
+        }
     }
 
     private void updateGraghViewVisibility(final int visibility) {
