@@ -7099,13 +7099,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 && mode != SettingsManager.SCENE_MODE_PROMODE_INT) {
             request.set(CaptureRequest.CONTROL_SCENE_MODE, mode);
             request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
-            if (mode == CaptureRequest.CONTROL_SCENE_MODE_HDR) {
-                try {
-                    request.set(custom_noise_reduction, (byte)0x01);
-                } catch (IllegalArgumentException e) {
-                    Log.w(TAG, " HDR can`t find vendor tag: " + custom_noise_reduction.toString());
-                }
-            }
         } else {
             request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
         }
