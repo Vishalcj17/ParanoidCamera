@@ -3556,6 +3556,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                     public void onImageAvailable(ImageReader reader) {
                         Log.d(TAG, "new yuv image from physical camera "+id);
                         Image image = reader.acquireNextImage();
+                        byte[] yuv = getYUVFromImage(image);
+                        mNamedImages.nameNewImage(System.currentTimeMillis());
+                        NamedEntity name = mNamedImages.getNextNameEntity();
+                        String title = (name == null) ? null : name.title;
+                        long date = (name == null) ? -1 : name.date;
+                        mActivity.getMediaSaveService().addRawImage(yuv,title,"yuv");
                         image.close();
                     }
                 };
@@ -3577,6 +3583,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                     public void onImageAvailable(ImageReader reader) {
                         Log.d(TAG, "new raw image from physical camera "+id);
                         Image image = reader.acquireNextImage();
+                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        byte[] raw = new byte[buffer.remaining()];
+                        buffer.get(raw);
+                        mNamedImages.nameNewImage(System.currentTimeMillis());
+                        NamedEntity name = mNamedImages.getNextNameEntity();
+                        String title = (name == null) ? null : name.title;
+                        long date = (name == null) ? -1 : name.date;
+                        mActivity.getMediaSaveService().addRawImage(raw,title,"raw");
                         image.close();
                     }
                 };
@@ -7313,6 +7327,19 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
         }
+
+        if (mSettingsManager.getPhysicalCameraId() != null){
+            Set<String> ids = mSettingsManager.getPhysicalFeatureEnableId(
+                    SettingsManager.KEY_PHYSICAL_HDR);
+            if (ids != null){
+                for (String id : ids) {
+                    request.setPhysicalCameraKey(CaptureRequest.CONTROL_SCENE_MODE,
+                            CaptureRequest.CONTROL_SCENE_MODE_HDR,id);
+                    request.setPhysicalCameraKey(CaptureRequest.CONTROL_MODE,
+                            CaptureRequest.CONTROL_MODE_USE_SCENE_MODE,id);
+                }
+            }
+        }
     }
 
     private void applyExposure(CaptureRequest.Builder request) {
@@ -7716,7 +7743,18 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void addPreviewSurface(CaptureRequest.Builder builder, List<Surface> surfaceList, int id) {
-        if (isBackCamera() && getCameraMode() == DUAL_MODE && id == MONO_ID) {
+        if (mSettingsManager.getPhysicalCameraId() != null) {
+            List<Surface> previews = mUI.getPhysicalSurfaces();
+            if(mSettingsManager.isLogicalEnable()){
+                builder.addTarget(previews.get(0));
+                if (surfaceList != null){
+                    surfaceList.add(previews.get(0));
+                }
+            }
+            for (int i =1;i <=mSettingsManager.getPhysicalCameraId().size();i++){
+                builder.addTarget(previews.get(i));
+            }
+        } else if (isBackCamera() && getCameraMode() == DUAL_MODE && id == MONO_ID) {
             if(surfaceList != null) {
                 surfaceList.add(mUI.getMonoDummySurface());
             }
