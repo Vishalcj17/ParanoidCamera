@@ -1274,6 +1274,8 @@
 
     <string name="pref_camera2_physical_camera_default" translatable="false"></string>
     <string name="pref_camera2_physical_camera_title" translatable="true">Enable physical camera</string>
+    <string name="pref_camera2_physical_recording_title" translatable="true">Enable physical recording</string>
+    <string name="pref_camera2_physical_jpeg_title" translatable="true">Enable physical JPEG callback</string>
     <string name="pref_camera2_physical_yuv_title" translatable="true">Enable physical YUV callback</string>
     <string name="pref_camera2_physical_raw_title" translatable="true">Enable physical RAW callback</string>
     <string name="pref_camera2_physical_hdr_title" translatable="true">Enable physical HDR</string>

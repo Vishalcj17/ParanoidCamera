@@ -147,6 +147,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_FORCE_AUX = "pref_camera2_force_aux_key";
     public static final String KEY_SWITCH_CAMERA = "pref_camera2_switch_camera_key";
     public static final String KEY_PHYSICAL_CAMERA = "pref_camera2_physical_camera_key";
+    public static final String KEY_PHYSICAL_CAMCORDER = "pref_camera2_physical_camcorder_key";
+    public static final String KEY_PHYSICAL_JPEG_CALLBACK = "pref_camera2_physical_jpeg_key";
     public static final String KEY_PHYSICAL_YUV_CALLBACK ="pref_camera2_physical_yuv_key";
     public static final String KEY_PHYSICAL_RAW_CALLBACK ="pref_camera2_physical_raw_key";
     public static final String KEY_PHYSICAL_HDR ="pref_camera2_physical_hdr_key";
@@ -1231,6 +1233,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (physicalCamera != null) {
             if (!buildPhysicalCamera(cameraId,physicalCamera)){
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMERA);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMCORDER);
+                removePreference(mPreferenceGroup, KEY_PHYSICAL_JPEG_CALLBACK);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_YUV_CALLBACK);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_RAW_CALLBACK);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_HDR);
@@ -1238,29 +1242,30 @@ public class SettingsManager implements ListMenu.SettingsListener {
             } else{
                 CharSequence[] fullEntryValues = physicalCamera.getEntryValues();
                 CharSequence[] fullEntries = physicalCamera.getEntries();
-                ListPreference physicalYuvCalllback = mPreferenceGroup.findPreference(
+                List<ListPreference> preferences = new ArrayList<>();
+                ListPreference physicalCamcorder = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_CAMCORDER);
+                ListPreference physicalJpegCallback = mPreferenceGroup.findPreference(
+                        KEY_PHYSICAL_JPEG_CALLBACK);
+                ListPreference physicalYuvCallback = mPreferenceGroup.findPreference(
                         KEY_PHYSICAL_YUV_CALLBACK);
-                if (physicalYuvCalllback != null){
-                    physicalYuvCalllback.setEntries(fullEntries);
-                    physicalYuvCalllback.setEntryValues(fullEntryValues);
-                }
-                ListPreference physicalRawCalllback = mPreferenceGroup.findPreference(
+                ListPreference physicalRawCallback = mPreferenceGroup.findPreference(
                         KEY_PHYSICAL_RAW_CALLBACK);
-                if (physicalRawCalllback != null){
-                    physicalRawCalllback.setEntries(fullEntries);
-                    physicalRawCalllback.setEntryValues(fullEntryValues);
-                }
                 ListPreference physicalHDR = mPreferenceGroup.findPreference(
                         KEY_PHYSICAL_HDR);
-                if (physicalHDR != null){
-                    physicalHDR.setEntries(fullEntries);
-                    physicalHDR.setEntryValues(fullEntryValues);
-                }
                 ListPreference physicalMFNR = mPreferenceGroup.findPreference(
                         KEY_PHYSICAL_MFNR);
-                if (physicalMFNR != null){
-                    physicalMFNR.setEntries(fullEntries);
-                    physicalMFNR.setEntryValues(fullEntryValues);
+                preferences.add(physicalCamcorder);
+                preferences.add(physicalJpegCallback);
+                preferences.add(physicalYuvCallback);
+                preferences.add(physicalRawCallback);
+                preferences.add(physicalMFNR);
+                preferences.add(physicalHDR);
+                for (ListPreference preference:preferences){
+                    if (preference != null){
+                        preference.setEntries(fullEntries);
+                        preference.setEntryValues(fullEntryValues);
+                    }
                 }
                 CharSequence[] newEntries = new CharSequence[fullEntries.length+1];
                 CharSequence[] newEntryValues = new CharSequence[fullEntryValues.length+1];

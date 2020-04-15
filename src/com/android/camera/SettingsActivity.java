@@ -930,6 +930,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_EIS_VALUE);
                 add(SettingsManager.KEY_FOVC_VALUE);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
+                add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
             }
         };
         final ArrayList<String> multiCameraSettingList = new ArrayList<String>() {
@@ -1003,6 +1004,8 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
+                        videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
+                        videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     addDeveloperOptions(developer, videoAddList);
@@ -1094,6 +1097,8 @@ public class SettingsActivity extends PreferenceActivity {
         updatePreference(SettingsManager.KEY_VIDEO_DURATION);
         updatePreference(SettingsManager.KEY_SWITCH_CAMERA);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMCORDER);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_HDR);
