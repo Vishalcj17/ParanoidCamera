@@ -73,9 +73,9 @@ public class SettingTranslation {
                 .NOISE_REDUCTION_MODE_ZERO_SHUTTER_LAG);
 
         VIDEO_ENCODER_PROFILE_TABLE.put("HEVCProfileMain10",
-                MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10);
+                MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10);
         VIDEO_ENCODER_PROFILE_TABLE.put("HEVCProfileMain10HDR10",
-                MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10);
+                MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10);
     }
 
     public static int getVideoEncoder(String key) {
