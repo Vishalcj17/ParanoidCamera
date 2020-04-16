@@ -4544,15 +4544,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         openProcessors();
         loadSoundPoolResource();
-        if(mIsCloseCamera) {
-            Message msg = Message.obtain();
-            msg.what = OPEN_CAMERA;
-            msg.arg1 = mCurrentSceneMode.getCurrentId();
-            Log.d(TAG, "open is " + msg.arg1);
-            if (mCameraHandler != null) {
-                mCameraHandler.sendMessage(msg);
-            }
-        }
         if (mDeepPortraitMode) {
             mUI.startDeepPortraitMode(mPreviewSize);
             if (mUI.getGLCameraPreview() != null) {
@@ -4580,12 +4571,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         mUI.enableShutter(true);
         setProModeVisible();
         updateZoomSeekBarVisible();
-
+        mUI.showRelatedIcons(mCurrentSceneMode.mode);
+        if(mIsCloseCamera) {
+            openCamera(mCurrentSceneMode.getCurrentId());
+        }
         String scene = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if (Integer.parseInt(scene) != SettingsManager.SCENE_MODE_UBIFOCUS_INT) {
             setRefocusLastTaken(false);
         }
-        mUI.showRelatedIcons(mCurrentSceneMode.mode);
         if(isPanoSetting(scene)) {
             if (mIntentMode != CaptureModule.INTENT_MODE_NORMAL) {
                 mSettingsManager.setValue(
