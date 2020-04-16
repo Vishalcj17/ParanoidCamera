@@ -241,6 +241,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_ZSL = "pref_camera2_zsl_key";
     public static final String KEY_VIDEO_ENCODER_PROFILE = "pref_camera2_videoencoderprofile_key";
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
+    public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
 
     private static final String TAG = "SnapCam_SettingsManager";
 

@@ -39,6 +39,7 @@ import android.graphics.RectF;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraCharacteristics.Key;
 import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -52,6 +53,7 @@ import android.hardware.camera2.params.InputConfiguration;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.params.OutputConfiguration;
+import android.hardware.camera2.params.Capability;
 import android.location.Location;
 import android.media.AudioManager;
 import android.media.CamcorderProfile;
@@ -534,6 +536,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     private String[] mCameraId = new String[MAX_NUM_CAM];
     private String[] mSelectableModes = {"Video", "HFR", "Photo", "Bokeh", "SAT", "ProMode"};
     private ArrayList<SceneModule> mSceneCameraIds = new ArrayList<>();
+    public static boolean MCXMODE = false;
+
+    private int mLogicalId = -1;
+    private int mSingleRearId = -1;
     private SceneModule mCurrentSceneMode;
     private int mNextModeIndex = 1;
     private int mCurrentModeIndex = 1;
@@ -2368,6 +2374,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyAFRegions(mPreviewRequestBuilder[id], id);
         applyAERegions(mPreviewRequestBuilder[id], id);
         mPreviewRequestBuilder[id].setTag(id);
+        Log.d(TAG, "setAFModeToPreview ,preview:" + mPreviewRequestBuilder[id].toString());
         try {
             if (isSSMEnabled() && (mIsPreviewingVideo || mIsRecordingVideo)) {
                 mCaptureSession[id].setRepeatingBurst(createSSMBatchRequest(mVideoRecordRequestBuilder),
@@ -2495,6 +2502,19 @@ public class CaptureModule implements CameraModule, PhotoController,
                     Log.d(TAG, "Found depth camera with id " + cameraId);
                     foundDepth = true;
                 }
+                if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA == capability) {
+                    Log.d(TAG, "Found logical multi camera with id " + cameraId);
+                    try {
+                        Byte type = characteristics.get(logical_camera_type);
+                        if (type == TYPE_DEFAULT) {
+                            MCXMODE = true;
+                            Log.d(TAG, "set MCXMode true since logical_camera_type is " + type);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        MCXMODE = true;
+                        Log.d(TAG, "set MCXMode true since no vendorTag logical_camera_type for " + cameraId);
+                    }
+                }
             }
             if(foundDepth) {
                 mCameraId[i] = "-1";
@@ -2532,37 +2552,58 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "setUpLocalMode no vendorTag logical_camera_type:" + logical_camera_type);
         }
-        Log.d(TAG,"init cameraId " + cameraId + " | logical_camera_type = " + type +
-                " | physical id = " + physicalId);
+        Set<String> physical_ids = characteristics.getPhysicalCameraIds();
         int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+        Log.d(TAG,"init cameraId " + cameraId + " | logical_camera_type = " + type +
+                " | physical id = " + physicalId + " | physical_ids : " + physical_ids + " | facing:" + facing);
         switch (type) {
             case TYPE_DEFAULT:// default
                 removeList[CameraMode.DEFAULT.ordinal()] = false;
                 removeList[CameraMode.VIDEO.ordinal()] = false;
                 removeList[CameraMode.PRO_MODE.ordinal()] = false;
-                if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                if (physical_ids == null && facing != CameraCharacteristics.LENS_FACING_FRONT){
+                    mSingleRearId = cameraId;
+                    Log.i(TAG,"mSingleRearId:" + mSingleRearId);
+                } else if (physical_ids != null && physical_ids.size() != 0 && MCXMODE){
+                    mLogicalId = cameraId;
+                    Log.i(TAG,"mLogicalId:" + mLogicalId);
+                    removeList[CameraMode.RTB.ordinal()] = false;
+                    if (mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId >= 0) {
+                        break;
+                    }
+                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId = cameraId;
+                }
+                if (physical_ids == null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                     CaptureModule.FRONT_ID = cameraId;
                     mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).frontCameraId = cameraId;
                     mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).frontCameraId = cameraId;
                     mSceneCameraIds.get(CameraMode.HFR.ordinal()).frontCameraId = cameraId;
                     mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).frontCameraId = cameraId;
                 } else {
-                    if (!isFirstDefault) {
+                    if (!isFirstDefault && physical_ids == null) {
                         mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).auxCameraId = cameraId;
-                        break;
+                        isFirstDefault = true;
+                    } else {
+                        isFirstDefault = false;
                     }
-                    isFirstDefault = false;
-                    mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).rearCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).rearCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).rearCameraId = cameraId;
+
+                    int defaultId;
+                    if (MCXMODE) {
+                        defaultId = mLogicalId;
+                    } else {
+                        defaultId = mSingleRearId;
+                    }
+                    mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).rearCameraId = defaultId;
+                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).rearCameraId = defaultId;
+                    mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).rearCameraId = defaultId;
                     if (mSettingsManager.isHFRSupported()) { // filter HFR mode
                         removeList[CameraMode.HFR.ordinal()] = false;
-                        mSceneCameraIds.get(CameraMode.HFR.ordinal()).rearCameraId = cameraId;
+                        mSceneCameraIds.get(CameraMode.HFR.ordinal()).rearCameraId = mSingleRearId;
                     }
                     if (mCurrentSceneMode == null) {
                         int index = mIntentMode == INTENT_MODE_VIDEO ?
                                 CameraMode.VIDEO.ordinal() : CameraMode.DEFAULT.ordinal();
-                        mCurrentModeIndex =  mNextModeIndex = index;
+                        mCurrentModeIndex = mNextModeIndex = index;
                         mCurrentSceneMode = mSceneCameraIds.get(index);
                     }
                 }
@@ -3188,6 +3229,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void captureStillPictureForCommon(CaptureRequest.Builder captureBuilder, int id) throws CameraAccessException{
+        Log.i(TAG,"captureStillPictureForCommon, captureBuilder:" + captureBuilder.toString());
         checkAndPlayShutterSound(id);
         if(isMpoOn()) {
             mCaptureStartTime = System.currentTimeMillis();
@@ -4216,6 +4258,14 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void applySessionParameters(CaptureRequest.Builder builder){
         applyEarlyPCR(builder);
+        if(CURRENT_MODE == CameraMode.RTB && MCXMODE){
+            Log.i(TAG,"set bokeh mode for captureBuilder");
+            builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_STILL_CAPTURE);
+        }
+        String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+        if(selectMode != null && selectMode.equals("rtb")){
+            builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_CONTINUOUS);
+        }
     }
 
     private void applyCommonSettings(CaptureRequest.Builder builder, int id) {
@@ -4314,6 +4364,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                 Log.d(TAG, "Time out waiting to lock camera opening.");
                 throw new RuntimeException("Time out waiting to lock camera opening");
             }
+            String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+            if(selectMode != null && selectMode.equals("single_rear_cameraid") && mSingleRearId != -1){
+                mCameraId[id] = mCameraId[mSingleRearId];
+            }else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1){
+                mCameraId[id] = mCameraId[mLogicalId];
+            }
+            Log.d(TAG, "open is " + mCameraId[id] );
             manager.openCamera(mCameraId[id], mStateCallback, mCameraHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();

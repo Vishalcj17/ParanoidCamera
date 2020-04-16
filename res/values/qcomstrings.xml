@@ -1397,5 +1397,19 @@
     <string name="pref_camera_tone_mapping_value_fourth_tone_anchor">fourth_tone_anchor</string>
     <string name="pref_camera_tone_mapping_value_user_setting">user_setting</string>
     <string name="pref_camera_tone_mapping_value_off">off</string>
+
+    <!-- select mode -->
+    <string name="pref_camera2_select_mode_default">default</string>
+    <string name="pref_camera2_select_mode_title">Select Mode</string>
+    <!-- select mode entry-->
+    <string name="pref_camera2_select_mode_entry_default">Default</string>
+    <string name="pref_camera2_select_mode_entry_sat">SAT</string>
+    <string name="pref_camera2_select_mode_entry_rtb">RTB</string>
+    <string name="pref_camera2_select_mode_entry_single_rear">Single rear cameraID</string>
+    <!-- select mode value-->
+    <string name="pref_camera2_select_mode_entry_value_default">default</string>
+    <string name="pref_camera2_select_mode_entry_value_sat">sat</string>
+    <string name="pref_camera2_select_mode_entry_value_rtb">rtb</string>
+    <string name="pref_camera2_select_mode_entry_value_single_rear">single_rear_cameraid</string>
 </resources>
 
