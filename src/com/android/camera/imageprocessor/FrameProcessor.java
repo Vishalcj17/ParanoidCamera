@@ -327,6 +327,10 @@ public class FrameProcessor {
         return surfaces;
     }
 
+    public Surface getSurfaceAsItIs(){
+        return mSurfaceAsItIs;
+    }
+
     public boolean isFrameFilterEnabled() {
         if (mFinalFilters.size() == 0) {
             return false;

@@ -52,6 +52,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
@@ -66,11 +67,9 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.camera.imageprocessor.filter.BeautificationFilter;
 import com.android.camera.data.Camera2ModeAdapter;
-import com.android.camera.imageprocessor.filter.DeepPortraitFilter;
 import com.android.camera.ui.AutoFitSurfaceView;
 import com.android.camera.ui.Camera2FaceView;
 import com.android.camera.ui.CameraControls;
@@ -155,6 +154,32 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         public void surfaceDestroyed(SurfaceHolder holder) {
         }
     };
+
+    private class PhysicalCallBack implements SurfaceHolder.Callback{
+        private int mIndex;
+
+        PhysicalCallBack(int index){
+            this.mIndex = index;
+        }
+
+        @Override
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            Log.d(TAG,"PhysicalCallback"+mIndex+" surfaceChanged width="+width+" height="+height);
+        }
+        @Override
+        public void surfaceCreated(SurfaceHolder holder) {
+            mPhysicalHolders[mIndex] = holder;
+            mSurfaceReady[mIndex] = true;
+            checkSurfaceReady();
+            Log.d(TAG,"PhysicalCallback surfaceCreated " + mIndex);
+        }
+        @Override
+        public void surfaceDestroyed(SurfaceHolder holder) {
+            mPhysicalHolders[mIndex] = null;
+            mSurfaceReady[mIndex] = false;
+            Log.d(TAG,"PhysicalCallback surfaceDestroyed"+ mIndex);
+        }
+    }
 
     private SurfaceHolder.Callback callback = new SurfaceHolder.Callback() {
 
@@ -267,15 +292,26 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private TextView mZoomSwitch;
     private int mZoomIndex = 0;
 
+    private boolean[] mSurfaceReady = {false,false,false};
+    private SurfaceView[] mPhysicalViews = new SurfaceView[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
+    private SurfaceHolder[] mPhysicalHolders = new SurfaceHolder[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
+    private int mPreviewCount = 0;
+
     int mPreviewWidth;
     int mPreviewHeight;
     private boolean mIsVideoUI = false;
     private boolean mIsSceneModeLabelClose = false;
     private LinearLayout mGridLineView;
 
+
     private void previewUIReady() {
         if((mSurfaceHolder != null && mSurfaceHolder.getSurface().isValid())) {
-            mModule.onPreviewUIReady();
+            if (mSettingsManager.getPhysicalCameraId() == null){
+                mModule.onPreviewUIReady();
+            } else {
+                checkSurfaceReady();
+            }
+
             if ((mIsVideoUI || mModule.getCurrentIntentMode() != CaptureModule.INTENT_MODE_NORMAL)
                     && mThumbnail != null){
                 mThumbnail.setVisibility(View.INVISIBLE);
@@ -288,6 +324,15 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mActivity.updateThumbnail(mThumbnail);
             }
         }
+    }
+
+    private void checkSurfaceReady(){
+        for (int i = 0; i< mPreviewCount; i++){
+            if (!mSurfaceReady[i])
+                return;
+        }
+        Log.d(TAG,"all the surface ready");
+        mModule.onPreviewUIReady();
     }
 
     public void initThumbnail() {
@@ -351,6 +396,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mSurfaceHolderMono.addCallback(callbackMono);
 
         mGridLineView = (LinearLayout) mRootView.findViewById(R.id.grid_line);
+
+        mPhysicalViews[0] = (SurfaceView) mRootView.findViewById(R.id.mdp_preview_physical_0);
+        mPhysicalHolders[0] = mPhysicalViews[0].getHolder();
+        mPhysicalHolders[0].addCallback(new PhysicalCallBack(0));
+        mPhysicalViews[1] = (SurfaceView) mRootView.findViewById(R.id.mdp_preview_physical_1);
+        mPhysicalHolders[1] = mPhysicalViews[1].getHolder();
+        mPhysicalHolders[1].addCallback(new PhysicalCallBack(1));
+        mPhysicalViews[2] = (SurfaceView) mRootView.findViewById(R.id.mdp_preview_physical_2);
+        mPhysicalHolders[2] = mPhysicalViews[2].getHolder();
+        mPhysicalHolders[2].addCallback(new PhysicalCallBack(2));
+        mPhysicalViews[3] = (SurfaceView) mRootView.findViewById(R.id.mdp_preview_physical_3);
+        mPhysicalHolders[3] = mPhysicalViews[3].getHolder();
+        mPhysicalHolders[3].addCallback(new PhysicalCallBack(3));
+
         mProgressBar = (ProgressBar) mRootView.findViewById(R.id.progress_bar);
         mRenderOverlay = (RenderOverlay) mRootView.findViewById(R.id.render_overlay);
         mShutterButton = (ShutterButton) mRootView.findViewById(R.id.shutter_button);
@@ -1780,6 +1839,44 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                     }
                 }
             }
+        }
+    }
+
+    public List<Surface> getPhysicalSurfaces(){
+        List<Surface> previewSurfaces = new ArrayList<>();
+        for (int i = 0; i< mPreviewCount; i++){
+            if (mPhysicalViews[i] != null && mPhysicalViews[i].getVisibility() == View.VISIBLE){
+                previewSurfaces.add(mPhysicalHolders[i].getSurface());
+            }
+        }
+        return previewSurfaces;
+    }
+
+    public void initPhysicalSurfaces(int count){
+        mPreviewCount = count + 1;
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                for (int i = 0; i< mPreviewCount; i++){
+                    mPhysicalViews[i].setVisibility(View.VISIBLE);
+                    if (mPhysicalHolders[i] != null){
+                        mPhysicalHolders[i].setFixedSize(mPreviewHeight/2,mPreviewWidth/2);
+                    }
+                }
+            }
+        });
+    }
+
+    public void hidePhysicalSurfaces(){
+        mActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                for (SurfaceView view : mPhysicalViews){
+                    view.setVisibility(View.GONE);
+                }
+            }
+        });
+        for (boolean b:mSurfaceReady){
+            b = false;
         }
     }
 
