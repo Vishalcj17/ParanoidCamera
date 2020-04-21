@@ -61,7 +61,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
-import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -295,8 +294,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private int mZoomIndex = 0;
 
     private boolean[] mSurfaceReady = {false,false,false,false};
-    private SurfaceView[] mPhysicalViews = new SurfaceView[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
-    private SurfaceHolder[] mPhysicalHolders = new SurfaceHolder[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
+    private SurfaceView[] mPhysicalViews = new SurfaceView[CaptureModule.MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
+    private SurfaceHolder[] mPhysicalHolders = new SurfaceHolder[CaptureModule.MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private int mPreviewCount = 0;
 
     int mPreviewWidth;

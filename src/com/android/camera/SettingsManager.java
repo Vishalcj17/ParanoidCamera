@@ -46,6 +46,7 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.media.CamcorderProfile;
 import android.preference.PreferenceManager;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.Range;
 import android.util.Rational;
@@ -153,7 +154,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_PHYSICAL_RAW_CALLBACK ="pref_camera2_physical_raw_key";
     public static final String KEY_PHYSICAL_HDR ="pref_camera2_physical_hdr_key";
     public static final String KEY_PHYSICAL_MFNR ="pref_camera2_physical_mfnr_key";
-    public static final String KEY_PHYSICAL_SIZE ="pref_camera2_physical_size_key";
+    public static final String[] KEY_PHYSICAL_SIZE = {"pref_camera2_physical_size_0_key",
+            "pref_camera2_physical_size_1_key","pref_camera2_physical_size_2_key"};
+    public static final String KEY_PHYSICAL_VIDEO_SIZE[] ={"pref_camera2_physical_quality_0_key",
+            "pref_camera2_physical_quality_1_key","pref_camera2_physical_quality_2_key"};
     public static final String KEY_PICTURE_SIZE = "pref_camera2_picturesize_key";
     public static final String KEY_PICTURE_FORMAT = "pref_camera2_picture_format_key";
     public static final String KEY_ISO = "pref_camera2_iso_key";
@@ -794,6 +798,11 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return facing + String.valueOf(CaptureModule.CURRENT_MODE);
     }
 
+    public Set<String> getAllPhysicalCameraId(){
+        return mCharacteristics.get(mCameraId).getPhysicalCameraIds();
+    }
+
+
     public Set<String> getPhysicalCameraId() {
         String ids  = getValue(KEY_PHYSICAL_CAMERA);
         if (ids == null || "".equals(ids)){
@@ -971,6 +980,25 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public int getInitialCameraId() {
         return CaptureModule.CURRENT_ID;
+    }
+
+    private void initPhysicalSizePreference(Set<String> physicalIds){
+        ListPreference[] physicalSize = new ListPreference[3];
+        ListPreference[] physicalQuality = new ListPreference[3];
+        int i = 0;
+        for(String id:physicalIds){
+            physicalSize[i] = mPreferenceGroup.findPreference(SettingsManager.KEY_PHYSICAL_SIZE[i]);
+            physicalQuality[i] = mPreferenceGroup.findPreference(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+            if (filterUnsupportedOptions(physicalSize[i], getSupportedPictureSize(
+                    Integer.valueOf(id)))) {
+                mFilteredKeys.add(physicalSize[i].getKey());
+            }
+            if (filterUnsupportedOptions(physicalQuality[i],getSupportedVideoSize(
+                    Integer.valueOf(id)))){
+                mFilteredKeys.add(physicalQuality[i].getKey());
+            }
+            i++;
+        }
     }
 
     private void filterPreferences(int cameraId) {
@@ -1239,6 +1267,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_RAW_CALLBACK);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_HDR);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_MFNR);
+                for (String key : SettingsManager.KEY_PHYSICAL_SIZE){
+                    removePreference(mPreferenceGroup, key);
+                }
+                for (String key : SettingsManager.KEY_PHYSICAL_VIDEO_SIZE){
+                    removePreference(mPreferenceGroup, key);
+                }
             } else{
                 CharSequence[] fullEntryValues = physicalCamera.getEntryValues();
                 CharSequence[] fullEntries = physicalCamera.getEntries();
@@ -1276,6 +1310,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         fullEntryValues.length);
                 physicalCamera.setEntries(newEntries);
                 physicalCamera.setEntryValues(newEntryValues);
+                initPhysicalSizePreference(mCharacteristics.get(cameraId).getPhysicalCameraIds());
             }
         }
 
@@ -1297,7 +1332,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     private boolean buildPhysicalCamera(int cameraId,ListPreference listPreference) {
         boolean ret = false;
-        Set<String> physical_ids = mCharacteristics.get(cameraId).getPhysicalCameraIds();
+        Set<String> physical_ids = getAllPhysicalCameraId();
         if (physical_ids != null && physical_ids.size() != 0){
             int i = 0;
             int size = physical_ids.size();
@@ -1306,7 +1341,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             for (String id : physical_ids){
                 fullEntries[i] = "physical id : " + id;
                 fullEntryValues[i] = id;
-                Log.d(TAG,"buildPhysicalCamera fullEntries[i]" + fullEntries[i]+
+                Log.d(TAG,"buildPhysicalCamera fullEntries[i]=" + fullEntries[i]+
                         " fullEntryValues[i]="+fullEntryValues[i]);
                 i++;
             }

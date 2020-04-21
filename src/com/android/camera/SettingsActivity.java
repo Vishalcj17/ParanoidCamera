@@ -931,6 +931,8 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FOVC_VALUE);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
+                for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
+                    add(key);
             }
         };
         final ArrayList<String> multiCameraSettingList = new ArrayList<String>() {
@@ -1004,7 +1006,6 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
-                        videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1086,6 +1087,40 @@ public class SettingsActivity extends PreferenceActivity {
         }
     }
 
+    private void initializePhysicalPreferences(){
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMCORDER);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_HDR);
+        updateMultiPreference(SettingsManager.KEY_PHYSICAL_MFNR);
+        Set<String> physicalIds = mSettingsManager.getAllPhysicalCameraId();
+        if (physicalIds != null){
+            int i = 0;
+            String imageSizeTitle = getResources().getString(
+                    R.string.pref_camera2_physical_size_title);
+            String videoSizeTitle = getResources().getString(
+                    R.string.pref_camera2_physical_quality_title);
+            for (String id : physicalIds){
+                ListPreference photo = (ListPreference)
+                        findPreference(SettingsManager.KEY_PHYSICAL_SIZE[i]);
+                if (photo != null){
+                    photo.setTitle(imageSizeTitle + " " + id);
+                }
+                ListPreference video = (ListPreference)
+                        findPreference(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+                if (video != null){
+                    video.setTitle(videoSizeTitle + " " + id);
+                }
+                updatePreference(SettingsManager.KEY_PHYSICAL_SIZE[i]);
+                updatePreference(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+                i++;
+            }
+        }
+
+    }
+
     private void initializePreferences() {
         updatePreference(SettingsManager.KEY_PICTURE_SIZE);
         updatePreference(SettingsManager.KEY_PICTURE_FORMAT);
@@ -1096,19 +1131,13 @@ public class SettingsActivity extends PreferenceActivity {
         updatePreference(SettingsManager.KEY_ZOOM);
         updatePreference(SettingsManager.KEY_VIDEO_DURATION);
         updatePreference(SettingsManager.KEY_SWITCH_CAMERA);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMCORDER);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_HDR);
-        updateMultiPreference(SettingsManager.KEY_PHYSICAL_MFNR);
         updatePreference(SettingsManager.KEY_TONE_MAPPING);
         updateMultiPreference(SettingsManager.KEY_STATS_VISUALIZER_VALUE);
         updatePictureSizePreferenceButton();
         updateVideoHDRPreference();
         updateFormatPreference();
         updateStoragePreference();
+        initializePhysicalPreferences();
 
         Map<String, SettingsManager.Values> map = mSettingsManager.getValuesMap();
         if (map == null) return;
