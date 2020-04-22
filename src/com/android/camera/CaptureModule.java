@@ -6485,14 +6485,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         int videoWidth = mProfile.videoFrameWidth;
         int videoHeight = mProfile.videoFrameHeight;
         mUnsupportedResolution = false;
-
+        String audioSelected = mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER);
+        int audioEncoder = -1;
         int videoEncoder = SettingTranslation
                 .getVideoEncoder(mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ENCODER));
-        int audioEncoder = SettingTranslation
-                .getAudioEncoder(mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER));
-
+        if (!audioSelected.equals("off")) {
+            audioEncoder = SettingTranslation
+                    .getAudioEncoder(mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER));
+        }
         mProfile.videoCodec = videoEncoder;
-        if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture) {
+        if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture && (-1 != audioEncoder)) {
             mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mProfile.audioCodec = audioEncoder;
             if (mProfile.audioCodec == MediaRecorder.AudioEncoder.AMR_NB) {
@@ -6524,7 +6526,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mMediaRecorder.setVideoSize(mProfile.videoFrameWidth, mProfile.videoFrameHeight);
         }
         mMediaRecorder.setVideoEncoder(videoEncoder);
-        if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture) {
+        if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture && (-1 != audioEncoder)) {
             mMediaRecorder.setAudioEncodingBitRate(mProfile.audioBitRate);
             mMediaRecorder.setAudioChannels(mProfile.audioChannels);
             mMediaRecorder.setAudioSamplingRate(mProfile.audioSampleRate);
