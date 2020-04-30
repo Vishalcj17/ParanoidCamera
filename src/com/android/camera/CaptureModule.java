@@ -141,6 +141,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -632,8 +633,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalRawSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalYuvReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalRawReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalYuvReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalRawReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalJpegReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
     private HeifWriter mInitHeifWriter;
     private OutputConfiguration mHeifOutput;
@@ -2052,29 +2053,35 @@ public class CaptureModule implements CameraModule, PhotoController,
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         if (jpeg_ids != null) {
             for (ImageReader reader : mPhysicalJpegReader) {
+                Iterator<String> id=jpeg_ids.iterator();
                 if (reader != null){
                     builder.addTarget(reader.getSurface());
                     targetCount++;
+                    Log.d(TAG,"add jpeg target id="+id.next());
                 }
             }
         }
         Set<String> yuv_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
         if(yuv_ids != null){
+            Iterator<String>id=yuv_ids.iterator();
             for (ImageReader reader : mPhysicalYuvReader) {
                 if (reader != null){
                     builder.addTarget(reader.getSurface());
                     targetCount++;
+                    Log.d(TAG,"add yuv target id="+id.next());
                 }
             }
         }
         Set<String> raw_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
         if(raw_ids != null){
+            Iterator<String>id=raw_ids.iterator();
             for (ImageReader reader : mPhysicalRawReader) {
                 if (reader != null) {
                     builder.addTarget(reader.getSurface());
                     targetCount++;
+                    Log.d(TAG,"add raw target id="+id.next());
                 }
             }
         }
@@ -2141,7 +2148,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             for (String id:yuv_ids){
                 OutputConfiguration configuration = new OutputConfiguration(
                         mPhysicalYuvReader[i].getSurface());
-                configuration.setPhysicalCameraId(id);
+                if (!"logical".equals(id)){
+                    configuration.setPhysicalCameraId(id);
+                }
                 outputConfigurations.add(configuration);
                 Log.d(TAG,"add output format=yuv physicalId="+id);
                 i++;
@@ -2155,7 +2164,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             for (String id:raw_ids){
                 OutputConfiguration configuration = new OutputConfiguration(
                         mPhysicalRawReader[i].getSurface());
-                configuration.setPhysicalCameraId(id);
+                if (!"logical".equals(id)){
+                    configuration.setPhysicalCameraId(id);
+                }
                 outputConfigurations.add(configuration);
                 Log.d(TAG,"add output format=raw physicalId="+id);
                 i++;
@@ -2917,7 +2928,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 warningToast("Camera is not ready yet to take a picture.");
                 return;
             }
-            
+
             CaptureRequest.Builder captureBuilder = getRequestBuilder(
                     CameraDevice.TEMPLATE_STILL_CAPTURE,id,mSettingsManager.getPhysicalCameraId());
 

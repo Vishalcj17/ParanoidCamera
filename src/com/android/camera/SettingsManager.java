@@ -1291,8 +1291,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         KEY_PHYSICAL_MFNR);
                 preferences.add(physicalCamcorder);
                 preferences.add(physicalJpegCallback);
-                preferences.add(physicalYuvCallback);
-                preferences.add(physicalRawCallback);
                 preferences.add(physicalMFNR);
                 preferences.add(physicalHDR);
                 for (ListPreference preference:preferences){
@@ -1310,6 +1308,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         fullEntryValues.length);
                 physicalCamera.setEntries(newEntries);
                 physicalCamera.setEntryValues(newEntryValues);
+                physicalYuvCallback.setEntries(newEntries);
+                physicalYuvCallback.setEntryValues(newEntryValues);
+                physicalRawCallback.setEntries(newEntries);
+                physicalRawCallback.setEntryValues(newEntryValues);
                 initPhysicalSizePreference(mCharacteristics.get(cameraId).getPhysicalCameraIds());
             }
         }
