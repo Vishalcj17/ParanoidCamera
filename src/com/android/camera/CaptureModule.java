@@ -1273,6 +1273,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                         Toast.LENGTH_LONG).show();
                 mActivity.finish();
             }
+            //workaround for removing task bug
+            System.exit(0);
         }
 
         @Override
