@@ -252,6 +252,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private boolean mIsHFRSupported = false;
     private JSONObject mDependency;
     private int mCameraId;
+    private int mBackCamId = -1;
+    private int mFrontCamId = -1;
     private Set<String> mFilteredKeys;
     private int[] mExtendedHFRSize;//An array of pairs (fps, maxW, maxH)
     private int mDeviceSocId = -1;
@@ -461,16 +463,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
         /* Picture Size */
         String[] pictSizes = getEntryValues(R.array.pref_camera2_picturesize_entryvalues);
         // back support pictureSizes
-        List<String> backPLists = getSupportList(getSupportedPictureSize(0), pictSizes);
-        supportLists.add("<Back camera support PictureSizes>");
-        supportLists.addAll(backPLists);
+        if (mBackCamId != -1) {
+            List<String> backPLists = getSupportList(getSupportedPictureSize(mBackCamId), pictSizes);
+            supportLists.add("<Back camera support PictureSizes>");
+            supportLists.addAll(backPLists);
+        }
         // front support pictureSizes
-        if (mCharacteristics.size() > 1) {
-            List<String> frontPLists = getSupportList(getSupportedPictureSize(1), pictSizes);
+        if (mCharacteristics.size() > 1 && (mFrontCamId != -1)) {
+            List<String> frontPLists = getSupportList(getSupportedPictureSize(mFrontCamId), pictSizes);
             supportLists.add("<Front camera support PictureSizes>");
             supportLists.addAll(frontPLists);
             /* Video Size */
-            List<String> frontVideoLists = getSupportList(getSupportedVideoSize(1), videoSizes);
+            List<String> frontVideoLists = getSupportList(getSupportedVideoSize(mFrontCamId), videoSizes);
             supportLists.add("<Front camera support VideoSizes and fps>");
             for (int i=0; i < frontVideoLists.size(); i++) {
                 String videoSize = frontVideoLists.get(i);
@@ -482,16 +486,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 supportLists.add("");
             }
         }
-        List<String> backVideoLists = getSupportList(getSupportedVideoSize(0), videoSizes);
-        supportLists.add("<Back camera support VideoSizes and fps>");
-        for (int i=0; i < backVideoLists.size(); i++) {
-            String videoSize = backVideoLists.get(i);
-            List<String> fps = getSupportedHFRForAutoTest(videoSize);
-            supportLists.add(videoSize);
-            supportLists.addAll(fps);
-            List<String> videoEncoders = getSupportedVideoEncoderForAutoTest(videoSize);
-            supportLists.addAll(videoEncoders);
-            supportLists.add("");
+        if (mBackCamId != -1) {
+            List<String> backVideoLists = getSupportList(getSupportedVideoSize(mBackCamId), videoSizes);
+            supportLists.add("<Back camera support VideoSizes and fps>");
+            for (int i=0; i < backVideoLists.size(); i++) {
+                String videoSize = backVideoLists.get(i);
+                List<String> fps = getSupportedHFRForAutoTest(videoSize);
+                supportLists.add(videoSize);
+                supportLists.addAll(fps);
+                List<String> videoEncoders = getSupportedVideoEncoderForAutoTest(videoSize);
+                supportLists.addAll(videoEncoders);
+                supportLists.add("");
+            }
         }
 
         String filePath = AutoTestUtil.createFile(mContext);
@@ -1439,6 +1445,11 @@ public class SettingsManager implements ListMenu.SettingsListener {
             String cameraIdString = "camera " + i +" facing:" +
                     (facing == CameraCharacteristics.LENS_FACING_FRONT ? "front" : "back");
             fullEntries[i] = "camera " + i +" facing:"+cameraIdString;
+            if ((mFrontCamId == -1) && (facing == CameraCharacteristics.LENS_FACING_FRONT)) {
+                mFrontCamId = i;
+            } else if ((mBackCamId == -1) && (facing != CameraCharacteristics.LENS_FACING_FRONT)) {
+                mBackCamId = i;
+            }
             try {
                 Byte cameraType = mCharacteristics.get(i).get(CaptureModule.logical_camera_type);
                 if (cameraType != null) {
