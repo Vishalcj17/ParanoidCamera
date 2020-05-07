@@ -4637,6 +4637,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updatePhysicalSize(){
+        if (!mSettingsManager.isMultiCameraEnabled())
+            return;
         for (int i = 0; i< PHYSICAL_CAMERA_COUNT; i++){
             String pictureSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_SIZE[i]);
             if (pictureSize != null){
