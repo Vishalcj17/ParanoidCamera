@@ -1318,7 +1318,7 @@
     <string name="pref_camera2_picture_format_title">Picture Format</string>
     <string name="pref_camera2_picture_format_default">0</string>
     <string name="pref_camera2_picture_format_entry_0">JPEG</string>
-    <string name="pref_camera2_picture_format_entry_1">HEIF</string>
+    <string name="pref_camera2_picture_format_entry_1">HEIC</string>
 
     <string name="pref_camera2_deepportrait_entry_value_disable" translatable="false">off</string>
     <string name="pref_camera2_deepportrait_entry_value_enable" translatable="false">on</string>
