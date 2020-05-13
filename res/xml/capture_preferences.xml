@@ -539,6 +539,13 @@
         camera:entryValues="@array/pref_camera2_capture_mfnr_entryvalues" />
 
     <ListPreference
+        camera:key="pref_camera2_live_preview_key"
+        camera:defaultValue="@string/pref_camera2_live_preview_default"
+        camera:title="@string/pref_camera2_live_preview_title"
+        camera:entries="@array/pref_camera2_live_preview_entries"
+        camera:entryValues="@array/pref_camera2_live_preview_entryvalues" />
+
+    <ListPreference
         camera:key="pref_camera2_fs2_key"
         camera:defaultValue="@string/pref_camera2_fs2_default"
         camera:title="@string/pref_camera2_fs2_title"
