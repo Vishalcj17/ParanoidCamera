@@ -51,26 +51,29 @@
             android:id="@+id/grid_preview"
             android:rowCount="2"
             android:columnCount="2"
-            android:orientation="horizontal"
-            android:alignmentMode="alignBounds">
+            android:orientation="horizontal">
             <SurfaceView
                 android:layout_rowWeight="1"
                 android:layout_columnWeight="1"
+                android:layout_gravity="center"
                 android:id="@+id/mdp_preview_physical_0"
                 android:visibility="gone"/>
             <SurfaceView
                 android:layout_rowWeight="1"
                 android:layout_columnWeight="1"
+                android:layout_gravity="center"
                 android:id="@+id/mdp_preview_physical_1"
                 android:visibility="gone"/>
             <SurfaceView
                 android:layout_rowWeight="1"
                 android:layout_columnWeight="1"
+                android:layout_gravity="center"
                 android:id="@+id/mdp_preview_physical_2"
                 android:visibility="gone"/>
             <SurfaceView
                 android:layout_rowWeight="1"
                 android:layout_columnWeight="1"
+                android:layout_gravity="center"
                 android:id="@+id/mdp_preview_physical_3"
                 android:visibility="gone"/>
         </GridLayout>

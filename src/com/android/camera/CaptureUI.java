@@ -1898,16 +1898,29 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         return previewSurfaces;
     }
 
-    public void initPhysicalSurfaces(){
+    public void initPhysicalSurfaces(Size[] physicalPreviewSizes){
         if (mSettingsManager.getPhysicalCameraId() == null)
             return;
         mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
         Log.d(TAG,"initPhysicalSurfaces count="+mPreviewCount);
 
-        for (int i = 0; i< mPreviewCount; i++){
-            mPhysicalViews[i].setVisibility(View.VISIBLE);
-            if (mPhysicalHolders[i] != null){
-                mPhysicalHolders[i].setFixedSize(mPreviewHeight/2,mPreviewWidth/2);
+        for (int i=0;i< CaptureModule.MAX_LOGICAL_PHYSICAL_CAMERA_COUNT;i++){
+            if (mPhysicalViews[i] != null){
+                mPhysicalHolders[i] = mPhysicalViews[i].getHolder();
+                Size preview;
+                if (i == 0){
+                    preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
+                } else {
+                    if (i < physicalPreviewSizes.length + 1 && physicalPreviewSizes[i-1] != null){
+                        preview = new Size(physicalPreviewSizes[i-1].getHeight()/2,
+                                physicalPreviewSizes[i-1].getWidth()/2);
+                    } else {
+                        preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
+                    }
+                }
+                Log.d(TAG,"physical surface "+i+" preview size="+preview.toString());
+                mPhysicalHolders[i].setFixedSize(preview.getWidth(),preview.getHeight());
+                mPhysicalViews[i].setVisibility(View.VISIBLE);
             }
         }
     }
@@ -1918,7 +1931,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (view != null){
                 view.setVisibility(View.GONE);
             }
-
         }
 
         for (int i=0;i < mSurfaceReady.length;i++){

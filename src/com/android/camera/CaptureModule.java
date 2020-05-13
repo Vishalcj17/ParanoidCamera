@@ -674,8 +674,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalRawSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalYuvReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalRawReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
+    private Size[] mPhysicalPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
+    private Size[] mPhysicalVideoPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalYuvReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalRawReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalJpegReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
     private HeifWriter mInitHeifWriter;
     private OutputConfiguration mHeifOutput;
@@ -3015,6 +3017,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     } else {
                         if(count == 0){
                             warningToast("No output is selected");
+                            unlockFocus(id);
                             return;
                         }
                     }
@@ -3370,10 +3373,16 @@ public class CaptureModule implements CameraModule, PhotoController,
             addPreviewSurface(captureBuilder, surfaces, id);
 
             if(mSettingsManager.getPhysicalCameraId() != null){
+                int count = addPhysicalVideoCaptureTarget(captureBuilder);
                 if (mSettingsManager.isLogicalEnable()){
                     captureBuilder.addTarget(mVideoSnapshotImageReader.getSurface());
+                } else {
+                    if(count == 0){
+                        warningToast("No output is selected");
+                        return;
+                    }
                 }
-                int targetCount = addPhysicalCaptureTarget(captureBuilder);
+
             } else {
                 if (mSettingsManager.isHeifWriterEncoding()) {
                     long captureTime = System.currentTimeMillis();
@@ -3808,7 +3817,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public static HeifWriter createHEIFEncoder(String path, int width, int height,
-                                        int orientation, int imageCount, int quality) {
+                                               int orientation, int imageCount, int quality) {
         HeifWriter heifWriter = null;
         try {
             HeifWriter.Builder builder =
@@ -3830,23 +3839,27 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void createPhysicalVideoSnapshotImageReader(){
         if (mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK) != null){
-            int count = mSettingsManager.getPhysicalFeatureEnableId(
-                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK).size();
+            Set<String> ids = mSettingsManager.getPhysicalFeatureEnableId(
+                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
+            int count = ids.size();
+            Iterator<String> iterator = ids.iterator();
             for (int i =0;i<count;i++){
                 mPhysicalSnapshotImageReaders[i] = ImageReader.newInstance(
                         mPhysicalVideoSizes[i].getWidth(),
                         mPhysicalVideoSizes[i].getHeight(),
                         ImageFormat.JPEG, 2);
+                final String id = iterator.next();
                 mPhysicalSnapshotImageReaders[i].setOnImageAvailableListener(
                         new ImageReader.OnImageAvailableListener() {
                             @Override
                             public void onImageAvailable(ImageReader reader) {
-                                Log.d(TAG,"new live shot image from physical");
+                                Log.d(TAG,"new live shot image from physical id="+id);
                                 Image image = reader.acquireNextImage();
                                 mCaptureStartTime = System.currentTimeMillis();
                                 mNamedImages.nameNewImage(mCaptureStartTime);
                                 NamedEntity name = mNamedImages.getNextNameEntity();
                                 String title = (name == null) ? null : name.title;
+                                title = title + "_phy_"+ id;
                                 long date = (name == null) ? -1 : name.date;
                                 byte[] bytes = getJpegData(image);
                                 int orientation = 0;
@@ -3859,6 +3872,23 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }, mImageAvailableHandler);
             }
         }
+    }
+
+    private int addPhysicalVideoCaptureTarget(CaptureRequest.Builder builder){
+        if (mSettingsManager.getPhysicalFeatureEnableId(
+                SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK) != null){
+            int count = mSettingsManager.getPhysicalFeatureEnableId(
+                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK).size();
+            int ret = 0;
+            for (int i =0;i<count;i++){
+                if (mPhysicalSnapshotImageReaders[i] != null){
+                    builder.addTarget(mPhysicalSnapshotImageReaders[i].getSurface());
+                    ret++;
+                }
+            }
+            return ret;
+        }
+        return 0;
     }
 
     private void createVideoSnapshotImageReader() {
@@ -4638,21 +4668,26 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void updatePhysicalSize(){
         if (!mSettingsManager.isMultiCameraEnabled())
-            return;
-        for (int i = 0; i< PHYSICAL_CAMERA_COUNT; i++){
-            String pictureSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_SIZE[i]);
-            if (pictureSize != null){
-                mPhysicalSizes[i] = parsePictureSize(pictureSize);
-            } else {
-                mPhysicalSizes[i] = mPictureSize;
-            }
-            Log.d(TAG,"set Physical Photo Size i="+i+" size="+
-                    mPhysicalSizes[i].toString());
-        }
-        Set<String> physicalIds = mSettingsManager.getAllPhysicalCameraId();
-        if (physicalIds != null){
+                return;
+        Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        if (ids != null) {
             int i = 0;
-            for (String id : physicalIds){
+            for (String id : ids){
+                String pictureSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_SIZE[i]);
+                if (pictureSize != null){
+                    mPhysicalSizes[i] = parsePictureSize(pictureSize);
+                } else {
+                    mPhysicalSizes[i] = mPictureSize;
+                }
+                mPhysicalPreviewSizes[i] = getOptimalPreviewSize(mPhysicalSizes[i],
+                        mSettingsManager.getSupportedOutputSize(
+                                Integer.valueOf(id),SurfaceHolder.class));
+                if (mPhysicalPreviewSizes[i] == null){
+                    mPhysicalPreviewSizes[i] = mPreviewSize;
+                }
+                Log.d(TAG,"set Physical "+ id+ " capture size="+mPhysicalSizes[i].toString()
+                         +" preview size="+mPhysicalPreviewSizes[i].toString());
+
                 Size[] rawSizes = mSettingsManager.getSupportedOutputSize(Integer.valueOf(id),
                         ImageFormat.RAW10);
                 if (rawSizes != null){
@@ -4660,7 +4695,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 } else {
                     mPhysicalRawSizes[i] = mPhysicalSizes[i];
                 }
-                Log.d(TAG,"set Physical Photo RAW Size i="+i+" size="+
+                Log.d(TAG,"set Physical Photo RAW Size i="+id+" size="+
                         mPhysicalRawSizes[i].toString());
                 i++;
             }
@@ -4668,14 +4703,36 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updatePhysicalVideoSize(){
-        for (int i = 0; i< PHYSICAL_CAMERA_COUNT ; i++){
-            String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
-            if (videoSize != null){
-                mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
-                Log.d(TAG,"set Physical Video Size i="+i+" size="+
-                        mPhysicalVideoSizes[i] .toString());
-            } else {
-                mPhysicalVideoSizes[i] = mVideoSize;
+//        for (int i = 0; i< PHYSICAL_CAMERA_COUNT ; i++){
+//            String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+//            if (videoSize != null){
+//                mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
+//                Log.d(TAG,"set Physical Video Size i="+i+" size="+
+//                        mPhysicalVideoSizes[i] .toString());
+//            } else {
+//                mPhysicalVideoSizes[i] = mVideoSize;
+//            }
+//        }
+
+        Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        if (ids != null) {
+            int i = 0;
+            for (String id : ids){
+                String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+                if (videoSize != null){
+                    mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
+                } else {
+                    mPhysicalVideoSizes[i] = mVideoSize;
+                }
+                mPhysicalVideoPreviewSizes[i] = getOptimalPreviewSize(mPhysicalVideoSizes[i],
+                        mSettingsManager.getSupportedOutputSize(
+                                Integer.valueOf(id),SurfaceHolder.class));
+                if (mPhysicalVideoPreviewSizes[i] == null){
+                    mPhysicalVideoPreviewSizes[i] = mVideoPreviewSize;
+                }
+                Log.d(TAG,"set Physical "+ id+ " video size="+ mPhysicalVideoSizes[i].toString()
+                        +" preview size="+mPhysicalVideoPreviewSizes[i].toString());
+                i++;
             }
         }
     }
@@ -4802,7 +4859,12 @@ public class CaptureModule implements CameraModule, PhotoController,
         mDeepPortraitMode = isDeepPortraitMode();
         initializeValues();
         updatePreviewSize();
-        mUI.initPhysicalSurfaces();
+        if (getCurrenCameraMode() == CameraMode.VIDEO){
+            mUI.initPhysicalSurfaces(mPhysicalVideoPreviewSizes);
+        } else {
+            mUI.initPhysicalSurfaces(mPhysicalPreviewSizes);
+        }
+
 
         // Set up sound playback for shutter button, video record and video stop
         if (mSoundPlayer == null) {
@@ -5832,7 +5894,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 outConfigurations.add(new OutputConfiguration(
                         mVideoSnapshotImageReader.getSurface()));
                 outConfigurations.add(new OutputConfiguration(mVideoRecordingSurface));
-
             }
             List<Surface> previewSurfaces = mUI.getPhysicalSurfaces();
             for (int i=1;i < mUI.getPhysicalSurfaces().size();i++){
@@ -6098,7 +6159,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private boolean startMediaRecorder() {
-        if (mMediaRecorder == null) {
+        if (mMediaRecorder == null && !mSettingsManager.isMultiCameraEnabled()) {
             Log.e(TAG, "Fail to initialize media recorder");
             mStartRecPending = false;
             mIsRecordingVideo = false;
@@ -6106,7 +6167,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
 
         try {
-            mMediaRecorder.start(); // Recording is now started
+            if (mMediaRecorder != null)
+                mMediaRecorder.start(); // Recording is now started
             startPhysicalRecorder();
             mRecordingStarted = true;
             Log.d(TAG, "StartRecordingVideo done. Time=" +
@@ -6165,6 +6227,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 recorder.setOnErrorListener(null);
                 recorder.setOnInfoListener(null);
                 recorder.stop();
+                recorder.reset();
             }
         }
     }
@@ -6322,6 +6385,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mfnr_ids != null){
             for (String id:mfnr_ids){
                 try {
+                    builder.setPhysicalCameraKey(CaptureRequest.NOISE_REDUCTION_MODE,
+                            noiseReduMode,id);
                     builder.setPhysicalCameraKey(custom_noise_reduction, (byte) 0x01,id);
                 } catch (Exception e) {
                     Log.w(TAG, "capture can`t find vendor tag: " + custom_noise_reduction.toString());
@@ -6523,6 +6588,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else {
                 setVideoState(VideoState.VIDEO_PAUSE);
             }
+            for (MediaRecorder mediaRecorder: mPhysicalMediaRecorders) {
+                if (mediaRecorder != null) {
+                    mediaRecorder.pause();
+                }
+            }
         } else {
             setEndOfStream(false, false);
         }
@@ -6538,6 +6608,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         updateRecordingTime();
         setEndOfStream(true, false);
+
         if (PersistUtil.enableMediaRecorder()) {
             if (!ApiHelper.HAS_RESUME_SUPPORTED) {
                 mMediaRecorder.start();
@@ -6552,6 +6623,17 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         } else {
             setVideoState(VideoState.VIDEO_RESUME);
+        }
+        try {
+            Method resumeRec = Class.forName("android.media.MediaRecorder").getMethod("resume");
+            resumeRec.invoke(mMediaRecorder);
+            for (MediaRecorder mediaRecorder: mPhysicalMediaRecorders){
+                if (mediaRecorder != null){
+                    resumeRec.invoke(mediaRecorder);
+                }
+            }
+        } catch (Exception e) {
+            Log.v(TAG, "resume method not implemented");
         }
     }
 
@@ -6597,6 +6679,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mMediaRecorder.pause();
                     } else {
                         setVideoState(VideoState.VIDEO_PAUSE);
+                    }
+                    for(MediaRecorder mediaRecorder:mPhysicalMediaRecorders) {
+                        if (mediaRecorder != null) {
+                            mediaRecorder.pause();
+                        }
                     }
                     captureRequestBuilder = mVideoPreviewRequestBuilder;
                     applyVideoCommentSettings(captureRequestBuilder, getMainCameraId());
@@ -6739,7 +6826,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             setVideoState(VideoState.VIDEO_STOP);
             stopCodecThreads();
-            stopPhysicalRecorder();
+            try{
+                stopPhysicalRecorder();
+            } catch (RuntimeException e){
+                Log.w(TAG, "MediaRecoder stop fail", e);
+                for (int i=0;i<mPhysicalFileName.length;i++){
+                    if (mPhysicalFileName[i] != null) deleteVideoFile(mPhysicalFileName[i]);
+                }
+            }
             shouldAddToMediaStoreNow = true;
         }
         Log.d(TAG, "stopRecordingVideo done. Time=" +
@@ -6863,8 +6957,12 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void saveVideo() {
         if (mVideoFileDescriptor == null) {
-            File origFile = new File(mVideoFilename);
-            if (!origFile.exists() || origFile.length() <= 0) {
+            File origFile = null;
+            if (mVideoFilename != null){
+                origFile = new File(mVideoFilename);
+            }
+
+            if (origFile == null || !origFile.exists() || origFile.length() <= 0) {
                 Log.e(TAG, "Invalid file");
                 mCurrentVideoValues = null;
                 return;
@@ -7723,6 +7821,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
     //------------------------------------------end-----------------------------------------
     private void setUpMediaRecorder(int cameraId) throws IOException {
+        if (mSettingsManager.isMultiCameraEnabled() && !mSettingsManager.isLogicalEnable()){
+            mMediaRecorder = null;
+            return;
+        }
         Log.d(TAG, "setUpMediaRecorder");
         Bundle myExtras = mActivity.getIntent().getExtras();
         if (mMediaRecorder == null) mMediaRecorder = new MediaRecorder();
