@@ -52,8 +52,8 @@ import android.util.Log;
 import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
-import android.media.EncoderCapabilities;
-import android.media.EncoderCapabilities.VideoEncoderCap;
+//import android.media.EncoderCapabilities;
+//import android.media.EncoderCapabilities.VideoEncoderCap;
 
 import com.android.camera.app.CameraApp;
 import com.android.camera.imageprocessor.filter.BestpictureFilter;
@@ -1517,10 +1517,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
         if (videoEncoder != null) {
             videoEncoder.reloadInitialEntriesAndEntryValues();
-            if (filterUnsupportedOptions(videoEncoder,
-                    getSupportedVideoEncoders())) {
+            //if (filterUnsupportedOptions(videoEncoder,
+             //       getSupportedVideoEncoders())) {
                 mFilteredKeys.add(videoEncoder.getKey());
-            }
+            //}
         }
     }
 
@@ -1626,6 +1626,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
         if (videoEncoder != null) {
             String str = null;
+            /*
             List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
             for (VideoEncoderCap vEncoder: videoEncoders) {
                 str = SettingTranslation.getVideoEncoder(vEncoder.mCodec);
@@ -1647,6 +1648,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     }
                 }
             }
+            */
         }
         return supported;
     }
@@ -2260,7 +2262,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
         return supportedIso;
     }
-
+    /*
     private boolean isCurrentVideoResolutionSupportedByEncoder(VideoEncoderCap encoderCap) {
         boolean supported = false;
         ListPreference videoQuality = mPreferenceGroup.findPreference(KEY_VIDEO_QUALITY);
@@ -2284,21 +2286,23 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
         return supported;
     }
-
-    private List<String> getSupportedVideoEncoders() {
-        ArrayList<String> supported = new ArrayList<String>();
-        String str = null;
-        List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
-        for (VideoEncoderCap videoEncoder: videoEncoders) {
-            str = SettingTranslation.getVideoEncoder(videoEncoder.mCodec);
-            if (str != null) {
-                if (isCurrentVideoResolutionSupportedByEncoder(videoEncoder)) {
-                    supported.add(str);
-                }
-            }
-        }
-        return supported;
-    }
+    */
+//    private List<String> getSupportedVideoEncoders() {
+//        ArrayList<String> supported = new ArrayList<String>();
+//        String str = null;
+//
+//        List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
+//        for (VideoEncoderCap videoEncoder: videoEncoders) {
+//            str = SettingTranslation.getVideoEncoder(videoEncoder.mCodec);
+//            if (str != null) {
+//                if (isCurrentVideoResolutionSupportedByEncoder(videoEncoder)) {
+//                    supported.add(str);
+//                }
+//            }
+//        }
+//
+//        return supported;
+//    }
 
     private static List<String> getSupportedAudioEncoders(CharSequence[] strings) {
         ArrayList<String> supported = new ArrayList<>();

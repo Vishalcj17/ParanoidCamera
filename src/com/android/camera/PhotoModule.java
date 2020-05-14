@@ -95,7 +95,6 @@ import android.content.DialogInterface;
 import android.text.InputType;
 import android.text.TextUtils;
 
-import com.android.internal.util.MemInfoReader;
 import android.app.ActivityManager;
 
 import java.io.ByteArrayOutputStream;
@@ -112,7 +111,6 @@ import android.util.AttributeSet;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.SystemProperties;
 import java.util.Collections;
 import java.util.Formatter;
 
@@ -863,8 +861,7 @@ public class PhotoModule
     }
 
     private void resetMiscSettings() {
-        boolean disableQcomMiscSetting =
-                SystemProperties.getBoolean("camera.qcom.misc.disable", false);
+        boolean disableQcomMiscSetting = false;
         if (disableQcomMiscSetting) {
             mUI.setPreference(CameraSettings.KEY_ZSL, ParametersWrapper.ZSL_OFF);
             mUI.setPreference(CameraSettings.KEY_FACE_DETECTION,
@@ -1047,13 +1044,13 @@ public class PhotoModule
                     Context.ACTIVITY_SERVICE);
             ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
             am.getMemoryInfo(memInfo);
-            SECONDARY_SERVER_MEM = memInfo.secondaryServerThreshold;
+            //SECONDARY_SERVER_MEM = memInfo.secondaryServerThreshold;
         }
 
         long totalMemory = Runtime.getRuntime().totalMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
         long remainMemory = maxMemory - totalMemory;
-
+        /*
         MemInfoReader reader = new MemInfoReader();
         reader.readMemInfo();
         long[] info = reader.getRawInfo();
@@ -1068,7 +1065,7 @@ public class PhotoModule
                 Toast.LENGTH_SHORT).show();
             return true;
         }
-
+        */
         return false;
     }
 
@@ -1715,8 +1712,7 @@ public class PhotoModule
         }
 
         if (mCameraState == LONGSHOT) {
-            mLongShotCaptureCountLimit = SystemProperties.getInt(
-                                    "persist.camera.longshot.shotnum", 0);
+            mLongShotCaptureCountLimit = 0; 
             mLongShotCaptureCount = 1;
             if(mLongshotSave) {
                 mCameraDevice.takePicture(mHandler,
@@ -3730,9 +3726,9 @@ public class PhotoModule
         //value: 1 - FLIP_MODE_H
         //value: 2 - FLIP_MODE_V
         //value: 3 - FLIP_MODE_VH
-        int preview_flip_value = SystemProperties.getInt("debug.camera.preview.flip", 0);
-        int video_flip_value = SystemProperties.getInt("debug.camera.video.flip", 0);
-        int picture_flip_value = SystemProperties.getInt("debug.camera.picture.flip", 0);
+        int preview_flip_value = 0;
+        int video_flip_value = 0;
+        int picture_flip_value = 0;
         int rotation = CameraUtil.getJpegRotation(mCameraId, mOrientation);
         mParameters.setRotation(rotation);
         if (rotation == 90 || rotation == 270) {
@@ -3895,7 +3891,7 @@ public class PhotoModule
         //value: 2 - 720x480
         //value: 3 - 1280x720
         //value: 4 - 1920x1080
-        int preview_resolution = SystemProperties.getInt("persist.camera.preview.size", 0);
+        int preview_resolution = 0;
         switch (preview_resolution) {
             case 1: {
                 optimalSize.width = 640;
