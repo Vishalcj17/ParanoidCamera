@@ -1257,7 +1257,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mUI.onCameraOpened(mCurrentSceneMode.getCurrentId());
+                        mUI.onCameraOpened(getMainCameraId());
                     }
                 });
                 createSessions();
@@ -1704,8 +1704,8 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void createSessions() {
         if (mPaused || !mCamerasOpened || mTempHoldVideoInVideoIntent) return;
-        final int cameraId = mCurrentSceneMode.getCurrentId();
-        Log.d(TAG,"createSessions : Current SceneMode is "+mCurrentSceneMode.mode);
+        final int cameraId = getMainCameraId();
+        Log.d(TAG,"createSessions : Current SceneMode is " + mCurrentSceneMode.mode + ", " + cameraId);
         switch (mCurrentSceneMode.mode) {
             case VIDEO:
                 createSessionForVideo(cameraId);
@@ -1747,6 +1747,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private CaptureRequest.Builder getRequestBuilder(int templateType,int id, Set<String> physicalIds)
             throws CameraAccessException{
         CaptureRequest.Builder builder = null;
+        Log.d(TAG, "id is " + id);
         if (physicalIds != null){
             builder = mCameraDevice[id].createCaptureRequest(
                     templateType,physicalIds);
@@ -2413,7 +2414,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void reinit() {
-        CURRENT_ID = mCurrentSceneMode.getCurrentId();
+        CURRENT_ID = getMainCameraId();
         CURRENT_MODE = mCurrentSceneMode.mode;
         Log.d(TAG,"reinit: CURRENT_ID camera id " + CURRENT_ID);
         mSettingsManager.init();
@@ -2544,8 +2545,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private boolean setUpLocalMode(int cameraId, CameraCharacteristics characteristics,
-                                boolean[] removeList, boolean isFirstDefault, String physicalId) {
+    private boolean setUpLocalMode(int camereIdIndex, CameraCharacteristics characteristics,
+                                boolean[] removeList, boolean isFirstDefault, String cameraId) {
         Byte type = 0;
         try {
             type = characteristics.get(logical_camera_type);
@@ -2554,34 +2555,41 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         Set<String> physical_ids = characteristics.getPhysicalCameraIds();
         int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-        Log.d(TAG,"init cameraId " + cameraId + " | logical_camera_type = " + type +
-                " | physical id = " + physicalId + " | physical_ids : " + physical_ids + " | facing:" + facing);
+        Log.d(TAG,"init cameraId " + camereIdIndex + " | logical_camera_type = " + type +
+                " | physical id = " + cameraId + " | physical_ids : " + physical_ids
+                + " | facing:" + facing);
         switch (type) {
             case TYPE_DEFAULT:// default
                 removeList[CameraMode.DEFAULT.ordinal()] = false;
                 removeList[CameraMode.VIDEO.ordinal()] = false;
                 removeList[CameraMode.PRO_MODE.ordinal()] = false;
-                if (physical_ids == null && facing != CameraCharacteristics.LENS_FACING_FRONT){
-                    mSingleRearId = cameraId;
-                    Log.i(TAG,"mSingleRearId:" + mSingleRearId);
+                if (physical_ids != null && physical_ids.size() == 0 &&
+                        facing != CameraCharacteristics.LENS_FACING_FRONT){
+                    if (mSingleRearId == -1) {
+                        mSingleRearId = camereIdIndex;
+                        Log.i(TAG, "mSingleRearId:" + camereIdIndex);
+                    }
                 } else if (physical_ids != null && physical_ids.size() != 0 && MCXMODE){
-                    mLogicalId = cameraId;
-                    Log.i(TAG,"mLogicalId:" + mLogicalId);
+                    mLogicalId = camereIdIndex;
+                    Log.i(TAG,"mLogicalId:" + camereIdIndex);
                     removeList[CameraMode.RTB.ordinal()] = false;
                     if (mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId >= 0) {
                         break;
                     }
-                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId = cameraId;
+                    Log.i(TAG,"RTB rear Id:" + camereIdIndex);
+                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId = camereIdIndex;
                 }
-                if (physical_ids == null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    CaptureModule.FRONT_ID = cameraId;
-                    mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).frontCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).frontCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.HFR.ordinal()).frontCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).frontCameraId = cameraId;
+                if (physical_ids != null && physical_ids.size() == 0 &&
+                        facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    CaptureModule.FRONT_ID = camereIdIndex;
+                    Log.i(TAG,"FRONT_ID:" + camereIdIndex);
+                    mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).frontCameraId = camereIdIndex;
+                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).frontCameraId = camereIdIndex;
+                    mSceneCameraIds.get(CameraMode.HFR.ordinal()).frontCameraId = camereIdIndex;
+                    mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).frontCameraId = camereIdIndex;
                 } else {
-                    if (!isFirstDefault && physical_ids == null) {
-                        mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).auxCameraId = cameraId;
+                    if (!isFirstDefault && physical_ids != null && physical_ids.size() == 0) {
+                        mSceneCameraIds.get(CameraMode.DEFAULT.ordinal()).auxCameraId = camereIdIndex;
                         isFirstDefault = true;
                     } else {
                         isFirstDefault = false;
@@ -2611,12 +2619,12 @@ public class CaptureModule implements CameraModule, PhotoController,
             case TYPE_RTB:// RTB
                 removeList[CameraMode.RTB.ordinal()] = false;
                 if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).frontCameraId = cameraId;
+                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).frontCameraId = camereIdIndex;
                 } else {
                     if (mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId >= 0) {
                         break;
                     }
-                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId = cameraId;
+                    mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId = camereIdIndex;
                     //add default front camera id, need to change if front RTB available
                     mSceneCameraIds.get(CameraMode.RTB.ordinal()).frontCameraId = FRONT_ID;
                 }
@@ -2624,14 +2632,14 @@ public class CaptureModule implements CameraModule, PhotoController,
             case TYPE_SAT:// SAT
                 removeList[CameraMode.SAT.ordinal()] = false;
                 if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    mSceneCameraIds.get(CameraMode.SAT.ordinal()).frontCameraId = cameraId;
+                    mSceneCameraIds.get(CameraMode.SAT.ordinal()).frontCameraId = camereIdIndex;
                 } else {
                     if (mSceneCameraIds.get(CameraMode.SAT.ordinal()).rearCameraId >= 0) {
                         break;
                     }
                     // if dual camera is enabled, video rear camera will be changed to SAT
-                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).rearCameraId = cameraId;
-                    mSceneCameraIds.get(CameraMode.SAT.ordinal()).rearCameraId = cameraId;
+                    mSceneCameraIds.get(CameraMode.VIDEO.ordinal()).rearCameraId = camereIdIndex;
+                    mSceneCameraIds.get(CameraMode.SAT.ordinal()).rearCameraId = camereIdIndex;
                     //add default front camera id, need to change if front SAT available
                     mSceneCameraIds.get(CameraMode.SAT.ordinal()).frontCameraId = FRONT_ID;
                 }
@@ -2702,7 +2710,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mPreviewCaptureResult.getRequest().get(CaptureRequest.CONTROL_AE_LOCK) != Boolean.TRUE)) {
             takeZSLPictureInHAL();
         } else {
-            int cameraId = mCurrentSceneMode.getCurrentId();
+            int cameraId = getMainCameraId();
             if (takeZSLPicture(cameraId)) {
                 return;
             }
@@ -2738,7 +2746,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void takeZSLPictureInHAL() {
         Log.d(TAG, "takeHALZSLPicture");
-        captureStillPicture(mCurrentSceneMode.getCurrentId());
+        captureStillPicture(getMainCameraId());
     }
 
     public boolean isLongShotActive() {
@@ -3624,8 +3632,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
             }
             mMediaRecorder = new MediaRecorder();
-            mAutoFocusRegionSupported = mSettingsManager.isAutoFocusRegionSupported(mCurrentSceneMode.getCurrentId());
-            mAutoExposureRegionSupported = mSettingsManager.isAutoExposureRegionSupported(mCurrentSceneMode.getCurrentId());
+            mAutoFocusRegionSupported = mSettingsManager.isAutoFocusRegionSupported(getMainCameraId());
+            mAutoExposureRegionSupported = mSettingsManager.isAutoExposureRegionSupported(getMainCameraId());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -4372,12 +4380,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 Log.d(TAG, "Time out waiting to lock camera opening.");
                 throw new RuntimeException("Time out waiting to lock camera opening");
             }
-            String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
-            if(selectMode != null && selectMode.equals("single_rear_cameraid") && mSingleRearId != -1){
-                mCameraId[id] = mCameraId[mSingleRearId];
-            }else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1){
-                mCameraId[id] = mCameraId[mLogicalId];
-            }
             Log.d(TAG, "open is " + mCameraId[id] );
             manager.openCamera(mCameraId[id], mStateCallback, mCameraHandler);
         } catch (CameraAccessException e) {
@@ -4745,7 +4747,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(mCurrentSceneMode.mode == CameraMode.VIDEO){
             enableVideoButton(false);//disable the video button before media recorder is ready
         }
-        checkRTBCameraId();
+        if(!MCXMODE) {
+            checkRTBCameraId();
+        }
         if (!isBackCamera() && !frontIsAllowed()) {
             Log.d(TAG, "Current Mode " + mCurrentSceneMode.mode + "not support Front camera");
             if (!resumeFromRestartAll && mIsCloseCamera) {
@@ -4799,7 +4803,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         updateZoomSeekBarVisible();
         mUI.showRelatedIcons(mCurrentSceneMode.mode);
         if(mIsCloseCamera) {
-            openCamera(mCurrentSceneMode.getCurrentId());
+            openCamera(getMainCameraId());
         }
         String scene = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if (Integer.parseInt(scene) != SettingsManager.SCENE_MODE_UBIFOCUS_INT) {
@@ -5145,10 +5149,18 @@ public class CaptureModule implements CameraModule, PhotoController,
         y = newXY[1];
         mInTAF = true;
         mUI.onFocusStarted();
-        triggerFocusAtPoint(x, y, mCurrentSceneMode.getCurrentId());
+        triggerFocusAtPoint(x, y, getMainCameraId());
     }
 
     public int getMainCameraId() {
+        if (CaptureModule.FRONT_ID != mCurrentSceneMode.getCurrentId()) {
+            String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+            if (selectMode != null && selectMode.equals("single_rear_cameraid") && mSingleRearId != -1) {
+                return mSingleRearId;
+            } else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1) {
+                return mLogicalId;
+            }
+        }
         return mCurrentSceneMode.getCurrentId();
     }
 
@@ -5606,7 +5618,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyZoomAndUpdate() {
-        applyZoomAndUpdate(mCurrentSceneMode.getCurrentId());
+        applyZoomAndUpdate(getMainCameraId());
         mUI.updateFaceViewCameraBound(mCropRegion[getMainCameraId()]);
         mUI.updateT2TCameraBound(mCropRegion[getMainCameraId()]);
     }
@@ -8496,7 +8508,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     restartAll();
                     return;
             }
-            updatePreviewLogical |= applyPreferenceToPreview(mCurrentSceneMode.getCurrentId(),
+            updatePreviewLogical |= applyPreferenceToPreview(getMainCameraId(),
                     key, value);
             count++;
         }
@@ -8548,7 +8560,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
         if (updatePreviewLogical) {
             try {
-                int cameraId = mCurrentSceneMode.getCurrentId();
+                int cameraId = getMainCameraId();
                 if (checkSessionAndBuilder(mCaptureSession[cameraId],
                         mPreviewRequestBuilder[cameraId])) {
                     if (mCaptureSession[cameraId] instanceof CameraConstrainedHighSpeedCaptureSession) {
@@ -8629,10 +8641,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void restartAll() {
-        Log.d(TAG, "restart all");
         setCurrentSceneModeOnly(mNextModeIndex);
+        Log.d(TAG, "restart all: " + mOringalCameraId + "?=" + CURRENT_ID + "," + mNextModeIndex);
         if(mOringalCameraId == CURRENT_ID){
-            mIsCloseCamera = false;
+            //mIsCloseCamera = false;
         }else{
             mIsCloseCamera = true;
         }
@@ -9224,7 +9236,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void setCurrentSceneModeOnly(int mode) {
         mCurrentSceneMode = mSceneCameraIds.get(mode);
         mCurrentModeIndex = mode;
-        CURRENT_ID = mCurrentSceneMode.getCurrentId();
+        CURRENT_ID = getMainCameraId();
         CURRENT_MODE = mCurrentSceneMode.mode;
     }
 
