@@ -832,6 +832,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
     }
 
+    public String getNextPrepNameKey(CaptureModule.CameraMode nextMode) {
+        //preference name is org.codeaurora.snapcam_preferences_rearDEFAULT.xml
+        String facing = mPreferences.getGlobal().getString(KEY_FRONT_REAR_SWITCHER_VALUE, "rear");
+        return facing + String.valueOf(nextMode);
+    }
+
     public String getValue(String key) {
         if (mValuesMap == null) return null;
         Values values = mValuesMap.get(key);

@@ -785,7 +785,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     private CamGLRenderer mRenderer;
     private boolean mDeepPortraitMode = false;
     private boolean mIsCloseCamera = true;
-    private int mOringalCameraId;
 
     private class SelfieThread extends Thread {
         public void run() {
@@ -2431,6 +2430,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (CameraAccessException | IllegalStateException e) {
             e.printStackTrace();
         }
+    }
+
+    private void reinitSceneMode() {
+        mCurrentSceneMode = mSceneCameraIds.get(mNextModeIndex);
+        mCurrentModeIndex = mNextModeIndex;
+        CURRENT_MODE = mCurrentSceneMode.mode;
+        CURRENT_ID = mCurrentSceneMode.getNextCameraId(CURRENT_MODE);
+        Log.d(TAG, "reinitSceneMode: CURRENT_ID :" + CURRENT_ID);
+        mSettingsManager.init();
     }
 
     public void reinit() {
@@ -4901,7 +4909,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         reinit();
         Log.d(TAG, "onResume " + (mCurrentSceneMode != null ? mCurrentSceneMode.mode : "null")
                 + (resumeFromRestartAll ? " isResumeFromRestartAll" : ""));
-        mOringalCameraId = CURRENT_ID;
         if(mCurrentSceneMode.mode == CameraMode.VIDEO){
             enableVideoButton(false);//disable the video button before media recorder is ready
         }
@@ -9691,9 +9698,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void restartAll() {
-        setCurrentSceneModeOnly(mNextModeIndex);
-        Log.d(TAG, "restart all: " + mOringalCameraId + "?=" + CURRENT_ID + "," + mNextModeIndex);
-        if(mOringalCameraId == CURRENT_ID && mCameraDevice[mOringalCameraId] != null){
+        int nextCameraId = getNextScreneModeId(mNextModeIndex);
+        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId);
+        if(CURRENT_ID == nextCameraId && mCameraDevice[CURRENT_ID] != null){
             mIsCloseCamera = false;
         }else{
             mIsCloseCamera = true;
@@ -9703,6 +9710,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mUI.showPreviewCover();
         }
         onPauseAfterSuper(false);
+        reinitSceneMode();
         onResumeBeforeSuper();
         onResumeAfterSuper(true);
         setRefocusLastTaken(false);
@@ -10283,11 +10291,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    public void setCurrentSceneModeOnly(int mode) {
-        mCurrentSceneMode = mSceneCameraIds.get(mode);
-        mCurrentModeIndex = mode;
-        CURRENT_ID = getMainCameraId();
-        CURRENT_MODE = mCurrentSceneMode.mode;
+    private int getNextScreneModeId(int mode) {
+        SceneModule nextSceneModule = mSceneCameraIds.get(mode);
+        return nextSceneModule.getNextCameraId(nextSceneModule.mode);
     }
 
     public void setNextSceneMode(int index) {
@@ -10328,6 +10334,25 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             if (cameraId == -1){
                 cameraId = 0;
+            }
+            return cameraId;
+        }
+
+        public int getNextCameraId(CameraMode nextMode) {
+            int cameraId = isBackCamera() ? rearCameraId : frontCameraId;
+            cameraId = isForceAUXOn(this.mode) ? auxCameraId : cameraId;
+            if ((this.mode == CameraMode.DEFAULT || this.mode == CameraMode.VIDEO ||
+                    this.mode == CameraMode.HFR || this.mode == CameraMode.PRO_MODE)
+                    && (mSettingsManager.isDeveloperEnabled())) {
+                final SharedPreferences pref = mActivity.getSharedPreferences(
+                        ComboPreferences.getLocalSharedPreferencesName(mActivity,
+                                mSettingsManager.getNextPrepNameKey(nextMode)), Context.MODE_PRIVATE);
+                String selectMode = pref.getString(SettingsManager.KEY_SELECT_MODE, null);
+                if (selectMode != null && selectMode.equals("single_rear_cameraid") && mSingleRearId !=-1) {
+                    return mSingleRearId;
+                } else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1) {
+                    return mLogicalId;
+            }
             }
             return cameraId;
         }
