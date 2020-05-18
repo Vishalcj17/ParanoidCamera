@@ -63,6 +63,9 @@ import android.media.CameraProfile;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaCodec;
+import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaRecorder;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
@@ -6958,30 +6961,24 @@ public class CaptureModule implements CameraModule, PhotoController,
         //check if codec supports the resolution, otherwise throw toast
         int videoWidth = mProfile.videoFrameWidth;
         int videoHeight = mProfile.videoFrameHeight;
-        /*
-        List<VideoEncoderCap> videoEncoders = EncoderCapabilities.getVideoEncoders();
-        for (VideoEncoderCap videoEnc: videoEncoders) {
-            if (videoEnc.mCodec == videoEncoder) {
-                if (videoWidth > videoEnc.mMaxFrameWidth ||
-                        videoWidth < videoEnc.mMinFrameWidth ||
-                        videoHeight > videoEnc.mMaxFrameHeight ||
-                        videoHeight < videoEnc.mMinFrameHeight) {
-                    Log.e(TAG, "Selected codec " + videoEncoder +
-                            " does not support "+ videoWidth + "x" + videoHeight
-                            + " resolution");
-                    Log.e(TAG, "Codec capabilities: " +
-                            "mMinFrameWidth = " + videoEnc.mMinFrameWidth + " , " +
-                            "mMinFrameHeight = " + videoEnc.mMinFrameHeight + " , " +
-                            "mMaxFrameWidth = " + videoEnc.mMaxFrameWidth + " , " +
-                            "mMaxFrameHeight = " + videoEnc.mMaxFrameHeight);
-                    mUnsupportedResolution = true;
-                    warningToast(R.string.error_app_unsupported);
-                    return;
-                }
-                break;
+        if (DEBUG) Log.d(TAG,"mProfile.videoCodec="+mProfile.videoCodec);
+        String type = SettingTranslation.getVideoEncoderType(mProfile.videoCodec);
+        if (DEBUG) Log.d(TAG,"codec type="+type);
+        MediaCodecList allCodecs = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        MediaFormat format = MediaFormat.createVideoFormat(type,videoWidth,videoHeight);
+        try{
+            String encodeName = allCodecs.findEncoderForFormat(format);
+            if (DEBUG) Log.d(TAG,"encodeName="+encodeName);
+        } catch (IllegalArgumentException| NullPointerException e){
+            e.printStackTrace();
+            if (DEBUG) Log.d(TAG,"error="+e.getLocalizedMessage());
+            mUnsupportedResolution = true;
+        } finally {
+            if (mUnsupportedResolution) {
+                warningToast(R.string.error_app_unsupported);
+                return;
             }
         }
-        */
     }
 
     private void setMaxFileSize(long requestLimit) {
@@ -7695,6 +7692,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         int audioEncoder = -1;
         int videoEncoder = SettingTranslation
                 .getVideoEncoder(mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ENCODER));
+        if (DEBUG) Log.d(TAG,"videoEncoder="+ videoEncoder+
+                " settings="+mSettingsManager.getValue(SettingsManager.KEY_VIDEO_ENCODER));
         if (!audioSelected.equals("off")) {
             audioEncoder = SettingTranslation
                     .getAudioEncoder(mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER));
@@ -7727,6 +7726,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         mMediaRecorder.setVideoSize(mProfile.videoFrameWidth, mProfile.videoFrameHeight);
         mMediaRecorder.setVideoEncoder(videoEncoder);
+        if (DEBUG) Log.d(TAG," mMediaRecorder.setVideoEncoder="+videoEncoder);
         if (!mCaptureTimeLapse && !hfr && !mSuperSlomoCapture && (-1 != audioEncoder)) {
             mMediaRecorder.setAudioEncodingBitRate(mProfile.audioBitRate);
             mMediaRecorder.setAudioChannels(mProfile.audioChannels);
@@ -7757,6 +7757,25 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         setMaxFileSize(requestedSizeLimit);
         setOrientationHint(cameraId);
+        //check if codec supports the resolution, otherwise throw toast
+        if (DEBUG) Log.d(TAG,"mProfile.videoCodec="+mProfile.videoCodec);
+        String type = SettingTranslation.getVideoEncoderType(mProfile.videoCodec);
+        if (DEBUG) Log.d(TAG,"codec type="+type);
+        MediaCodecList allCodecs = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        MediaFormat format = MediaFormat.createVideoFormat(type,videoWidth,videoHeight);
+        try{
+            String encodeName = allCodecs.findEncoderForFormat(format);
+            if (DEBUG) Log.d(TAG,"encodeName="+encodeName);
+        } catch (IllegalArgumentException| NullPointerException e){
+            e.printStackTrace();
+            if (DEBUG) Log.d(TAG,"error="+e.getLocalizedMessage());
+            mUnsupportedResolution = true;
+        } finally {
+            if (mUnsupportedResolution) {
+                warningToast(R.string.error_app_unsupported);
+                return;
+            }
+        }
         prepareMediaRecorder();
         mMediaRecorder.setOnErrorListener(this);
         mMediaRecorder.setOnInfoListener(this);
