@@ -7048,6 +7048,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (Exception e) {
             Log.v(TAG, "resume method not implemented");
         }
+        applyZoomAndUpdate();
     }
 
     private void setEndOfStream(boolean isResume, boolean isStopRecord) {
@@ -9099,33 +9100,45 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyZoomAndUpdate(int id) {
-        if (!checkSessionAndBuilder(mCaptureSession[id], mPreviewRequestBuilder[id])) {
+        CaptureRequest.Builder captureRequest = mPreviewRequestBuilder[id];
+        Log.i(TAG,"applyZoomAndUpdate, mRecordingPausing:" + mRecordingPausing);
+        String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+        boolean isUseVideoPreview = true;
+        if (mCurrentSceneMode.mode == CameraMode.HFR ) {
+            if(selectMode != null && selectMode.equals("default")){
+                isUseVideoPreview = false;
+            }
+        }
+        if (mRecordingPausing && isUseVideoPreview) {
+            captureRequest = mVideoPreviewRequestBuilder;
+        }
+        if (!checkSessionAndBuilder(mCaptureSession[id], captureRequest)) {
             return;
         }
         if (mState[id] == STATE_PREVIEW) {
             cancelTouchFocus(id);
         }
         if (mUI.getZoomFixedSupport()) {
-            applyZoomRatio(mPreviewRequestBuilder[id], mZoomValue, id);
+            applyZoomRatio(captureRequest, mZoomValue, id);
         } else {
-            applyZoom(mPreviewRequestBuilder[id], id);
+            applyZoom(captureRequest, id);
         }
         try {
             if(id == MONO_ID && !canStartMonoPreview()) {
-                mCaptureSession[id].capture(mPreviewRequestBuilder[id]
+                mCaptureSession[id].capture(captureRequest
                         .build(), mCaptureCallback, mCameraHandler);
             } else {
                 CameraCaptureSession session = mCaptureSession[id];
                 if (session instanceof CameraConstrainedHighSpeedCaptureSession) {
                     List list = ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
-                            .createHighSpeedRequestList(mPreviewRequestBuilder[id].build());
+                            .createHighSpeedRequestList(captureRequest.build());
                     ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
                             , mCaptureCallback, mCameraHandler);
                 } else if (isSSMEnabled()) {
-                    session.setRepeatingBurst(createSSMBatchRequest(mPreviewRequestBuilder[id]),
+                    session.setRepeatingBurst(createSSMBatchRequest(captureRequest),
                             mCaptureCallback, mCameraHandler);
                 } else {
-                    mCaptureSession[id].setRepeatingRequest(mPreviewRequestBuilder[id]
+                    mCaptureSession[id].setRepeatingRequest(captureRequest
                             .build(), mCaptureCallback, mCameraHandler);
                 }
 
