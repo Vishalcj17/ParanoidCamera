@@ -6984,6 +6984,26 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void saveVideo() {
+        for (String physicalFileName : mPhysicalFileName){
+            if (physicalFileName == null)
+                continue;
+            File origFile = new File(physicalFileName);
+            if (origFile == null || !origFile.exists() || origFile.length() <= 0) {
+                Log.e(TAG, "Invalid file "+physicalFileName);
+                continue;
+            }
+            long dateTaken = System.currentTimeMillis();
+            ContentValues contentValues = new ContentValues(9);
+            contentValues.put(MediaStore.Video.Media.TITLE, origFile.getName());
+            contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, origFile.getName());
+            contentValues.put(MediaStore.Video.Media.DATE_TAKEN, dateTaken);
+            contentValues.put(MediaStore.MediaColumns.DATE_MODIFIED, dateTaken / 1000);
+            contentValues.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+            contentValues.put(MediaStore.Video.Media.DATA, physicalFileName);
+            mActivity.getMediaSaveService().addVideo(physicalFileName,
+                    0L, contentValues,
+                    mOnVideoSavedListener, mContentResolver);
+        }
         if (mVideoFileDescriptor == null) {
             File origFile = null;
             if (mVideoFilename != null){
