@@ -1312,6 +1312,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraDevice[id] = null;
             mCameraOpenCloseLock.release();
             mCamerasOpened = false;
+            mIsCloseCamera = true;
         }
 
         @Override
@@ -1337,6 +1338,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraDevice[id] = null;
             mCameraOpenCloseLock.release();
             mCamerasOpened = false;
+            mIsCloseCamera = true;
         }
 
     };
@@ -9659,8 +9661,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void restartAll() {
         setCurrentSceneModeOnly(mNextModeIndex);
         Log.d(TAG, "restart all: " + mOringalCameraId + "?=" + CURRENT_ID + "," + mNextModeIndex);
-        if(mOringalCameraId == CURRENT_ID){
-            //mIsCloseCamera = false;
+        if(mOringalCameraId == CURRENT_ID && mCameraDevice[mOringalCameraId] != null){
+            mIsCloseCamera = false;
         }else{
             mIsCloseCamera = true;
         }
