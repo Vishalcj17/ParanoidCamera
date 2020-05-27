@@ -73,6 +73,7 @@ import com.android.camera.util.SettingTranslation;
 import com.android.camera.util.AutoTestUtil;
 
 import org.codeaurora.snapcam.R;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -102,10 +103,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final int SCENE_MODE_NIGHT_INT = 5;
     public static final int SCENE_MODE_HDR_INT = 18;
 
-    public static final int TALOS_SOCID = 355;
-    public static final int MOOREA_SOCID = 365;
-    public static final int SAIPAN_SOCID = 400;
-    public static final int SM6250_SOCID = 407;
     public static final boolean DEBUG =
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_DUMP_LOG) ||
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_DUMP_ALL);
@@ -265,7 +262,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private int mFrontCamId = -1;
     private Set<String> mFilteredKeys;
     private int[] mExtendedHFRSize;//An array of pairs (fps, maxW, maxH)
-    private int mDeviceSocId = -1;
     private ArrayList<String> mPrepNameKeys;
 
     private static Map<String, Set<String>> VIDEO_ENCODER_PROFILE_TABLE = new HashMap<>();
@@ -763,35 +759,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
     }
 
-    public int getDeviceSocId() {
-        if (mDeviceSocId == -1) {
-            String filePath = "/sys/devices/soc0/soc_id";
-            File file = new File(filePath);
-            if (file.isDirectory()) {
-                Log.d(TAG, filePath + " is directory");
-            } else {
-                try {
-                    InputStream is = new FileInputStream(file);
-                    if (is != null) {
-                        InputStreamReader isr = new InputStreamReader(is);
-                        BufferedReader br = new BufferedReader(isr);
-
-                        String line;
-                        while ((line = br.readLine()) != null) {
-                            mDeviceSocId = Integer.parseInt(line);
-                        }
-                    }
-                } catch (FileNotFoundException e) {
-                    Log.d(TAG, filePath + " doesn't found!");
-                } catch (IOException e) {
-                    Log.d(TAG, filePath + " read exception, " + e.getMessage());
-                }
-            }
-        }
-        Log.d(TAG, "getDeviceSocId mDeviceSocId :" + mDeviceSocId);
-        return mDeviceSocId;
-    }
-
     public int getCurrentCameraId() {
         return mCameraId;
     }
@@ -881,6 +848,24 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 Context.MODE_PRIVATE);
         return sharedPreferences.getFloat(key, 0.5f);
     }
+
+    public JSONArray getVideoSettings() {
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            FileInputStream fs = new FileInputStream("/system/etc/videosettings.json");
+            int size = fs.available();
+            byte[] buffer = new byte[size];
+            fs.read(buffer);
+            fs.close();
+            String sJsonArray = new String(buffer, "UTF-8");
+            JSONArray jsonArray = new JSONArray(sJsonArray);
+            return jsonArray;
+        } catch (IOException | JSONException e) {
+            Log.w(TAG, "No videosettings.json.");
+            return null;
+        }
+    }
+
 
     public boolean isOverriden(String key) {
         Values values = mValuesMap.get(key);

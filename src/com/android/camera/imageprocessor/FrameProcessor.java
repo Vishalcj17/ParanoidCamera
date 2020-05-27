@@ -458,7 +458,7 @@ public class FrameProcessor {
                     }
                     if (mIsFirstIn && mIsVideoOn && isFrameListnerEnabled()) {
                         mIsFirstIn = false;
-                        mModule.startMediaRecording();
+                        mModule.startVideoRecording();
                     }
                     //End processing yvu buf
                     if (needToFeedSurface) {

@@ -38,6 +38,7 @@ import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
 import android.hardware.camera2.CameraCharacteristics;
 import android.location.Location;
+import android.media.MediaMuxer;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Handler;
@@ -63,7 +64,6 @@ import com.android.camera.CameraManager;
 import com.android.camera.CameraSettings;
 import com.android.camera.ui.RotateTextToast;
 import com.android.camera.util.IntentHelper;
-
 import org.codeaurora.snapcam.R;
 
 import java.io.Closeable;
@@ -1393,17 +1393,31 @@ public class CameraUtil {
     }
 
     public static String convertOutputFormatToMimeType(int outputFileFormat) {
-        if (outputFileFormat == MediaRecorder.OutputFormat.MPEG_4) {
+        if (PersistUtil.enableMediaRecorder()) {
+            if (outputFileFormat == MediaRecorder.OutputFormat.MPEG_4) {
+                return "video/mp4";
+            }
+            return "video/3gpp";
+        } else {
+            if (outputFileFormat == MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP) {
+                return "video/3gpp";
+            }
             return "video/mp4";
         }
-        return "video/3gpp";
     }
 
     public static String convertOutputFormatToFileExt(int outputFileFormat) {
-        if (outputFileFormat == MediaRecorder.OutputFormat.MPEG_4) {
+        if (PersistUtil.enableMediaRecorder()) {
+            if (outputFileFormat == MediaRecorder.OutputFormat.MPEG_4) {
+                return ".mp4";
+            }
+            return ".3gp";
+        } else {
+            if (outputFileFormat == MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP) {
+                return ".3gp";
+            }
             return ".mp4";
         }
-        return ".3gp";
     }
 
     /**
