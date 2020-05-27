@@ -4510,7 +4510,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(mIsCloseCamera) {
             updatePreviewSurfaceReadyState(false);
         }
-        updateMFNRText();
     }
 
     private void cancelTouchFocus() {
@@ -4815,6 +4814,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mUI.enableShutter(true);
         setProModeVisible();
         updateZoomSeekBarVisible();
+        updateMFNRText();//this must before showRelatedIcons, color filter based on mfnr
         mUI.showRelatedIcons(mCurrentSceneMode.mode);
         if(mIsCloseCamera) {
             openCamera(getMainCameraId());
