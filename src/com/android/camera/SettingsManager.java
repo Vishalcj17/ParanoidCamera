@@ -2347,6 +2347,47 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return supported;
     }
 
+    public float[] getSupportedRatioZoomRange(int cameraId) {
+        Range<Float> range = null;
+        float[] result = new float[2];
+        try {
+            range = mCharacteristics.get(cameraId).get(CameraCharacteristics
+                    .CONTROL_ZOOM_RATIO_RANGE);
+            if (range == null) {
+                return null;
+            }
+            result[0] = range.getLower();
+            result[1] = range.getUpper();
+            Log.v(TAG, " RatioZoom min :"+ result[0] + ", zoom max :" + result[1]);
+        } catch(IllegalArgumentException e) {
+            result = null;
+            Log.w(TAG, "getSupportedRatioZoomRange occurs IllegalArgumentException");
+        } catch(NoSuchFieldError e) {
+            result = null;
+            Log.w(TAG, "getSupportedRatioZoomRange NoSuchFieldError CONTROL_ZOOM_RATIO_RANGE");
+        }
+        return result;
+    }
+
+    public float[] getSupportedBokenRatioZoomRange(int cameraId) {
+        float[] result = new float[2];
+        try {
+            result = mCharacteristics.get(cameraId).get(
+                    CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_ZOOM_RATIO_RANGES);
+            if (result != null) {
+                Log.v(TAG, " boken RatioZoom min :"+ result[0] + ", zoom max :" + result[1]);
+            }
+        } catch(IllegalArgumentException e) {
+            result = null;
+            Log.w(TAG, "getSupportedBokenRatioZoomRange occurs IllegalArgumentException");
+        } catch(NoSuchFieldError e) {
+            result = null;
+            Log.w(TAG, "getSupportedBokenRatioZoomRange NoSuchFieldError " +
+                    "CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_ZOOM_RATIO_RANGES");
+        }
+        return result;
+    }
+
     private void resetIfInvalid(ListPreference pref) {
         // Set the value to the first entry if it is invalid.
         String value = pref.getValue();
