@@ -94,6 +94,7 @@ import com.android.camera.util.PersistUtil;
 import org.codeaurora.snapcam.R;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -164,7 +165,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            Log.d(TAG,"PhysicalCallback"+mIndex+" surfaceChanged width="+width+" height="+height);
+            Log.d(TAG,"PhysicalCallback "+mIndex+" surfaceChanged width="+width+" height="+height);
         }
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
@@ -292,9 +293,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private TextView mZoomSwitch;
     private int mZoomIndex = 0;
 
-    private boolean[] mSurfaceReady = {false,false,false};
-    private SurfaceView[] mPhysicalViews = new SurfaceView[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
-    private SurfaceHolder[] mPhysicalHolders = new SurfaceHolder[CaptureModule.MAX_PHYSICAL_CAMERA_COUNT];
+    private boolean[] mSurfaceReady = {false,false,false,false};
+    private SurfaceView[] mPhysicalViews = new SurfaceView[CaptureModule.MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
+    private SurfaceHolder[] mPhysicalHolders = new SurfaceHolder[CaptureModule.MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private int mPreviewCount = 0;
 
     int mPreviewWidth;
@@ -327,11 +328,12 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     private void checkSurfaceReady(){
+        mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+        Log.d(TAG,"checkSurfaceReady SurfaceReady="+ Arrays.toString(mSurfaceReady));
         for (int i = 0; i< mPreviewCount; i++){
             if (!mSurfaceReady[i])
                 return;
         }
-        Log.d(TAG,"all the surface ready");
         mModule.onPreviewUIReady();
     }
 
@@ -1842,6 +1844,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         }
     }
 
+
     public List<Surface> getPhysicalSurfaces(){
         List<Surface> previewSurfaces = new ArrayList<>();
         for (int i = 0; i< mPreviewCount; i++){
@@ -1852,32 +1855,33 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         return previewSurfaces;
     }
 
-    public void initPhysicalSurfaces(int count){
-        mPreviewCount = count + 1;
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                for (int i = 0; i< mPreviewCount; i++){
-                    mPhysicalViews[i].setVisibility(View.VISIBLE);
-                    if (mPhysicalHolders[i] != null){
-                        mPhysicalHolders[i].setFixedSize(mPreviewHeight/2,mPreviewWidth/2);
-                    }
-                }
+    public void initPhysicalSurfaces(){
+        if (mSettingsManager.getPhysicalCameraId() == null)
+            return;
+        mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+        Log.d(TAG,"initPhysicalSurfaces count="+mPreviewCount);
+
+        for (int i = 0; i< mPreviewCount; i++){
+            mPhysicalViews[i].setVisibility(View.VISIBLE);
+            if (mPhysicalHolders[i] != null){
+                mPhysicalHolders[i].setFixedSize(mPreviewHeight/2,mPreviewWidth/2);
             }
-        });
+        }
     }
 
     public void hidePhysicalSurfaces(){
-        mActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                for (SurfaceView view : mPhysicalViews){
-                    view.setVisibility(View.GONE);
-                }
+        Log.d(TAG,"hidePhysicalSurfaces");
+        for (SurfaceView view : mPhysicalViews){
+            if (view != null){
+                view.setVisibility(View.GONE);
             }
-        });
-        for (boolean b:mSurfaceReady){
-            b = false;
+
         }
+
+        for (int i=0;i < mSurfaceReady.length;i++){
+            mSurfaceReady[i] = false;
+        }
+        mPreviewCount = 0;
     }
 
     public Surface getMonoDummySurface() {

@@ -383,10 +383,28 @@
             android:defaultValue="@array/pref_camera2_physical_camera_default"
             android:key="pref_camera2_physical_camera_key"
             android:layout="@layout/preference"
-            android:summary="Choose which camera to capture JPEG"
+            android:summary="Choose which camera for preview"
             android:entries="@array/pref_camera2_physical_camera_entries"
             android:entryValues="@array/pref_camera2_physical_camera_entryvalues"
             android:title="@string/pref_camera2_physical_camera_title"/>
+
+        <MultiSelectListPreference
+            android:defaultValue="@array/pref_camera2_physical_camera_default"
+            android:key="pref_camera2_physical_camcorder_key"
+            android:layout="@layout/preference"
+            android:summary="Choose which camera for recording"
+            android:entries="@array/pref_camera2_physical_camera_entries"
+            android:entryValues="@array/pref_camera2_physical_camera_entryvalues"
+            android:title="@string/pref_camera2_physical_recording_title"/>
+
+        <MultiSelectListPreference
+            android:defaultValue="@array/pref_camera2_physical_camera_default"
+            android:key="pref_camera2_physical_jpeg_key"
+            android:layout="@layout/preference"
+            android:summary="Choose which camera to capture JPEG"
+            android:entries="@array/pref_camera2_physical_camera_entries"
+            android:entryValues="@array/pref_camera2_physical_camera_entryvalues"
+            android:title="@string/pref_camera2_physical_jpeg_title"/>
 
         <MultiSelectListPreference
             android:defaultValue="@array/pref_camera2_physical_camera_default"
@@ -425,6 +443,45 @@
             android:entryValues="@array/pref_camera2_physical_camera_entryvalues"
             android:title="@string/pref_camera2_physical_mfnr_title"/>
 
+        <ListPreference
+            android:entries="@array/pref_camera2_picturesize_entries"
+            android:entryValues="@array/pref_camera2_picturesize_entryvalues"
+            android:key="pref_camera2_physical_size_0_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_size_title"/>
+        <ListPreference
+            android:entries="@array/pref_camera2_picturesize_entries"
+            android:entryValues="@array/pref_camera2_picturesize_entryvalues"
+            android:key="pref_camera2_physical_size_1_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_size_title"/>
+        <ListPreference
+            android:entries="@array/pref_camera2_picturesize_entries"
+            android:entryValues="@array/pref_camera2_picturesize_entryvalues"
+            android:key="pref_camera2_physical_size_2_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_size_title"/>
+        <ListPreference
+            android:defaultValue="@string/pref_camera2_video_quality_default"
+            android:entries="@array/pref_camera2_video_quality_entries"
+            android:entryValues="@array/pref_camera2_video_quality_entryvalues"
+            android:key="pref_camera2_physical_quality_0_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_quality_title"/>
+        <ListPreference
+            android:defaultValue="@string/pref_camera2_video_quality_default"
+            android:entries="@array/pref_camera2_video_quality_entries"
+            android:entryValues="@array/pref_camera2_video_quality_entryvalues"
+            android:key="pref_camera2_physical_quality_1_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_quality_title"/>
+        <ListPreference
+            android:defaultValue="@string/pref_camera2_video_quality_default"
+            android:entries="@array/pref_camera2_video_quality_entries"
+            android:entryValues="@array/pref_camera2_video_quality_entryvalues"
+            android:key="pref_camera2_physical_quality_2_key"
+            android:layout="@layout/preference"
+            android:title="@string/pref_camera2_physical_quality_title"/>
         <ListPreference
             android:key="pref_camera2_zoom_key"
             android:defaultValue="@string/pref_camera_zoom_default"
