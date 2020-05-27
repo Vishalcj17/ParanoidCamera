@@ -242,6 +242,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_VIDEO_ENCODER_PROFILE = "pref_camera2_videoencoderprofile_key";
     public static final String KEY_LIVE_PREVIEW = "pref_camera2_live_preview_key";
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
+    public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
 
     private static final String TAG = "SnapCam_SettingsManager";
 
@@ -1963,8 +1964,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public boolean isFlashSupported(int id) {
         return mCharacteristics.get(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) &&
                 mValuesMap.get(KEY_FLASH_MODE) != null &&
-                CaptureModule.CURRENT_MODE != CaptureModule.CameraMode.RTB &&
-                CaptureModule.CURRENT_MODE != CaptureModule.CameraMode.SAT;
+                isSupportedForMode();
+    }
+
+	private boolean isSupportedForMode(){
+        if((CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
+                CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT)){
+            if (CaptureModule.MCXMODE){
+                return true;
+            }
+            return false;
+        }
+        return true;
     }
 
     private List<String> getSupportedPictureSize(int cameraId) {

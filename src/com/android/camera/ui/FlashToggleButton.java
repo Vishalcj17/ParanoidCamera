@@ -75,8 +75,8 @@ public class FlashToggleButton extends RotateImageView {
         if (mIndex == -1 || (redeye != null && redeye.equals("on")) ||
                 manualExposureMode.equals(userSetting) ||
                 CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.PRO_MODE ||
-                CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
-                CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT) {
+                ((CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
+                CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT) && (!CaptureModule.MCXMODE))) {
             setVisibility(GONE);
             return;
         } else {

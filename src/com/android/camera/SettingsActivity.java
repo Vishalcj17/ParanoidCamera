@@ -141,6 +141,14 @@ public class SettingsActivity extends PreferenceActivity {
                     mSettingsManager.filterVideoDuration();
                 }
                 updatePreference(SettingsManager.KEY_VIDEO_DURATION);
+            } else if (key.equals(SettingsManager.KEY_SELECT_MODE)) {
+                value = ((ListPreference) p).getValue();
+                CaptureModule.CameraMode mode = (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
+                if (value.equals("single_rear_cameraid") && mode == CaptureModule.CameraMode.VIDEO) {
+                    updateSwitchIDInModePreference(false);
+                } else {
+                    updateSwitchIDInModePreference(true);
+                }
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
             if (list != null) {
@@ -1009,6 +1017,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
+                    videoAddList.add(SettingsManager.KEY_SELECT_MODE);
                     addDeveloperOptions(developer, videoAddList);
                 }
                 removePreference(mode == VIDEO ?
@@ -1195,6 +1204,7 @@ public class SettingsActivity extends PreferenceActivity {
             e.printStackTrace();
         }
         updateZslPreference();
+        updateSwitchIDInModePreference(true);
     }
 
     private void updateStoragePreference() {
@@ -1206,6 +1216,32 @@ public class SettingsActivity extends PreferenceActivity {
         pref.setEnabled(isWrite);
         if (!isWrite) {
             updatePreference(SettingsManager.KEY_CAMERA_SAVEPATH);
+        }
+    }
+
+    private void updateSwitchIDInModePreference(boolean isShowRTB){
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        List<String> key = new ArrayList<String>(Arrays.asList("Single rear cameraID", "SAT", "Default" ));
+        List<String> value = new ArrayList<String>(Arrays.asList( "single_rear_cameraid", "sat", "default"));
+        boolean isBack = false;
+
+        if (pref != null) {
+            CaptureModule.CameraMode mode =
+                    (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
+            if (mode == CaptureModule.CameraMode.VIDEO && isShowRTB) {
+                key.add("RTB");
+                value.add("rtb");
+            }
+            pref.setEntries(key.toArray(new CharSequence[key.size()]));
+            pref.setEntryValues(value.toArray(new CharSequence[value.size()]));
+            int idx = pref.findIndexOfValue(pref.getValue());;
+            if (idx < 0 ) {
+                idx = 0;
+            }
+            pref.setValueIndex(idx);
+            String cameraValue = mSettingsManager.getValue(SettingsManager.KEY_FRONT_REAR_SWITCHER_VALUE);
+            if (cameraValue != null && cameraValue.equals("rear")) isBack = true;
+            pref.setEnabled(CaptureModule.MCXMODE && isBack);
         }
     }
 
