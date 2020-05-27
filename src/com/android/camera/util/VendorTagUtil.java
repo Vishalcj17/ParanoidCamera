@@ -71,6 +71,12 @@ public class VendorTagUtil {
     private static CaptureRequest.Key<Float> TONE_MAPPING_FOURTH_TONE =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.tmcusercontrol.fourth_tone_anchor", Float.class);
 
+    // Session Parameters
+    private static final CaptureRequest.Key<Integer> shdr_enable =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableSHDR", Integer.class);
+    private static final CaptureRequest.Key<Integer> mfhdr_enable =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableMFHDR", Integer.class);
+
     private static final int MANUAL_WB_DISABLE_MODE = 0;
     private static final int MANUAL_WB_CCT_MODE = 1;
     private static final int MANUAL_WB_GAINS_MODE = 2;
@@ -231,6 +237,18 @@ public class VendorTagUtil {
         }catch(CameraAccessException exception) {
             exception.printStackTrace();
             return false;
+        }
+    }
+
+    public static void setSHDRMode(CaptureRequest.Builder builder, int enable) {
+        if (isSupported(builder, shdr_enable)) {
+            builder.set(shdr_enable, enable);
+        }
+    }
+
+    public static void setMFHDRMode(CaptureRequest.Builder builder, int enable) {
+        if (isSupported(builder, mfhdr_enable)) {
+            builder.set(mfhdr_enable, enable);
         }
     }
 }

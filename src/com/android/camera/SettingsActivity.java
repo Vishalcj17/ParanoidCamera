@@ -965,6 +965,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FACIAL_CONTOUR);
                 add(SettingsManager.KEY_ZSL);
                 add(SettingsManager.KEY_TONE_MAPPING);
+                add(SettingsManager.KEY_BURST_LIMIT);
             }
         };
         final ArrayList<String> proModeOnlyList = new ArrayList<String>() {
@@ -1015,6 +1016,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
+                        videoAddList.add(SettingsManager.KEY_SHDR);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
