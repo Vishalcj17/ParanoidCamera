@@ -37,6 +37,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -2370,13 +2371,26 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     public float[] getSupportedBokenRatioZoomRange(int cameraId) {
+        Range<Float> range = null;
         float[] result = new float[2];
         try {
-            result = mCharacteristics.get(cameraId).get(
-                    CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_ZOOM_RATIO_RANGES);
-            if (result != null) {
-                Log.v(TAG, " boken RatioZoom min :"+ result[0] + ", zoom max :" + result[1]);
+            Capability[] extendedSceneModeCaps = mCharacteristics.get(cameraId).get(
+                    CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_CAPABILITIES);
+            if (extendedSceneModeCaps == null) {
+                return null;
             }
+            for (Capability cap : extendedSceneModeCaps) {
+                int mode = cap.getMode();
+                if (mode == CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_CONTINUOUS) {
+                    range = cap.getZoomRatioRange();
+                }
+            }
+            if (range == null) {
+                return null;
+            }
+            result[0] = range.getLower();
+            result[1] = range.getUpper();
+            Log.v(TAG, " boken RatioZoom min :" + result[0] + ", zoom max :" + result[1]);
         } catch(IllegalArgumentException e) {
             result = null;
             Log.w(TAG, "getSupportedBokenRatioZoomRange occurs IllegalArgumentException");
