@@ -1184,6 +1184,8 @@ public class SettingsActivity extends PreferenceActivity {
             String videoSizeTitle = getResources().getString(
                     R.string.pref_camera2_physical_quality_title);
             for (String id : physicalIds){
+                if (i >= CaptureModule.PHYSICAL_CAMERA_COUNT)
+                    break;
                 ListPreference photo = (ListPreference)
                         findPreference(SettingsManager.KEY_PHYSICAL_SIZE[i]);
                 if (photo != null){

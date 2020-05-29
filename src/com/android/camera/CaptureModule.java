@@ -4701,6 +4701,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (ids != null) {
             int i = 0;
             for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
                 String pictureSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_SIZE[i]);
                 if (pictureSize != null){
                     mPhysicalSizes[i] = parsePictureSize(pictureSize);
@@ -4731,21 +4733,12 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updatePhysicalVideoSize(){
-//        for (int i = 0; i< PHYSICAL_CAMERA_COUNT ; i++){
-//            String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
-//            if (videoSize != null){
-//                mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
-//                Log.d(TAG,"set Physical Video Size i="+i+" size="+
-//                        mPhysicalVideoSizes[i] .toString());
-//            } else {
-//                mPhysicalVideoSizes[i] = mVideoSize;
-//            }
-//        }
-
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         if (ids != null) {
             int i = 0;
             for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
                 String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
                 if (videoSize != null){
                     mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
