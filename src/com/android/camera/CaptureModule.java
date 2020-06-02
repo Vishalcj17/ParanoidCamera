@@ -483,6 +483,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     // Session Parameters vendorTag
     public static final CaptureRequest.Key<Integer> earlyPCR =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.numPCRsBeforeStreamOn", Integer.class);
+    public static final CaptureRequest.Key<Integer> mcxMasterCb =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableMCXMasterCb", Integer.class);
 
     private static final CaptureResult.Key<Byte> is_depth_focus =
             new CaptureResult.Key<>("org.quic.camera.isDepthFocus.isDepthFocus", byte.class);
@@ -4405,6 +4407,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_CONTINUOUS);
         }
         applySHDR(builder);
+        if(CURRENT_MODE == CameraMode.DEFAULT && MCXMODE){
+            Log.i(TAG,"set bokeh mode for captureBuilder");
+            applyMcxMasterCb(builder);
+        }
     }
 
     private void applyCommonSettings(CaptureRequest.Builder builder, int id) {
@@ -8389,6 +8395,18 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             request.set(CaptureModule.earlyPCR, 1);
         } catch (IllegalArgumentException e) {
+        }
+    }
+
+    private void applyMcxMasterCb(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_MASTRT_CB);
+        if (value != null) {
+            int intValue = Integer.parseInt(value);
+            try {
+                request.set(CaptureModule.mcxMasterCb, intValue);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "hal no vendorTag : " + mcxMasterCb);
+            }
         }
     }
 
