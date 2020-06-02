@@ -1031,7 +1031,9 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
                 add(SettingsManager.KEY_QCFA);
                 add(SettingsManager.KEY_FACE_DETECTION_MODE);
-                add(SettingsManager.KEY_BSGC_DETECTION);
+                add(SettingsManager.KEY_FD_SMILE);
+                add(SettingsManager.KEY_FD_GAZE);
+                add(SettingsManager.KEY_FD_BLINK);
                 add(SettingsManager.KEY_FACIAL_CONTOUR);
                 add(SettingsManager.KEY_ZSL);
                 add(SettingsManager.KEY_TONE_MAPPING);
@@ -1082,7 +1084,9 @@ public class SettingsActivity extends PreferenceActivity {
                     videoAddList.addAll(videoOnlyList);
                     videoAddList.add(SettingsManager.KEY_ANTI_BANDING_LEVEL);
                     if (mode == VIDEO) {
-                        videoAddList.add(SettingsManager.KEY_BSGC_DETECTION);
+                        videoAddList.add(SettingsManager.KEY_FD_SMILE);
+                        videoAddList.add(SettingsManager.KEY_FD_GAZE);
+                        videoAddList.add(SettingsManager.KEY_FD_BLINK);
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);

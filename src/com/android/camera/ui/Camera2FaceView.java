@@ -72,19 +72,25 @@ public class Camera2FaceView extends FaceView {
     };
     private boolean mFacePointsEnable = false;
     private boolean mFacialContourEnable = false;
-    private boolean mBsgcEnable = false;
+    private boolean mFdSmileEnable = false;
+    private boolean mFdGazeEnable = false;
+    private boolean mFdBlinkEnable = false;
 
     public Camera2FaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
     public void initMode() {
-        mBsgcEnable = "enable".equals(SettingsManager.getInstance().getValue(
-                SettingsManager.KEY_BSGC_DETECTION));
         mFacialContourEnable = "enable".equals(SettingsManager.getInstance().getValue(
                 SettingsManager.KEY_FACIAL_CONTOUR));
         mFacePointsEnable = "2".equals(SettingsManager.getInstance().getValue(
                 SettingsManager.KEY_FACE_DETECTION_MODE));
+        mFdSmileEnable = "enable".equals(SettingsManager.getInstance().getValue(
+                SettingsManager.KEY_FD_SMILE));
+        mFdGazeEnable = "enable".equals(SettingsManager.getInstance().getValue(
+                SettingsManager.KEY_FD_GAZE));
+        mFdBlinkEnable = "enable".equals(SettingsManager.getInstance().getValue(
+                SettingsManager.KEY_FD_BLINK));
     }
 
     public void setCameraBound(Rect cameraBound) {
@@ -227,7 +233,7 @@ public class Camera2FaceView extends FaceView {
                 mRect.offset(dx, dy);
                 canvas.drawRect(mRect, mPaint);
 
-                if (mBsgcEnable && i < extendFaceSize &&
+                if (i < extendFaceSize &&
                         mExFaces[i] != null) {
                     ExtendedFace exFace = mExFaces[i];
                     Face face = mFaces[i];
@@ -256,7 +262,7 @@ public class Camera2FaceView extends FaceView {
                         }
                         bsgcTranslateMatrix.mapPoints(point);
                         mMatrix.mapPoints (point);
-                        if (exFace.getLeyeBlink() >= blink_threshold) {
+                        if (mFdBlinkEnable && exFace.getLeyeBlink() >= blink_threshold) {
                             canvas.drawLine(point[0]+ dx, point[1]+ dy,
                                     point[2]+ dx, point[3]+ dy, mPaint);
                         }
@@ -276,7 +282,7 @@ public class Camera2FaceView extends FaceView {
                         }
                         bsgcTranslateMatrix.mapPoints(point);
                         mMatrix.mapPoints (point);
-                        if (exFace.getReyeBlink() >= blink_threshold) {
+                        if (mFdBlinkEnable && exFace.getReyeBlink() >= blink_threshold) {
                             //Add offset to the points if the rect has an offset
                             canvas.drawLine(point[0] + dx, point[1] + dy,
                                     point[2] +dx, point[3] +dy, mPaint);
@@ -314,7 +320,7 @@ public class Camera2FaceView extends FaceView {
                                                         180.0*Math.PI)) *
                                         (-length) + 0.5);
 
-                        if (exFace.getLeyeBlink() < blink_threshold) {
+                        if (mFdGazeEnable && exFace.getLeyeBlink() < blink_threshold) {
                             if ((mDisplayRotation == 90) ||
                                     (mDisplayRotation == 270)) {
                                 point[0] = face.getLeftEyePosition().x;
@@ -333,7 +339,7 @@ public class Camera2FaceView extends FaceView {
                                     point[2] + dx, point[3] +dy, mPaint);
                         }
 
-                        if (exFace.getReyeBlink() < blink_threshold) {
+                        if (mFdGazeEnable && exFace.getReyeBlink() < blink_threshold) {
                             if ((mDisplayRotation == 90) ||
                                     (mDisplayRotation == 270)) {
                                 point[0] = face.getRightEyePosition().x;
@@ -353,7 +359,7 @@ public class Camera2FaceView extends FaceView {
                         }
                     }
 
-                    if (face.getMouthPosition() != null) {
+                    if (mFdSmileEnable && face.getMouthPosition() != null) {
                         Log.e(TAG, "smile: " + exFace.getSmileDegree() + "," +
                                 exFace.getSmileConfidence());
                         if (exFace.getSmileDegree() < smile_threashold_no_smile) {

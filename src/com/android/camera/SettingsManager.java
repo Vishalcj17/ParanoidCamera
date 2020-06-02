@@ -234,7 +234,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_STATS_VISUALIZER_VALUE = "pref_camera2_stats_visualizer_key";
 
     public static final HashMap<String, Integer> KEY_ISO_INDEX = new HashMap<String, Integer>();
-    public static final String KEY_BSGC_DETECTION = "pref_camera2_bsgc_key";
+    public static final String KEY_FD_SMILE = "pref_camera2_fd_smile_key";
+    public static final String KEY_FD_GAZE = "pref_camera2_fd_gaze_key";
+    public static final String KEY_FD_BLINK = "pref_camera2_fd_blink_key";
     public static final String KEY_FACIAL_CONTOUR = "pref_camera2_facial_contour_key";
     public static final String KEY_FACE_DETECTION_MODE = "pref_camera2_face_detection_mode";
     public static final String KEY_ZSL = "pref_camera2_zsl_key";
@@ -1092,7 +1094,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference hdr = mPreferenceGroup.findPreference(KEY_HDR);
         ListPreference zoom = mPreferenceGroup.findPreference(KEY_ZOOM);
         ListPreference qcfa = mPreferenceGroup.findPreference(KEY_QCFA);
-        ListPreference bsgc = mPreferenceGroup.findPreference(KEY_BSGC_DETECTION);
+        ListPreference fd_smile = mPreferenceGroup.findPreference(KEY_FD_SMILE);
+        ListPreference fd_gaze = mPreferenceGroup.findPreference(KEY_FD_GAZE);
+        ListPreference fd_blink = mPreferenceGroup.findPreference(KEY_FD_BLINK);
         ListPreference pictureFormat = mPreferenceGroup.findPreference(KEY_PICTURE_FORMAT);
         ListPreference faceDetectionMode = mPreferenceGroup.findPreference(KEY_FACE_DETECTION_MODE);
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
@@ -1130,11 +1134,15 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
-        if (bsgc != null) {
+        if (fd_smile != null && fd_gaze != null && fd_blink != null) {
             if (!isBsgcAvailable(mCameraId)) {
-                removePreference(mPreferenceGroup, KEY_BSGC_DETECTION);
+                removePreference(mPreferenceGroup, KEY_FD_SMILE);
+                removePreference(mPreferenceGroup, KEY_FD_GAZE);
+                removePreference(mPreferenceGroup, KEY_FD_BLINK);
                 removePreference(mPreferenceGroup, KEY_FACIAL_CONTOUR);
-                mFilteredKeys.add(bsgc.getKey());
+                mFilteredKeys.add(fd_smile.getKey());
+                mFilteredKeys.add(fd_gaze.getKey());
+                mFilteredKeys.add(fd_blink.getKey());
                 mFilteredKeys.add(KEY_FACIAL_CONTOUR);
             }
         }
@@ -1196,8 +1204,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (frontRearSwitcherPref != null && (!mIsFrontCameraPresent)) {
             removePreference(mPreferenceGroup, KEY_FRONT_REAR_SWITCHER_VALUE);
         }
-
         if (pictureSize != null) {
+
             if (filterUnsupportedOptions(pictureSize, getSupportedPictureSize(cameraId))) {
                 mFilteredKeys.add(pictureSize.getKey());
             } else {

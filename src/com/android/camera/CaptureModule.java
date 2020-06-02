@@ -1606,7 +1606,23 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private boolean isBsgcDetecionOn() {
-        String value = mSettingsManager.getValue(SettingsManager.KEY_BSGC_DETECTION);
+        return  isFdSmileOn() || isFdGazeOn() || isFdBlinkOn();
+    }
+
+    private boolean isFdSmileOn(){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_FD_SMILE);
+        if (value == null) return false;
+        return  value.equals("enable");
+    }
+
+    private boolean isFdGazeOn(){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_FD_GAZE);
+        if (value == null) return false;
+        return  value.equals("enable");
+    }
+
+    private boolean isFdBlinkOn(){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_FD_BLINK);
         if (value == null) return false;
         return  value.equals("enable");
     }
@@ -5458,12 +5474,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                 for (int i = 0; i < size; i++) {
                     ExtendedFace tmp = new ExtendedFace(i);
                     try {
-                        tmp.setBlinkDetected(blinkDetectedArray[i]);
-                        tmp.setBlinkDegree(blinkDegreesArray[2 * i], blinkDegreesArray[2 * i + 1]);
-                        tmp.setGazeDirection(gazeDirectionArray[3 * i], gazeDirectionArray[3 * i + 1], gazeDirectionArray[3 * i + 2]);
-                        tmp.setGazeAngle(gazeAngleArray[i]);
                         tmp.setSmileDegree(smileDegreeArray[i]);
                         tmp.setSmileConfidence(smileConfidenceArray[i]);
+                        tmp.setGazeDirection(gazeDirectionArray[3 * i], gazeDirectionArray[3 * i + 1], gazeDirectionArray[3 * i + 2]);
+                        tmp.setGazeAngle(gazeAngleArray[i]);
+                        tmp.setBlinkDetected(blinkDetectedArray[i]);
+                        tmp.setBlinkDegree(blinkDegreesArray[2 * i], blinkDegreesArray[2 * i + 1]);
                     } catch (ArrayIndexOutOfBoundsException e) {}
                     extendedFaces[i] = tmp;
                 }
@@ -9223,8 +9239,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void applyFaceDetection(CaptureRequest.Builder request) {
         String value = mSettingsManager.getValue(SettingsManager.KEY_FACE_DETECTION);
         String mode = mSettingsManager.getValue(SettingsManager.KEY_FACE_DETECTION_MODE);
-        String bsgc = mSettingsManager.getValue(SettingsManager.KEY_BSGC_DETECTION);
         String facialContour = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
+        boolean bsgc = isBsgcDetecionOn();
         if (value != null) {
             try {
                 boolean FdEnable = value.equals("on");
@@ -9239,9 +9255,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                 request.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
                         modeValue);
 
-                if (bsgc != null) {
+                if (bsgc) {
                     final byte bsgc_enable;
-                    if (bsgc.equals("enable") && FdEnable) {
+                    if (FdEnable) {
                         bsgc_enable = 1;
                         request.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
                                 CaptureRequest.STATISTICS_FACE_DETECT_MODE_FULL);
