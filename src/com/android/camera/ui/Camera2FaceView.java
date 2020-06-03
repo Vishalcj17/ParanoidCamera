@@ -81,7 +81,7 @@ public class Camera2FaceView extends FaceView {
     }
 
     public void initMode() {
-        mFacialContourEnable = "enable".equals(SettingsManager.getInstance().getValue(
+        mFacialContourEnable = !"disable".equals(SettingsManager.getInstance().getValue(
                 SettingsManager.KEY_FACIAL_CONTOUR));
         mFacePointsEnable = "2".equals(SettingsManager.getInstance().getValue(
                 SettingsManager.KEY_FACE_DETECTION_MODE));

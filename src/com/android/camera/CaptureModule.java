@@ -409,6 +409,12 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static CaptureResult.Key<int[]> contourPoints =
             new CaptureResult.Key<>("org.codeaurora.qcamera3.stats.contours",
                     int[].class);
+    public static CaptureResult.Key<int[]> contourPointsExtend =
+            new CaptureResult.Key<>("org.codeaurora.qcamera3.stats.contour_results",
+                    int[].class);
+    public static CaptureRequest.Key<Byte> facialContourVersion =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_version",
+                    Byte.class);
     public static CaptureRequest.Key<Byte> facialContourEnable =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_enable",
                     Byte.class);
@@ -1630,7 +1636,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean isFacialContourOn() {
         String value = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
         if (value == null) return false;
-        return  value.equals("enable");
+        return  !value.equals("disable");
     }
 
     private boolean isFacePointOn() {
@@ -5485,7 +5491,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
             }
             if (contourEnable || facePointEnable) {
-                int[] contourPoints = captureResult.get(CaptureModule.contourPoints);
+                String contourMode = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
+                int[] contourPoints = null;
+                if ("0".equals(contourMode)) {
+                    contourPoints = captureResult.get(CaptureModule.contourPoints);
+                } else if ("1".equals(contourMode)) {
+                    contourPoints = captureResult.get(CaptureModule.contourPointsExtend);
+                }
                 if (BSGC_DEBUG)
                     Log.d(BSGC_TAG,"contourPoints="+Arrays.toString(contourPoints));
                 int[] landmarkPoints = null; //captureResult.get(CaptureResult.STATISTICS_FACE_LANDMARKS);
@@ -9271,12 +9283,22 @@ public class CaptureModule implements CameraModule, PhotoController,
 
                 if (facialContour != null) {
                     final byte facialContour_enable;
-                    if (facialContour.equals("enable") && FdEnable) {
-                        facialContour_enable = 1;
-                    } else {
-                        facialContour_enable = 0;
+                    if (FdEnable) {
+                        if ("0".equals(facialContour)) {
+                            facialContour_enable = 1;
+                            request.set(CaptureModule.facialContourEnable, facialContour_enable);
+                        } else if ("1".equals(facialContour)) {
+                            byte facialContour_version = 1;
+                            facialContour_enable = 1;
+                            request.set(CaptureModule.facialContourVersion, facialContour_version);
+                            request.set(CaptureModule.facialContourEnable, facialContour_enable);
+                        } else {
+                            facialContour_enable = 0;
+                            request.set(CaptureModule.facialContourEnable, facialContour_enable);
+                            request.set(CaptureModule.facialContourVersion, facialContour_enable);
+                        }
                     }
-                    request.set(CaptureModule.facialContourEnable, facialContour_enable);
+
                 }
             } catch (IllegalArgumentException e) {
             }
