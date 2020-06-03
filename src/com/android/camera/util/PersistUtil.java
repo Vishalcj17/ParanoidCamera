@@ -72,8 +72,8 @@ public class PersistUtil {
             getInt("persist.sys.camera.focus_delay", 5000);
     private static final int PERSIST_CAMERA_DEBUG =
             getInt("persist.sys.camera.debug", 0);
-    private static final boolean PERSIST_CAMERA_BSGC_DEBUG =
-            getBoolean("persist.sys.camera.bsgc.debug", false);
+    private static final boolean PERSIST_CAMERA_FD_DEBUG =
+            getBoolean("persist.sys.camera.fd.debug", false);
     private static final int PERSIST_CAMERA_DEV_DEBUG_OPTION =
             getInt("persist.sys.camera.devoption.debug", 0);
     private static final String PERSIST_CAMERA_STILLMORE_BRCOLR =
@@ -260,8 +260,8 @@ public class PersistUtil {
         return PERSIST_CAMERA_DEBUG;
     }
 
-    public static boolean getBsgcebug(){
-        return PERSIST_CAMERA_BSGC_DEBUG;
+    public static boolean getFdDebug(){
+        return PERSIST_CAMERA_FD_DEBUG;
     }
 
     public static int getDevOptionLevel() {

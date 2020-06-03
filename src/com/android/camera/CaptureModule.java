@@ -294,8 +294,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_VIDEO);
     private static final boolean DEBUG_MEDIACODEC =
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_MEDIACODEC);
-    private static final boolean BSGC_DEBUG = PersistUtil.getBsgcebug();
-    private static final String BSGC_TAG = "BSGC";
+    private static final boolean FD_DEBUG = PersistUtil.getFdDebug();
+    private static final String FD_TAG = "SnapCam_FD";
 
     private static final String HFR_RATE = PersistUtil.getHFRRate();
 
@@ -1008,8 +1008,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             int id = (int) partialResult.getRequest().getTag();
             if (id == getMainCameraId()) {
                 Face[] faces = partialResult.get(CaptureResult.STATISTICS_FACES);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"onCaptureProgressed Detected Face size = " + Integer.toString(faces == null? 0 : faces.length));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"onCaptureProgressed Detected Face size = " + Integer.toString(faces == null? 0 : faces.length));
                 if (faces != null && mSettingsManager.isFDRenderingAtPreview()){
                     if (isBsgcDetecionOn() || isFacialContourOn() || isFacePointOn()){
                         updateFaceView(faces, getBsgcInfo(partialResult, faces.length));
@@ -1031,8 +1031,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 updateAWBCCTAndgains(result);
                 updateAECGainAndExposure(result);
                 Face[] faces = result.get(CaptureResult.STATISTICS_FACES);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"onCaptureCompleted Detected Face size = " + Integer.toString(faces == null? 0 : faces.length));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"onCaptureCompleted Detected Face size = " + Integer.toString(faces == null? 0 : faces.length));
                 if (faces != null && mSettingsManager.isFDRenderingAtPreview()){
                     if (isBsgcDetecionOn() || isFacialContourOn() || isFacePointOn()){
                         updateFaceView(faces, getBsgcInfo(result, faces.length));
@@ -5449,8 +5449,8 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private ExtendedFace[] getBsgcInfo(CaptureResult captureResult, int size) {
         if (captureResult == null || size == 0) {
-            if(BSGC_DEBUG)
-                Log.d(BSGC_TAG,"extendface size ="+size);
+            if(FD_DEBUG)
+                Log.d(FD_TAG,"extendface size ="+size);
             return null;
         }
         ExtendedFace[] extendedFaces = new ExtendedFace[size];
@@ -5460,23 +5460,23 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             if (bsgEnable) {
                 byte[] blinkDetectedArray = captureResult.get(blinkDetected);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"blinkDetectedArray="+Arrays.toString(blinkDetectedArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"blinkDetectedArray="+Arrays.toString(blinkDetectedArray));
                 byte[] blinkDegreesArray = captureResult.get(blinkDegree);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"blinkDegreesArray="+Arrays.toString(blinkDegreesArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"blinkDegreesArray="+Arrays.toString(blinkDegreesArray));
                 int[] gazeDirectionArray = captureResult.get(gazeDirection);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"gazeDirectionArray="+Arrays.toString(gazeDirectionArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"gazeDirectionArray="+Arrays.toString(gazeDirectionArray));
                 byte[] gazeAngleArray = captureResult.get(gazeAngle);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"gazeAngleArray="+Arrays.toString(gazeAngleArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"gazeAngleArray="+Arrays.toString(gazeAngleArray));
                 byte[] smileDegreeArray = captureResult.get(smileDegree);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"smileDegreeArray="+Arrays.toString(smileDegreeArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"smileDegreeArray="+Arrays.toString(smileDegreeArray));
                 byte[] smileConfidenceArray = captureResult.get(smileConfidence);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"smileConfidenceArray="+Arrays.toString(smileConfidenceArray));
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"smileConfidenceArray="+Arrays.toString(smileConfidenceArray));
                 for (int i = 0; i < size; i++) {
                     ExtendedFace tmp = new ExtendedFace(i);
                     try {
@@ -5493,16 +5493,32 @@ public class CaptureModule implements CameraModule, PhotoController,
             if (contourEnable || facePointEnable) {
                 String contourMode = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
                 int[] contourPoints = null;
+                String contourVersion = null;
                 if ("0".equals(contourMode)) {
+                    contourVersion = "V0";
                     contourPoints = captureResult.get(CaptureModule.contourPoints);
                 } else if ("1".equals(contourMode)) {
+                    contourVersion = "V1";
                     contourPoints = captureResult.get(CaptureModule.contourPointsExtend);
                 }
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"contourPoints="+Arrays.toString(contourPoints));
-                int[] landmarkPoints = null; //captureResult.get(CaptureResult.STATISTICS_FACE_LANDMARKS);
-                if (BSGC_DEBUG)
-                    Log.d(BSGC_TAG,"landmarkPoints="+Arrays.toString(landmarkPoints));
+
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"version="+ contourVersion +
+                            " contourPoints="+Arrays.toString(contourPoints));
+                //int[] landmarkPoints = captureResult.get(CaptureResult.STATISTICS_FACE_LANDMARKS);
+                Face[] faces = captureResult.get(CaptureResult.STATISTICS_FACES);
+                int[] landmarkPoints = new int[6 * faces.length];
+                for (int i = 0 ; i < faces.length; i++){
+                    landmarkPoints[6*i] = faces[i].getLeftEyePosition().x;
+                    landmarkPoints[6*i + 1] = faces[i].getLeftEyePosition().y;
+                    landmarkPoints[6*i + 2] = faces[i].getRightEyePosition().x;
+                    landmarkPoints[6*i + 3] = faces[i].getRightEyePosition().y;
+                    landmarkPoints[6*i + 4] = faces[i].getMouthPosition().x;
+                    landmarkPoints[6*i + 5] = faces[i].getMouthPosition().y;
+                }
+                if (FD_DEBUG)
+                    Log.d(FD_TAG,"landmarkPoints="+Arrays.toString(landmarkPoints));
+
                 ExtendedFace tmp;
                 if (extendedFaces[0] == null) {
                     tmp = new ExtendedFace(0);
@@ -5524,6 +5540,13 @@ public class CaptureModule implements CameraModule, PhotoController,
         mExFaces = extendedFaces;
         if (faces != null) {
             if (faces.length != 0) {
+                if (FD_DEBUG){
+                    for (int i = 0; i < faces.length; i++){
+                        if (faces[i] != null){
+                            Log.d(FD_TAG,"face i="+i+" ROI="+faces[i].getBounds().toString());
+                        }
+                    }
+                }
                 mStickyFaces = faces;
                 mStickyExFaces = extendedFaces;
             }
