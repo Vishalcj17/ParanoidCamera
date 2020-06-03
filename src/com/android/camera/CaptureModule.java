@@ -6996,7 +6996,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             warningToast(R.string.error_app_unsupported_profile);
             throw new IllegalArgumentException("error_app_unsupported_profile");
         }
-        mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+        if (PersistUtil.enableMediaRecorder()) {
+            mProfile.fileFormat = MediaRecorder.OutputFormat.MPEG_4;
+        } else {
+            mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+        }
         updateHFRSetting();
     }
 
@@ -7499,7 +7503,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         String encoderSelected = mSettingsManager.getValue(SettingsManager.KEY_AUDIO_ENCODER);
         mProfile.audioCodec  = SettingTranslation.getAudioEncoder(encoderSelected);
         if (mProfile.audioCodec == MediaRecorder.AudioEncoder.AMR_NB) {
-            mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP;
+            if (!PersistUtil.enableMediaRecorder()) {
+                mProfile.fileFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP;
+            }
         }
         String encoder = getEncoderFormatAudio(encoderSelected);
         mAudioFormat = MediaFormat.createAudioFormat(encoder, mProfile.audioSampleRate,
