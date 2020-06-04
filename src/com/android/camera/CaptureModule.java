@@ -4616,6 +4616,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             closeCamera();
             mUI.showPreviewCover();
             mUI.hideSurfaceView();
+        }else{
+            closeProcessors();
         }
         resetAudioMute();
         mUI.releaseSoundPool();
