@@ -8033,7 +8033,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (IOException e) {
             Log.e(TAG, "prepare failed for " + mVideoFilename, e);
             releaseMediaRecorder();
-            throw new RuntimeException(e);
+            quitVideoToPhotoWithError(e.getMessage());
         }
     }
 
