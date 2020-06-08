@@ -192,7 +192,7 @@
         android:visibility="gone">
         <TextView
             android:id="@+id/zoom_value_text"
-            android:layout_width="30dip"
+            android:layout_width="50dip"
             android:layout_height="30dip"
             android:textSize="14dip"
             android:layout_gravity="center_horizontal"
