@@ -3719,14 +3719,35 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
 
+    private int getIndexByPhysicalId(String id){
+        Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        int index = 0;
+        Iterator<String> iterator = ids.iterator();
+        while (index < ids.size()){
+            if(id.equals(iterator.next())){
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+
     private void setUpPhysicalOutput(){
         Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         if (jpeg_ids != null) {
             int i = 0;
             for (String id : jpeg_ids){
-                mPhysicalJpegReader[i] = ImageReader.newInstance(mPhysicalSizes[i].getWidth(),
-                        mPhysicalSizes[i].getHeight(),ImageFormat.JPEG,3);
+                int index = getIndexByPhysicalId(id);
+                Size size;
+                if (index != -1){
+                    size = mPhysicalSizes[index];
+                } else {
+                    size = mPictureSize;
+                }
+                mPhysicalJpegReader[i] = ImageReader.newInstance(size.getWidth(),
+                        size.getHeight(),ImageFormat.JPEG,3);
                 PhysicalImageListener jpegListener = new PhysicalImageListener() {
                     @Override
                     public void onImageAvailable(ImageReader reader) {
@@ -3756,8 +3777,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (yuv_ids != null){
             int i =0;
             for (String id:yuv_ids){
-                mPhysicalYuvReader[i] = ImageReader.newInstance(mPhysicalSizes[i].getWidth(),
-                        mPhysicalSizes[i].getHeight(),ImageFormat.YUV_420_888,3);
+                int index = getIndexByPhysicalId(id);
+                Size size;
+                if (index != -1){
+                    size = mPhysicalSizes[index];
+                } else {
+                    size = mPictureSize;
+                }
+                mPhysicalYuvReader[i] = ImageReader.newInstance(size.getWidth(),
+                        size.getHeight(),ImageFormat.YUV_420_888,3);
                 PhysicalImageListener yuvListener = new PhysicalImageListener() {
                     @Override
                     public void onImageAvailable(ImageReader reader) {
@@ -4694,6 +4722,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (ids != null) {
             int i = 0;
             for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
                 String pictureSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_SIZE[i]);
                 if (pictureSize != null){
                     mPhysicalSizes[i] = parsePictureSize(pictureSize);
@@ -4724,21 +4754,12 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updatePhysicalVideoSize(){
-//        for (int i = 0; i< PHYSICAL_CAMERA_COUNT ; i++){
-//            String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
-//            if (videoSize != null){
-//                mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
-//                Log.d(TAG,"set Physical Video Size i="+i+" size="+
-//                        mPhysicalVideoSizes[i] .toString());
-//            } else {
-//                mPhysicalVideoSizes[i] = mVideoSize;
-//            }
-//        }
-
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         if (ids != null) {
             int i = 0;
             for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
                 String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
                 if (videoSize != null){
                     mPhysicalVideoSizes[i] = parsePictureSize(videoSize);
@@ -6986,6 +7007,26 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void saveVideo() {
+        for (String physicalFileName : mPhysicalFileName){
+            if (physicalFileName == null)
+                continue;
+            File origFile = new File(physicalFileName);
+            if (origFile == null || !origFile.exists() || origFile.length() <= 0) {
+                Log.e(TAG, "Invalid file "+physicalFileName);
+                continue;
+            }
+            long dateTaken = System.currentTimeMillis();
+            ContentValues contentValues = new ContentValues(9);
+            contentValues.put(MediaStore.Video.Media.TITLE, origFile.getName());
+            contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, origFile.getName());
+            contentValues.put(MediaStore.Video.Media.DATE_TAKEN, dateTaken);
+            contentValues.put(MediaStore.MediaColumns.DATE_MODIFIED, dateTaken / 1000);
+            contentValues.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+            contentValues.put(MediaStore.Video.Media.DATA, physicalFileName);
+            mActivity.getMediaSaveService().addVideo(physicalFileName,
+                    0L, contentValues,
+                    mOnVideoSavedListener, mContentResolver);
+        }
         if (mVideoFileDescriptor == null) {
             File origFile = null;
             if (mVideoFilename != null){
@@ -7063,7 +7104,13 @@ public class CaptureModule implements CameraModule, PhotoController,
         CamcorderProfile profile;
         Object[] idsArray =ids.toArray();
         for (int i=0;i<count;i++) {
-            String videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+            int index = getIndexByPhysicalId((String)idsArray[i]);
+            String videoSize;
+            if (index != -1){
+                videoSize = mSettingsManager.getValue(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
+            } else {
+                videoSize = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_QUALITY);
+            }
             int size = CameraSettings.VIDEO_QUALITY_TABLE.get(videoSize);
             if (CamcorderProfile.hasProfile(getMainCameraId(), size)) {
                 profile = CamcorderProfile.get(getMainCameraId(), size);

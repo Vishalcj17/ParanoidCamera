@@ -984,6 +984,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference[] physicalQuality = new ListPreference[3];
         int i = 0;
         for(String id:physicalIds){
+            if (i >= CaptureModule.PHYSICAL_CAMERA_COUNT)
+                break;
             physicalSize[i] = mPreferenceGroup.findPreference(SettingsManager.KEY_PHYSICAL_SIZE[i]);
             physicalQuality[i] = mPreferenceGroup.findPreference(SettingsManager.KEY_PHYSICAL_VIDEO_SIZE[i]);
             if (filterUnsupportedOptions(physicalSize[i], getSupportedPictureSize(
