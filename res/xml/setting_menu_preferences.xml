@@ -379,6 +379,15 @@
             android:summary="%s"
             android:title="@string/pref_camera2_zsl_title" />
 
+        <ListPreference
+            android:defaultValue="@string/pref_camera2_multi_camera_mode_default"
+            android:key="pref_camera2_multi_camera_mode_key"
+            android:layout="@layout/preference"
+            android:summary="Enable multi camera mode"
+            android:title="@string/pref_camera2_multi_camera_mode_title"
+            android:entries="@array/pref_camera2_multi_camera_mode_entries"
+            android:entryValues="@array/pref_camera2_multi_camera_mode_entryvalues"/>
+
         <MultiSelectListPreference
             android:defaultValue="@array/pref_camera2_physical_camera_default"
             android:key="pref_camera2_physical_camera_key"

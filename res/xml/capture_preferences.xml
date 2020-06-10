@@ -490,6 +490,13 @@
         camera:entryValues="@array/pref_camera2_select_mode_entryvalues" />
 
     <ListPreference
+        camera:defaultValue="@string/pref_camera2_multi_camera_mode_default"
+        camera:key="pref_camera2_multi_camera_mode_key"
+        camera:title="@string/pref_camera2_multi_camera_mode_title"
+        camera:entries="@array/pref_camera2_multi_camera_mode_entries"
+        camera:entryValues="@array/pref_camera2_multi_camera_mode_entryvalues"/>
+
+    <ListPreference
         camera:defaultValue="@string/pref_camera2_physical_camera_default"
         camera:key="pref_camera2_physical_camera_key"
         camera:title="@string/pref_camera2_physical_camera_title"

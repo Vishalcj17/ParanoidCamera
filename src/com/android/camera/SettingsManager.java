@@ -143,6 +143,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_FRONT_REAR_SWITCHER_VALUE = "pref_camera2_switcher_key";
     public static final String KEY_FORCE_AUX = "pref_camera2_force_aux_key";
     public static final String KEY_SWITCH_CAMERA = "pref_camera2_switch_camera_key";
+    public static final String KEY_MULTI_CAMERA_MODE = "pref_camera2_multi_camera_mode_key";
     public static final String KEY_PHYSICAL_CAMERA = "pref_camera2_physical_camera_key";
     public static final String KEY_PHYSICAL_CAMCORDER = "pref_camera2_physical_camcorder_key";
     public static final String KEY_PHYSICAL_JPEG_CALLBACK = "pref_camera2_physical_jpeg_key";
@@ -772,8 +773,15 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return mCharacteristics.get(mCameraId).getPhysicalCameraIds();
     }
 
+    public boolean isMultiCameraEnabled(){
+        String enable = getValue(SettingsManager.KEY_MULTI_CAMERA_MODE);
+        return "1".equals(enable);
+    }
+
 
     public Set<String> getPhysicalCameraId() {
+        if (!isMultiCameraEnabled())
+            return null;
         String ids  = getValue(KEY_PHYSICAL_CAMERA);
         if (ids == null || "".equals(ids)){
             return null;
@@ -783,7 +791,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 if ("".equals(ids))
                     return null;
             }
-
             String[] physical_ids = ids.split(";");
             List<String> idList = Arrays.asList(physical_ids);
             return new HashSet<>(Arrays.asList(physical_ids));
@@ -792,8 +799,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     public Set<String> getPhysicalFeatureEnableId(String key) {
+        if (!isMultiCameraEnabled())
+            return null;
         String ids  = getValue(key);
-        if (ids == null || "".equals(ids)){
+        if (getPhysicalCameraId() == null || ids == null || "".equals(ids)){
             return null;
         } else {
             String[] physical_ids = ids.split(";");
@@ -1254,7 +1263,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
 
         if (physicalCamera != null) {
-            if (!buildPhysicalCamera(cameraId, physicalCamera)) {
+            if (!buildPhysicalCamera(cameraId, physicalCamera)){
+                removePreference(mPreferenceGroup, KEY_MULTI_CAMERA_MODE);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMERA);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMCORDER);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_JPEG_CALLBACK);
