@@ -91,6 +91,11 @@
                     <category android:name="android.intent.category.DEFAULT" />
                 </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.media.action.TOF_CAMERA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
                 <meta-data
                         android:name="android.support.PARENT_ACTIVITY"
                         android:value="com.android.camera.CameraActivity" />
@@ -180,6 +185,11 @@
 
         <activity
             android:name="com.android.camera.RefocusActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+
+        <activity
+            android:name="com.android.camera.TofCameraActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
 
