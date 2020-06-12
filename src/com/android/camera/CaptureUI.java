@@ -2164,13 +2164,23 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mFaceView.setMirror(mirror);
         mFaceView.setCameraBound(cameraBound);
         mFaceView.setOriginalCameraBound(originalCameraBound);
-        mFaceView.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if (zoomValue < 1.0f) {
+            zoomValue = 1.0f;
+        }
+        zoomValue = 1.0f;
+        mFaceView.setZoom(zoomValue);
         mFaceView.resume();
     }
 
     public void updateFaceViewCameraBound(Rect cameraBound) {
         mFaceView.setCameraBound(cameraBound);
-        mFaceView.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if (zoomValue < 1.0f) {
+            zoomValue = 1.0f;
+        }
+        zoomValue = 1.0f;
+        mFaceView.setZoom(zoomValue);
     }
 
     public void onStopFaceDetection() {

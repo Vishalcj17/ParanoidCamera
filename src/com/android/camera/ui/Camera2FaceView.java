@@ -168,6 +168,9 @@ public class Camera2FaceView extends FaceView {
             translateMatrix.preTranslate(-mCameraBound.width() / 2f, -mCameraBound.height() / 2f);
             translateMatrix.postScale(2000f / mCameraBound.width(), 2000f / mCameraBound.height());
 
+            if (LOGV) {
+                Log.v(TAG, "onDraw w * H :" + mCameraBound.width() + " x " + mCameraBound.height());
+            }
             Matrix bsgcTranslateMatrix = new Matrix();
             bsgcTranslateMatrix.preTranslate(-mCameraBound.width() / 2f * mZoom,
                     -mCameraBound.height() / 2f * mZoom);
@@ -178,6 +181,11 @@ public class Camera2FaceView extends FaceView {
             dx -= (rw - mUncroppedWidth) / 2;
             int dy = (getHeight() - mUncroppedHeight) / 2;
             dy -= (rh - mUncroppedHeight) / 2;
+            if (LOGV) {
+                Log.v(TAG, "onDraw mUncroppedWidth x height :" + mUncroppedWidth + " x " + mUncroppedHeight);
+                Log.v(TAG, "onDraw rw x rh :" + rw + " x " + rh);
+                Log.v(TAG, "onDraw dx * dy :" + dx + " x " + dy);
+            }
 
             Matrix pointTranslateMatrix = new Matrix();
             pointTranslateMatrix.postTranslate(dx,dy);

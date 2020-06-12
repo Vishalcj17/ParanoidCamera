@@ -8549,7 +8549,12 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mZoomValue == 1f) {
             mOriginalCropRegion[id] = cropRegion;
         }
-        mCropRegion[id] = cropRegion;
+        if (mZoomValue < 1.0f) {
+            mCropRegion[id] = mOriginalCropRegion[id];
+        } else {
+            mCropRegion[id] = cropRegion;
+        }
+        Log.d(TAG, "cropRegionForZoom  mCropRegion[id] " +  mCropRegion[id]);
         return mCropRegion[id];
     }
 
