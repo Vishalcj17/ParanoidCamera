@@ -2311,11 +2311,16 @@ public class CaptureModule implements CameraModule, PhotoController,
             surfaces.add(mVideoPreviewSurface);
             surfaces.add(mVideoRecordingSurface);
             setUpVideoCaptureRequestBuilder(cameraId);
+            if (!PersistUtil.enableMediaRecorder()) {
+                mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+            }
             mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
-            mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
             mPreviewRequestBuilder[cameraId] = mVideoRecordRequestBuilder;
             mIsPreviewingVideo = true;
             if (isHighSpeedRateCapture()) {
+                if (PersistUtil.enableMediaRecorder()) {
+                    mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+                }
                 int optionMode = isSSMEnabled() ? STREAM_CONFIG_SSM : SESSION_HIGH_SPEED;
                 buildConstrainedCameraSession(mCameraDevice[cameraId], optionMode,
                         surfaces, mSessionListener, mCameraHandler, mVideoRecordRequestBuilder);
@@ -6089,6 +6094,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             mUI.clearFocus();
             mUI.hideUIwhileRecording();
             if (isHighSpeedRateCapture()) {
+                //This should be not needed since setRepeatingBurst don't change
+                //Will remove it in next version
                 List<CaptureRequest> slowMoRequests  = mSuperSlomoCapture ?
                         createSSMBatchRequest(mVideoRecordRequestBuilder) :
                         ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
@@ -6109,7 +6116,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
 
                 } else {
-                    mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+                    if (PersistUtil.enableMediaRecorder()) {
+                        mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+                    }
                 }
                 mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
                         mCaptureCallback, mCameraHandler);
