@@ -844,12 +844,17 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (!isMultiCameraEnabled())
             return null;
         String ids  = getValue(key);
-        if (getPhysicalCameraId() == null || ids == null || "".equals(ids)){
-            return null;
-        } else {
-            String[] physical_ids = ids.split(";");
-            return new HashSet<>(Arrays.asList(physical_ids));
+        if (getPhysicalCameraId() == null){
+            if (!isLogicalEnable() &&
+                    !KEY_PHYSICAL_YUV_CALLBACK.equals(key) &&
+                    !KEY_PHYSICAL_RAW_CALLBACK.equals(key) ){
+                return null;
+            }
         }
+        if (ids == null || "".equals(ids))
+            return null;
+        String[] physical_ids = ids.split(";");
+        return new HashSet<>(Arrays.asList(physical_ids));
     }
 
     public boolean isLogicalEnable(){

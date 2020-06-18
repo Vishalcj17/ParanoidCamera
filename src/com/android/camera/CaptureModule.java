@@ -2049,6 +2049,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     }
                 } else {
+                    if (mSettingsManager.isMultiCameraEnabled() &&
+                            mSettingsManager.isLogicalEnable()) {
+                        List<OutputConfiguration> physicalOutput =
+                                getPhysicalOutputConfiguration();
+                        outputConfigurations.addAll(physicalOutput);
+                    }
                     List<Surface> surfaces = mFrameProcessor.getInputSurfaces();
                     for(Surface surs : surfaces) {
                         mPreviewRequestBuilder[id].addTarget(surs);
@@ -2199,10 +2205,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private List<OutputConfiguration> getPhysicalOutputConfiguration(){
-        List<OutputConfiguration> outputConfigurations = new ArrayList<>();
-        Set<String> physical_ids = mSettingsManager.getPhysicalCameraId();
-        if (physical_ids == null)
+        if (!mSettingsManager.isMultiCameraEnabled())
             return null;
+        List<OutputConfiguration> outputConfigurations = new ArrayList<>();
 
         Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
@@ -3063,7 +3068,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else if(id == getMainCameraId() && mPostProcessor.isFilterOn()) { // Case of post filtering
                 captureStillPictureForFilter(captureBuilder, id);
             } else {
-                if (mSettingsManager.getPhysicalCameraId() != null) {
+                if (mSettingsManager.isMultiCameraEnabled()) {
                     int count = addPhysicalCaptureTarget(captureBuilder);
                     if (mSettingsManager.isLogicalEnable()){
                         captureBuilder.addTarget(mImageReader[id].getSurface());
