@@ -833,7 +833,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 if ("".equals(ids))
                     return null;
             }
-            String[] physical_ids = ids.split(";");
+            String[] physical_ids = ids.trim().split(";");
             List<String> idList = Arrays.asList(physical_ids);
             return new HashSet<>(Arrays.asList(physical_ids));
         }
@@ -853,7 +853,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
         if (ids == null || "".equals(ids))
             return null;
-        String[] physical_ids = ids.split(";");
+        String[] physical_ids = ids.trim().split(";");
         return new HashSet<>(Arrays.asList(physical_ids));
     }
 
@@ -1402,7 +1402,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             CharSequence[] fullEntries = new CharSequence[size];
             for (String id : physical_ids){
                 fullEntries[i] = "physical id : " + id;
-                fullEntryValues[i] = id;
+                fullEntryValues[i] = id.trim();
                 Log.d(TAG,"buildPhysicalCamera fullEntries[i]=" + fullEntries[i]+
                         " fullEntryValues[i]="+fullEntryValues[i]);
                 i++;
