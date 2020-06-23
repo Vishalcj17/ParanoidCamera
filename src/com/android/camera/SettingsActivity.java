@@ -1138,6 +1138,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
                 add(SettingsManager.KEY_PHYSICAL_HDR);
                 add(SettingsManager.KEY_PHYSICAL_MFNR);
+                add(SettingsManager.KEY_ZSL);
                 for(String id : SettingsManager.KEY_PHYSICAL_SIZE){
                     add(id);
                 }
@@ -1160,6 +1161,7 @@ public class SettingsActivity extends PreferenceActivity {
                 multiCameraPhotoList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                 addDeveloperOptions(developer,multiCameraPhotoList);
             } else {
+                multiCameraPhotoList.remove(SettingsManager.KEY_ZSL);
                 for (String removeKey : multiCameraPhotoList){
                     removePreference(removeKey,developer);
                 }
