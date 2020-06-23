@@ -583,6 +583,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean mIsLinked = false;
     private long mCaptureStartTime;
     private boolean mPaused = true;
+    private boolean mResumed = true;
     private boolean mIsSupportedQcfa = false;
     private Semaphore mSurfaceReadyLock = new Semaphore(1);
     private final Object mVideoStateLock = new Object();
@@ -5287,6 +5288,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void updateZoomChanged(float requestedZoom) {
+        Log.i(TAG,"updateZoomChanged,mPaused:" + mPaused + ",mResumed:" +mResumed);
+        if (!mResumed)
+            return;
         if (Math.abs(mZoomValue - requestedZoom) > 0.05) {
             mZoomValue = requestedZoom;
             applyZoomAndUpdate();
@@ -9645,7 +9649,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void cancelTouchFocus(int id) {
         if(mPaused)
             return;
-
         if (DEBUG) {
             Log.v(TAG, "cancelTouchFocus " + id);
         }
@@ -9955,6 +9958,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void restartAll() {
+        mResumed = false;
         int nextCameraId = getNextScreneModeId(mNextModeIndex);
         Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId);
         if(CURRENT_ID == nextCameraId && mCameraDevice[CURRENT_ID] != null){
@@ -9970,6 +9974,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         reinitSceneMode();
         onResumeBeforeSuper();
         onResumeAfterSuper(true);
+        mResumed = true;
         setRefocusLastTaken(false);
         mIsCloseCamera = true;
     }
