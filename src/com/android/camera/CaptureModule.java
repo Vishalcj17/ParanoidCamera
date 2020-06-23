@@ -12346,33 +12346,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void updateZoomSeekBarVisible() {
-        if (mCurrentSceneMode.mode == CameraMode.PRO_MODE || mIsRTBCameraId ||
-                mCurrentSceneMode.mode == CameraMode.RTB || isRTBModeInSelectMode()) {
-            if (mCurrentSceneMode.mode == CameraMode.RTB || isRTBModeInSelectMode()) {
-                float[] zoomRatioRange = mSettingsManager.getSupportedBokenRatioZoomRange(
-                        getMainCameraId());
-                if (zoomRatioRange != null && zoomRatioRange[0] == zoomRatioRange[1]) {
-                    mZoomValue = zoomRatioRange[0];
-                    Log.v(TAG, "updateZoomSeekBarVisible mZoomValue :" + mZoomValue);
-                    mUI.hideZoomSeekBar();
-                    return;
-                } else if (zoomRatioRange != null && zoomRatioRange[0] != zoomRatioRange[1]) {
-                    if (mZoomValue < zoomRatioRange[0]) {
-                        mZoomValue = zoomRatioRange[0];
-                    }
-                    mUI.showZoomSeekBar();
-                    if (zoomRatioRange[0] > 1){
-                        mUI.hideZoomSwitch();
-                    }
-                    Log.v(TAG, "updateZoomSeekBarVisible showZoomSeekBar mZoomValue :" + mZoomValue);
-                    return;
-                }
-            }
             mUI.hideZoomSeekBar();
-        } else {
-            mUI.showZoomSeekBar();
-            mUI.enableZoomSeekBar(true);
-        }
     }
 
     private int getNextScreneModeId(int mode) {
