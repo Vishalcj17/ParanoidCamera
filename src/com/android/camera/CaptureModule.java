@@ -4453,8 +4453,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_CONTINUOUS);
         }
         applySHDR(builder);
-        if(CURRENT_MODE == CameraMode.DEFAULT && MCXMODE){
-            Log.i(TAG,"set bokeh mode for captureBuilder");
+        if(MCXMODE){
             applyMcxMasterCb(builder);
         }
     }
@@ -8459,14 +8458,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyMcxMasterCb(CaptureRequest.Builder request) {
-        String value = mSettingsManager.getValue(SettingsManager.KEY_MASTRT_CB);
-        if (value != null) {
-            int intValue = Integer.parseInt(value);
-            try {
-                request.set(CaptureModule.mcxMasterCb, intValue);
-            } catch (IllegalArgumentException e) {
-                Log.w(TAG, "hal no vendorTag : " + mcxMasterCb);
-            }
+        try {
+            request.set(CaptureModule.mcxMasterCb, 1);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "hal no vendorTag : " + mcxMasterCb);
         }
     }
 
