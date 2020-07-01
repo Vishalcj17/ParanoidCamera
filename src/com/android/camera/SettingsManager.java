@@ -586,7 +586,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             try {
                 isCameraFDSupported =
                         mCharacteristics.get(mCameraId).get(CaptureModule.is_camera_fd_supported) == 1;
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 isCameraFDSupported = true;
             }
         }
@@ -598,7 +598,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         try {
             supportted =
                     (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             Log.d(TAG, "isT2TSupported no vendor tag");
             supportted = true;
         }
@@ -1974,7 +1974,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if(!isFDRenderingInVideoUISupported) {
             try {
                 isFDRenderingInVideoUISupported = mCharacteristics.get(mCameraId).get(CaptureModule.is_FD_Rendering_In_Video_UI_Supported) == 1;
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 isFDRenderingInVideoUISupported = true;
                 Log.e(TAG, "isFDRenderingInVideoUISupported no vendorTag isFDRenderingInVideoUISupported:");
             }
