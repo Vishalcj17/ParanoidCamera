@@ -1838,6 +1838,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private CaptureRequest.Builder getRequestBuilder(int templateType,int id, Set<String> physicalIds)
             throws CameraAccessException{
+        Log.d(TAG,"getRequestBuilder id="+id+" physicalIds="+physicalIds.toString());
         CaptureRequest.Builder builder = null;
         if (physicalIds != null){
             builder = mCameraDevice[id].createCaptureRequest(
@@ -2167,31 +2168,34 @@ public class CaptureModule implements CameraModule, PhotoController,
                 if (reader != null){
                     builder.addTarget(reader.getSurface());
                     targetCount++;
-                    Log.d(TAG,"add jpeg target id="+id.next());
+                    Log.d(TAG,"add jpeg target id="+id.next()+" size="
+                            +reader.getWidth()+"x"+reader.getHeight());
                 }
             }
         }
         Set<String> yuv_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
         if(yuv_ids != null){
-            Iterator<String>id=yuv_ids.iterator();
+            Iterator<String> id=yuv_ids.iterator();
             for (ImageReader reader : mPhysicalYuvReader) {
                 if (reader != null){
                     builder.addTarget(reader.getSurface());
                     targetCount++;
-                    Log.d(TAG,"add yuv target id="+id.next());
+                    Log.d(TAG,"add yuv target id="+id.next()+" size="
+                            +reader.getWidth()+"x"+reader.getHeight());
                 }
             }
         }
         Set<String> raw_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
         if(raw_ids != null){
-            Iterator<String>id=raw_ids.iterator();
+            Iterator<String> id=raw_ids.iterator();
             for (ImageReader reader : mPhysicalRawReader) {
                 if (reader != null) {
                     builder.addTarget(reader.getSurface());
                     targetCount++;
-                    Log.d(TAG,"add raw target id="+id.next());
+                    Log.d(TAG,"add raw target id="+id.next()+" size="
+                            +reader.getWidth()+"x"+reader.getHeight());
                 }
             }
         }
@@ -2245,7 +2249,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mPhysicalJpegReader[i].getSurface());
                 configuration.setPhysicalCameraId(id);
                 outputConfigurations.add(configuration);
-                Log.d(TAG,"add output format=jpeg physicalId="+id);
+                Log.d(TAG,"add output format=jpeg physicalId="+id+" size="
+                        +mPhysicalJpegReader[i].getWidth()+"x"+mPhysicalJpegReader[i].getHeight());
                 i++;
             }
         }
@@ -2261,7 +2266,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                     configuration.setPhysicalCameraId(id);
                 }
                 outputConfigurations.add(configuration);
-                Log.d(TAG,"add output format=yuv physicalId="+id);
+                Log.d(TAG,"add output format=yuv physicalId="+id+" size="
+                        +mPhysicalYuvReader[i].getWidth()+"x"+mPhysicalYuvReader[i].getHeight());
                 i++;
             }
         }
@@ -2277,7 +2283,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                     configuration.setPhysicalCameraId(id);
                 }
                 outputConfigurations.add(configuration);
-                Log.d(TAG,"add output format=raw physicalId="+id);
+                Log.d(TAG,"add output format=raw physicalId="+id+" size="
+                        +mPhysicalRawReader[i].getWidth()+"x"+mPhysicalRawReader[i].getHeight());
                 i++;
             }
         }
@@ -3105,7 +3112,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             if (valueFS2 != null) {
                 fs2Value = Integer.parseInt(valueFS2);
             }
-            if (mSettingsManager.getPhysicalCameraId() == null) {
+            if (!mSettingsManager.isMultiCameraEnabled()) {
                 if (!(mIsSupportedQcfa || isDeepZoom() || (fs2Value ==1))) {
                     addPreviewSurface(captureBuilder, null, id);
                 }
@@ -3788,9 +3795,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                             mRawImageReader[i].setOnImageAvailableListener(listener, mImageAvailableHandler);
                         }
                     }
-                    setUpPhysicalOutput();
                 }
             }
+            setUpPhysicalOutput();
             mAutoFocusRegionSupported = mSettingsManager.isAutoFocusRegionSupported(getMainCameraId());
             mAutoExposureRegionSupported = mSettingsManager.isAutoExposureRegionSupported(getMainCameraId());
         } catch (CameraAccessException e) {
@@ -3817,18 +3824,23 @@ public class CaptureModule implements CameraModule, PhotoController,
     private int getIndexByPhysicalId(String id){
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         int index = 0;
+        int ret = -1;
         Iterator<String> iterator = ids.iterator();
         while (index < ids.size()){
             if(id.equals(iterator.next())){
-                return index;
+                ret = index;
+                break;
             }
             index++;
         }
-        return -1;
+        Log.d(TAG,"getIndexByPhysicalId ids="+ids.toString()+" id="+id+" ret="+ret);
+        return ret;
     }
 
 
     private void setUpPhysicalOutput(){
+        if (!mSettingsManager.isMultiCameraEnabled())
+            return;
         Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         if (jpeg_ids != null) {
@@ -3843,6 +3855,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
                 mPhysicalJpegReader[i] = ImageReader.newInstance(size.getWidth(),
                         size.getHeight(),ImageFormat.JPEG,3);
+                Log.d(TAG,"JPEG imageReader i="+i+" id="+id+" index="+index+
+                        " size="+size.toString());
                 PhysicalImageListener jpegListener = new PhysicalImageListener() {
                     @Override
                     public void onImageAvailable(ImageReader reader) {
@@ -3881,6 +3895,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
                 mPhysicalYuvReader[i] = ImageReader.newInstance(size.getWidth(),
                         size.getHeight(),ImageFormat.YUV_420_888,3);
+                Log.d(TAG,"YUV imageReader i="+i+" id="+id+" index="+index+
+                        " size="+size.toString());
                 PhysicalImageListener yuvListener = new PhysicalImageListener() {
                     @Override
                     public void onImageAvailable(ImageReader reader) {
@@ -3907,8 +3923,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (raw_ids != null){
             int i =0;
             for (String id:raw_ids){
-                mPhysicalRawReader[i] = ImageReader.newInstance(mPhysicalRawSizes[i].getWidth(),
-                        mPhysicalRawSizes[i].getHeight(),ImageFormat.RAW10,3);
+                int index = getIndexByPhysicalId(id);
+                Size size;
+                if (index != -1){
+                    size = mPhysicalRawSizes[index];
+                } else {
+                    size = mSupportedRawPictureSize;
+                }
+                mPhysicalRawReader[i] = ImageReader.newInstance(size.getWidth(),
+                        size.getHeight(),ImageFormat.RAW10,MAX_IMAGEREADERS+2);
+                Log.d(TAG,"RAW imageReader i="+i+" id="+id+" index="+index+
+                        " size="+size.toString());
                 PhysicalImageListener rawListener = new PhysicalImageListener() {
                     @Override
                     public void onImageAvailable(ImageReader reader) {
@@ -4847,7 +4872,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 if (rawSizes != null){
                     mPhysicalRawSizes[i] = rawSizes[0];
                 } else {
-                    mPhysicalRawSizes[i] = mPhysicalSizes[i];
+                    mPhysicalRawSizes[i] = mSupportedRawPictureSize;
                 }
                 Log.d(TAG,"set Physical Photo RAW Size i="+id+" size="+
                         mPhysicalRawSizes[i].toString());
