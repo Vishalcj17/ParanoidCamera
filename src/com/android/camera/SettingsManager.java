@@ -247,6 +247,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_MASTRT_CB = "pref_camera2_master_cb_key";
+    public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
 
     private static final String TAG = "SnapCam_SettingsManager";
 

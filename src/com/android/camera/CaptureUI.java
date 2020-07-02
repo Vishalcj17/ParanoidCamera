@@ -87,6 +87,7 @@ import com.android.camera.ui.SelfieFlashView;
 import com.android.camera.ui.TrackingFocusRenderer;
 import com.android.camera.ui.ZoomRenderer;
 import com.android.camera.ui.TouchTrackFocusRenderer;
+import com.android.camera.ui.StateNNTrackFocusRenderer;
 import com.android.camera.util.CameraUtil;
 import com.android.camera.deepportrait.GLCameraPreview;
 import com.android.camera.util.PersistUtil;
@@ -116,6 +117,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private static final int AUTOMATIC_MODE = 0;
     private static final String[] AWB_INFO_TITLE = {" R gain "," G gain "," B gain "," CCT "};
     private static final String[] AEC_INFO_TITLE = {" Lux "," Gain "," Sensitivity "," Exp Time "};
+    private static final String[] STATS_NN_RESULT_TITLE = {" Width "," Height "," MapData "," NumROI "," ROIData "," ROIWeight "};
     private CameraActivity mActivity;
     private View mRootView;
     private View mPreviewCover;
@@ -132,6 +134,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private SettingsManager mSettingsManager;
     private TrackingFocusRenderer mTrackingFocusRenderer;
     private TouchTrackFocusRenderer mT2TFocusRenderer;
+    private StateNNTrackFocusRenderer mStatsNNFocusRenderer;
     private ImageView mThumbnail;
     private Camera2FaceView mFaceView;
     private Point mDisplaySize = new Point();
@@ -201,6 +204,10 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             }
             if(mT2TFocusRenderer != null && mT2TFocusRenderer.isShown()) {
                 mT2TFocusRenderer.setSurfaceDim(mSurfaceView.getLeft(), mSurfaceView.getTop(),
+                        mSurfaceView.getRight(), mSurfaceView.getBottom());
+            }
+            if(mStatsNNFocusRenderer != null && mStatsNNFocusRenderer.isShown()) {
+                mStatsNNFocusRenderer.setSurfaceDim(mSurfaceView.getLeft(), mSurfaceView.getTop(),
                         mSurfaceView.getRight(), mSurfaceView.getBottom());
             }
         }
@@ -290,6 +297,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private TextView mStatsAecSensitivityText;
     private TextView mStatsAecExposureTimeText;
 
+    private View mStatsNNResult;
+    private TextView mStatsNNResultText;
+
     private LinearLayout mZoomLinearLayout;
 
     private TextView mZoomSwitch;
@@ -357,8 +367,16 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         return mT2TFocusRenderer;
     }
 
+    public StateNNTrackFocusRenderer getStatsNNFocusRenderer() {
+        return mStatsNNFocusRenderer;
+    }
+
     public void updateT2TCameraBound(Rect cameraBound) {
         mT2TFocusRenderer.setZoom(mModule.getZoomValue());
+    }
+
+    public void updateStatsNNCameraBound(Rect cameraBound) {
+        mStatsNNFocusRenderer.setZoom(mModule.getZoomValue());
     }
 
     public Point getDisplaySize() {
@@ -387,6 +405,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 int height = bottom - top;
                 if (mFaceView != null) {
                     mFaceView.onSurfaceTextureSizeChanged(width, height);
+                }
+                if (mStatsNNFocusRenderer != null) {
+                    mStatsNNFocusRenderer.onSurfaceTextureSizeChanged(width, height);
                 }
                 if (mT2TFocusRenderer != null) {
                     mT2TFocusRenderer.onSurfaceTextureSizeChanged(width, height);
@@ -529,6 +550,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mStatsAecSensitivityText= mRootView.findViewById(R.id.stats_aec_sensitivity_text);
         mStatsAecExposureTimeText= mRootView.findViewById(R.id.stats_aec_exp_time_text);
 
+        mStatsNNResult = mRootView.findViewById(R.id.stats_nn_result_info);
+        mStatsNNResultText= mRootView.findViewById(R.id.stats_nn_result_text);
+
         mMuteButton = (RotateImageView)mRootView.findViewById(R.id.mute_button);
         mMuteButton.setVisibility(View.VISIBLE);
         setMuteButtonResource(!mModule.isAudioMute());
@@ -585,7 +609,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         } else {
             mT2TFocusRenderer.setVisible(false);
         }
-
+        mStatsNNFocusRenderer = (StateNNTrackFocusRenderer) mRootView.findViewById(R.id.statsnn_track_focus);
+        mStatsNNFocusRenderer.init(mActivity, mModule, this);
+        if (mModule.isSateNNFocusSettingOn()) {
+            mStatsNNFocusRenderer.setVisible(true);
+        } else {
+            mStatsNNFocusRenderer.setVisible(false);
+        }
         mZoomSwitch = (TextView)mRootView.findViewById(R.id.zoom_switch);
 
         mZoomSwitch.setOnClickListener(new View.OnClickListener() {
@@ -888,6 +918,17 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mStatsAecExposureTimeText.setText(AEC_INFO_TITLE[3]+info[7]+" "+info[8]+" "+info[9]);
     }
 
+    public void updateStatsNNResultText(byte statsNNWidth, byte statsNNHeight, byte statsNNMapdata, byte statsNNNumroi, int[] statsNNRoiData, int statsNNRoiWeight) {
+        mStatsAecLuxText.setText(STATS_NN_RESULT_TITLE[0]+Byte.toString(statsNNWidth) +" " + "\r\n" +
+                                 STATS_NN_RESULT_TITLE[1]+Byte.toString(statsNNHeight) +" " + "\r\n" +
+                                 STATS_NN_RESULT_TITLE[2]+Byte.toString(statsNNMapdata) +" " + "\r\n" +
+                                 STATS_NN_RESULT_TITLE[3]+Byte.toString(statsNNNumroi) +" " + "\r\n" +
+                                 STATS_NN_RESULT_TITLE[4]+String.valueOf(statsNNRoiData[0]) +"," +
+                                 String.valueOf(statsNNRoiData[1]) +"," + String.valueOf(statsNNRoiData[2]) +"," + 
+                                 String.valueOf(statsNNRoiData[3]) +" "+"\r\n" +
+                                 STATS_NN_RESULT_TITLE[5]+String.valueOf(statsNNRoiWeight));
+    }
+
     public void updateAWBInfoVisibility(int visibility) {
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
@@ -907,7 +948,15 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             }
         });
     }
-
+    public void updateStatsNNVisibility(int visibility) {
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                if(mStatsNNResult != null) {
+                    mStatsNNResult.setVisibility(visibility);
+                }
+            }
+        });
+    }
     private int getCurrentIntentMode() {
         return mModule.getCurrentIntentMode();
     }
@@ -1002,6 +1051,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mT2TFocusRenderer.setVisible(true);
         } else {
             mT2TFocusRenderer.setVisible(false);
+        }
+
+        if (mModule.isSateNNFocusSettingOn()) {
+            mStatsNNFocusRenderer.setVisible(false);
+            mStatsNNFocusRenderer.setVisible(true);
+        } else {
+            mStatsNNFocusRenderer.setVisible(false);
         }
 
         if (mSurfaceViewMono != null) {
@@ -1404,6 +1460,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mModule.isT2TFocusSettingOn()) {
             mT2TFocusRenderer.setVisible(false);
             mT2TFocusRenderer.setVisible(true);
+        }
+    }
+
+    public void resetStatsNNTrackingFocus() {
+        if (mModule.isT2TFocusSettingOn()) {
+            mStatsNNFocusRenderer.setVisible(false);
+            mStatsNNFocusRenderer.setVisible(true);
         }
     }
 
@@ -2055,6 +2118,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mT2TFocusRenderer != null) {
             mT2TFocusRenderer.setVisible(false);
         }
+        if (mStatsNNFocusRenderer != null) {
+            mStatsNNFocusRenderer.setVisible(false);
+        }
         if (mMonoDummyAllocation != null && mIsMonoDummyAllocationEverUsed) {
             mMonoDummyAllocation.setOnBufferAvailableListener(null);
             mMonoDummyAllocation.destroy();
@@ -2091,6 +2157,12 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mPieRenderer.clear();
             }
             return mT2TFocusRenderer;
+        }
+        if (mModule.isSateNNFocusSettingOn()) {
+            if (mPieRenderer != null) {
+                mPieRenderer.clear();
+            }
+            return mStatsNNFocusRenderer;
         }
         FocusIndicator focusIndicator;
         if (mFaceView != null && mFaceView.faceExists() && !mIsTouchAF) {

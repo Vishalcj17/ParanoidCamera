@@ -126,6 +126,7 @@ import com.android.camera.ui.ProMode;
 import com.android.camera.ui.RotateTextToast;
 import com.android.camera.ui.TrackingFocusRenderer;
 import com.android.camera.ui.TouchTrackFocusRenderer;
+import com.android.camera.ui.StateNNTrackFocusRenderer;
 import com.android.camera.util.ApiHelper;
 import com.android.camera.util.CameraUtil;
 import com.android.camera.util.PersistUtil;
@@ -492,6 +493,22 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final CaptureResult.Key<Float> aec_frame_control_lux_index =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
+    //Stats NN Result
+    private static final CaptureRequest.Key<Byte> statsNNControl =
+            new CaptureRequest.Key<>("org.quic.camera2.statsNNControl.Enable", Byte.class);
+    private static final CaptureResult.Key<Byte> stats_nn_result_width =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyWidth", Byte.class);
+    private static final CaptureResult.Key<Byte> stats_nn_result_height =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyHeight", Byte.class);
+    private static final CaptureResult.Key<Byte> stats_nn_result_mapdata =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyMapData", Byte.class);
+    private static final CaptureResult.Key<Byte> stats_nn_result_numroi =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyNumROI", Byte.class);
+    private static final CaptureResult.Key<int[]> stats_nn_result_roidata =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyROIData", int[].class);
+    private static final CaptureResult.Key<Integer> stats_nn_result_roiweight =
+            new CaptureResult.Key<>("org.quic.camera2.statsNNSaliNetResults.statsNNSaliencyROIWeight", Integer.class);
+
     public static final CaptureRequest.Key<Integer> sharpness_control = new CaptureRequest.Key<>(
             "org.codeaurora.qcamera3.sharpness.strength", Integer.class);
     public static final CaptureRequest.Key<Integer> exposure_metering = new CaptureRequest.Key<>(
@@ -552,6 +569,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
 
     private TouchTrackFocusRenderer mT2TFocusRenderer;
+    private StateNNTrackFocusRenderer mStateNNFocusRenderer;
     private boolean mIsDepthFocus = false;
     private boolean[] mTakingPicture = new boolean[MAX_NUM_CAM];
     private int mControlAFMode = CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
@@ -1069,6 +1087,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                 updateBEStatsVisibility(View.GONE);
                 updateGraghViewVisibility(View.GONE);
             }
+            if (isSateNNFocusSettingOn()) {
+                updateStatsNNView(result);
+            } else {
+                mUI.updateStatsNNVisibility(View.GONE);
+            }
         }
     };
 
@@ -1078,6 +1101,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         mT2TFocusRenderer.setMirror(mSettingsManager.isFacingFront(getMainCameraId()));
         mT2TFocusRenderer.setDisplayOrientation(mDisplayOrientation);
         mT2TFocusRenderer.setCameraBound(mCropRegion[getMainCameraId()]);
+    }
+
+    private void updateStatsNNTracking() {
+        mStateNNFocusRenderer.setOriginalCameraBound(
+                mSettingsManager.getSensorActiveArraySize(getMainCameraId()));
+        mStateNNFocusRenderer.setMirror(mSettingsManager.isFacingFront(getMainCameraId()));
+        mStateNNFocusRenderer.setDisplayOrientation(mDisplayOrientation);
+        mStateNNFocusRenderer.setCameraBound(mCropRegion[getMainCameraId()]);
     }
 
     private void updateTouchFocusState(int t2tTrigger) {
@@ -1144,6 +1175,41 @@ public class CaptureModule implements CameraModule, PhotoController,
                     Log.v(TAG, "updateT2tTrackerView resultROI :" + resultROI);
                 }
             } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void updateStatsNNView(CaptureResult result){
+        if (result != null) {
+            try {
+                Byte statsNNWidth = result.get(stats_nn_result_width);
+                Byte statsNNHeight = result.get(stats_nn_result_height);
+                Byte statsNNMapdata = result.get(stats_nn_result_mapdata);
+                Byte statsNNNumroi = result.get(stats_nn_result_numroi);
+                int[] statsNNRoiData = result.get(stats_nn_result_roidata);
+                Integer statsNNRoiWeight = result.get(stats_nn_result_roiweight);
+                Log.i(TAG,"statsNNWidth:" + statsNNWidth + ",statsNNHeight:" + statsNNHeight + ",statsNNMapdata:" + statsNNMapdata +
+                        ",statsNNNumroi:" + statsNNNumroi + ",statsNNRoiData:" + statsNNRoiData +",statsNNRoiWeight:" + statsNNRoiWeight);
+                if (statsNNWidth == null || statsNNHeight == null || statsNNMapdata == null ||
+                    statsNNNumroi == null|| statsNNRoiData == null|| statsNNRoiWeight == null)
+                    return;
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mUI.updateAECInfoVisibility(View.VISIBLE);
+                        mUI.updateStatsNNResultText(statsNNWidth, statsNNHeight, statsNNMapdata, statsNNNumroi, statsNNRoiData, statsNNRoiWeight);
+                    }
+                });
+                if (mStateNNFocusRenderer == null) {
+                    mStateNNFocusRenderer = getStatsNNFocusRenderer();
+                    updateStatsNNTracking();
+                }
+                if (mStateNNFocusRenderer.isShown()) {
+                    updateStatsNNTracking();
+                    mStateNNFocusRenderer.updateTrackerRect(statsNNRoiData);
+                }
+            } catch (IllegalArgumentException|NullPointerException e) {
                 e.printStackTrace();
             }
         }
@@ -4604,6 +4670,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyWbColorTemperature(builder);
         applyToneMapping(builder);
         applyLivePreview(builder);
+        applyStatsNNControl(builder);
     }
 
     /**
@@ -4833,6 +4900,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             String value = mSettingsManager.getValue(SettingsManager.KEY_TOUCH_TRACK_FOCUS);
             if (value != null && value.equals("on")) {
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
+
+    public boolean isSateNNFocusSettingOn() {
+        try {
+            String stats_nn_control = mSettingsManager.getValue(SettingsManager.KEY_STATSNN_CONTROL);
+            if (stats_nn_control != null && Integer.parseInt(stats_nn_control) == 1) {
                 return true;
             }
         } catch (Exception e) {
@@ -5996,6 +6074,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyZoomAndUpdate(getMainCameraId());
         mUI.updateFaceViewCameraBound(mCropRegion[getMainCameraId()]);
         mUI.updateT2TCameraBound(mCropRegion[getMainCameraId()]);
+        mUI.updateStatsNNCameraBound(mCropRegion[getMainCameraId()]);
     }
 
     private void updateZoom() {
@@ -6705,6 +6784,18 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void applyStatsNNControl(CaptureRequest.Builder builder) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_STATSNN_CONTROL);
+        Log.v(TAG, "applyStatsNNControl statsnn control :" + value );
+        if (value != null) {
+            byte statsnn = (byte)(Integer.parseInt(value) == 1 ? 0x01 : 0x00);
+            try {
+                builder.set(CaptureModule.statsNNControl, statsnn);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "cannot find vendor tag: " + livePreview.toString());
+            }
+        }
+    }
     private void applyCaptureBurstFps(CaptureRequest.Builder builder) {
         try {
             Log.v(TAG, " applyCaptureBurstFps burst fps mLongshotActive :" + mLongshotActive +
@@ -10016,6 +10107,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (isT2TFocusSettingOn()) {
             mUI.resetTouchTrackingFocus();
         }
+        if (isSateNNFocusSettingOn()) {
+            mUI.resetStatsNNTrackingFocus();
+        }
         resetStateMachine();
     }
 
@@ -10087,6 +10181,10 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public TouchTrackFocusRenderer getT2TFocusRenderer() {
         return mUI.getT2TFocusRenderer();
+    }
+
+    public StateNNTrackFocusRenderer getStatsNNFocusRenderer() {
+        return mUI.getStatsNNFocusRenderer();
     }
 
     private class MyCameraHandler extends Handler {
