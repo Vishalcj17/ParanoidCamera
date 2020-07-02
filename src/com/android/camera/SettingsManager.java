@@ -836,6 +836,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     return null;
             }
             String[] physical_ids = ids.trim().split(";");
+            if (physical_ids == null || physical_ids.length == 0)
+                return null;
             List<String> idList = Arrays.asList(physical_ids);
             return new HashSet<>(Arrays.asList(physical_ids));
         }
@@ -856,6 +858,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (ids == null || "".equals(ids))
             return null;
         String[] physical_ids = ids.trim().split(";");
+        if (physical_ids == null || physical_ids.length == 0)
+            return null;
         return new HashSet<>(Arrays.asList(physical_ids));
     }
 

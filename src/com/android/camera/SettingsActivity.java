@@ -1454,7 +1454,7 @@ public class SettingsActivity extends PreferenceActivity {
                 String values = mSettingsManager.getValue(key);
                 Set<String> valueSet = new HashSet<String>();
                 if (values != null) {
-                    String[] splitValues = values.split(";");
+                    String[] splitValues = values.trim().split(";");
                     for (String str : splitValues) {
                         valueSet.add(str);
                     }

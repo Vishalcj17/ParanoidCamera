@@ -164,7 +164,9 @@ public class ListPreference extends CameraPreference {
     public void setFromMultiValues(Set<String> set) {
         String value = "";
         for (String str : set) {
-            value = value + str +";";
+            if (!"".equals(str)){
+                value = value + str +";";
+            }
         }
         mValue = value;
         persistStringValue(value);

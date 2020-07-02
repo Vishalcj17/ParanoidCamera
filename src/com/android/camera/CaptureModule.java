@@ -697,8 +697,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalYuvReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
-    private ImageReader[] mPhysicalRawReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalYuvReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mPhysicalRawReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalJpegReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
     private HeifWriter mInitHeifWriter;
     private OutputConfiguration mHeifOutput;
@@ -1823,7 +1823,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         CaptureRequest.Builder builder;
         if (mSettingsManager.getPhysicalCameraId()!= null){
             Set<String> physical_ids = mSettingsManager.getPhysicalCameraId();
-            Log.d(TAG,"getRequestBuilder physical request ids="+physical_ids.toString());
             builder = mCameraDevice[id].createCaptureRequest(templateType,physical_ids);
         } else {
             builder = mCameraDevice[id].createCaptureRequest(templateType);
@@ -1838,7 +1837,6 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private CaptureRequest.Builder getRequestBuilder(int templateType,int id, Set<String> physicalIds)
             throws CameraAccessException{
-        Log.d(TAG,"getRequestBuilder id="+id+" physicalIds="+physicalIds.toString());
         CaptureRequest.Builder builder = null;
         if (physicalIds != null){
             builder = mCameraDevice[id].createCaptureRequest(
