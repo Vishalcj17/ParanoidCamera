@@ -253,11 +253,8 @@ public class SettingsActivity extends PreferenceActivity {
         if (formatPref == null)
             return;
 
-        CaptureModule.CameraMode mode =
-                (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
         if((ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())) ||
-                (selfiePref != null && selfiePref.isChecked()) ||
-                (mode != null && (mode == SAT || mode == RTB))){
+                (selfiePref != null && selfiePref.isChecked())){
             formatPref.setValue("0");
             formatPref.setEnabled(false);
         } else {

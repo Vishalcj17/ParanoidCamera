@@ -1267,7 +1267,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (pictureFormat != null){
             if (filterUnsupportedOptions(pictureFormat,
                     getSupportedPictureFormat(cameraId))){
-                mFilteredKeys.add(pictureSize.getKey());
+                mFilteredKeys.add(pictureFormat.getKey());
             }
         }
 
