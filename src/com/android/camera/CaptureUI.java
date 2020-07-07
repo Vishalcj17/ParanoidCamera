@@ -744,7 +744,12 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 }
                 int zoomSig = Math.round((progress + mZoomFixedValue * 100)) / 100;
                 int zoomFraction = Math.round(progress + mZoomFixedValue * 100) % 100;
-                String txt = zoomSig + "." + zoomFraction + "x";
+                String txt = "";
+                if (zoomFraction < 10) {
+                    txt = zoomSig + "." + "0" + zoomFraction + "x";
+                } else {
+                    txt = zoomSig + "." + zoomFraction + "x";
+                }
                 if (mZoomValueText != null) {
                     mZoomValueText.setText(txt);
                 }
