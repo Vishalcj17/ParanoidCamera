@@ -1098,6 +1098,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                         videoAddList.add(SettingsManager.KEY_SHDR);
+                        videoAddList.add(SettingsManager.KEY_VARIABLE_FPS);
                     }
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
@@ -1288,6 +1289,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateMultiPreference(SettingsManager.KEY_STATS_VISUALIZER_VALUE);
         updatePictureSizePreferenceButton();
         updateVideoHDRPreference();
+        updateVideoVariableFpsPreference();
         updateFormatPreference();
         updateEISPreference();
         updateStoragePreference();
@@ -1396,6 +1398,14 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
         pref.setEnabled(mSettingsManager.isZZHDRSupported());
+    }
+
+    private void updateVideoVariableFpsPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_VARIABLE_FPS);
+        if (pref == null) {
+            return;
+        }
+        pref.setEnabled(!PersistUtil.enableMediaRecorder());
     }
 
     private void updatePreferenceButton(String key) {

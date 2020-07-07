@@ -143,6 +143,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -153,11 +154,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executor;
 import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -4245,6 +4249,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         return mfnrEnable;
     }
 
+    private boolean isVariableFPSEnabled() {
+        boolean variableFPSEnable = false;
+        if (mSettingsManager != null) {
+            String variableFPSValue = mSettingsManager.getValue(SettingsManager.KEY_VARIABLE_FPS);
+            if (variableFPSValue != null) {
+                variableFPSEnable = variableFPSValue.equals("1");
+            }
+        }
+        return variableFPSEnable;
+    }
+
     private boolean isHDREnable() {
         boolean hdrEnable = false;
         if (mSettingsManager != null) {
@@ -4505,7 +4520,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 .CONTROL_AF_TRIGGER_START);
         if (mCurrentSceneMode.mode == CameraMode.VIDEO ||
                 mCurrentSceneMode.mode == CameraMode.HFR) {
-            Range fpsRange = mHighSpeedCapture ? mHighSpeedFPSRange : new Range(30, 30);
+            Range fpsRange = mHighSpeedCapture ? mHighSpeedFPSRange : new Range(60, 60);
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
         }
         applyAFRegions(builder, id);
@@ -6293,6 +6308,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                     }
                 }
+                applyVariableFPS();
                 mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
                         mCaptureCallback, mCameraHandler);
             }
@@ -6577,12 +6593,34 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         } else {
-            mHighSpeedFPSRange = new Range(30, 30);
+            mHighSpeedFPSRange = new Range(60, 60);
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         }
         if (!isHighSpeedRateCapture()) {
             applyVideoCommentSettings(mVideoPreviewRequestBuilder, cameraId);
+        }
+    }
+
+    private void applyVariableFPS() {
+        if (!PersistUtil.enableMediaRecorder() && isVariableFPSEnabled()) {
+            Timer timer = new Timer();
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    Log.d(TAG, "variable fps run");
+                    // TODO Auto-generated method stub
+                    try {
+                        Range range = new Range(30, 60);
+                        mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                                range);
+                        mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
+                                mCaptureCallback, mCameraHandler);
+                    } catch (CameraAccessException | IllegalStateException | NullPointerException e) {
+                    }
+                }
+            };
+            timer.schedule(task, 1000);
         }
     }
 
