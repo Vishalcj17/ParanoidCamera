@@ -5903,9 +5903,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             mMaxVideoDurationInMs = 60000 * minutes;
         }
         mMaxDurationForCodec = mMaxVideoDurationInMs;
-        if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
-            mMaxDurationForCodec = mMaxDurationForCodec * mHighSpeedCaptureRate / 30;
-        }
     }
 
     public void updateDeepZoomIndex(float zoom) {
@@ -6804,7 +6801,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         mRecordingPausingTime += mRecordingStartTime - mRecordingPauseTime;
         if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
             mRecordingPausingTime = mRecordingPausingTime * mHighSpeedCaptureRate / 30;
+            Log.d(TAG, "pause time is " + mRecordingPausingTime);
         }
+
         updateRecordingTime();
         setEndOfStream(true, false);
 
@@ -6831,7 +6830,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         try {
             Method resumeRec = Class.forName("android.media.MediaRecorder").getMethod("resume");
-            resumeRec.invoke(mMediaRecorder);
             for (MediaRecorder mediaRecorder: mPhysicalMediaRecorders){
                 if (mediaRecorder != null){
                     resumeRec.invoke(mediaRecorder);
@@ -7004,7 +7002,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             try {
                 mCurrentSession.abortCaptures();
                 Log.d(TAG, "stopRecordingVideo call abortCaptures ");
-            } catch (CameraAccessException e) {
+            } catch (CameraAccessException | IllegalStateException e) {
                 e.printStackTrace();
             }
         }
@@ -7689,6 +7687,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         long frameGap = 0;
         int frameNumber = 0;
         int endCounter = 0;
+        boolean stopRec = true;
         MediaFormat originalFormat = null;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         while (notDone) {
@@ -7813,7 +7812,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                                 + (bufferInfo.presentationTimeUs - startPtsUs));
                     }
                     if ((mMaxDurationForCodec != 0) && (bufferInfo.presentationTimeUs - startPtsUs
-                            >= mMaxDurationForCodec*1000)) {
+                            >= mMaxDurationForCodec*1000) && stopRec) {
+                        stopRec = false;
                         // stop video
                         mActivity.runOnUiThread(new Runnable() {
                             @Override
