@@ -720,6 +720,10 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         float zoomMin = 1.0f;
         if(zoomRatioRange != null) {
             mZoomFixedValue = zoomRatioRange[0];
+            if (mZoomRenderer != null) {
+                mZoomRenderer.setZoomMin(zoomRatioRange[0]);
+                mZoomRenderer.setZoomMax(zoomRatioRange[1]);
+            }
             Log.v(TAG, "initZoomSeekBar min:" + zoomRatioRange[0] + ", max :" + zoomRatioRange[1]);
             mZoomSeekBar.setMax((int)((zoomRatioRange[1] -zoomRatioRange[0]) * 100));
             if (zoomRatioRange[0] > zoomMin) {
@@ -802,8 +806,14 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mZoomSeekBar != null) {
             mZoomSeekBar.setVisibility(View.VISIBLE);
         }
-        if (mZoomSwitch != null) {
-            mZoomSwitch.setVisibility(View.VISIBLE);
+        if(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.RTB) {
+            if (mZoomSwitch != null) {
+                mZoomSwitch.setVisibility(View.GONE);
+            }
+        } else {
+            if (mZoomSwitch != null) {
+                mZoomSwitch.setVisibility(View.VISIBLE);
+            }
         }
         if(mFilterMenuStatus == FILTER_MENU_ON){
             hideZoomSeekBar();
@@ -998,7 +1008,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         }
         mZoomIndex = 0;
         mZoomSwitch.setText("1x");
-        if(getCurrentIntentMode() == CaptureModule.TYPE_RTB) {
+        if(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.RTB) {
             mZoomSwitch.setVisibility(View.GONE);
         } else {
             mZoomSwitch.setVisibility(View.VISIBLE);
@@ -1051,7 +1061,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         });
     }
 
-    public void initializeZoom(int id) {
+    private void initializeZoom(int id) {
         if (!mSettingsManager.isZoomSupported(id) || (mZoomRenderer == null))
             return;
 

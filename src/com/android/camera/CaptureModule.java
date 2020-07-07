@@ -4737,7 +4737,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             mState[i] = STATE_PREVIEW;
         }
         mLongshotActive = false;
-        updateZoom();
         if(mIsCloseCamera) {
             updatePreviewSurfaceReadyState(false);
         }
@@ -5071,6 +5070,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mUI.enableShutter(true);
         setProModeVisible();
         updateZoomSeekBarVisible();
+        updateZoom();
         updateMFNRText();//this must before showRelatedIcons, color filter based on mfnr
         mUI.showRelatedIcons(mCurrentSceneMode.mode);
         if(mIsCloseCamera) {
