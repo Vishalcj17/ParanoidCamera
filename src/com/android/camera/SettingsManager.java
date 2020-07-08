@@ -567,6 +567,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         filterChromaflashPictureSizeOptions();
         filterHeifSizeOptions();
         mVideoEisConfigs = getVideoEisConfigs(cameraId);
+        filterHFROptions();
     }
 
 
@@ -1831,6 +1832,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         if (videoCapabilities != null) {
                             if (videoCapabilities.areSizeAndRateSupported(
                                     videoSize.getWidth(), videoSize.getHeight(), (int) r.getUpper())) {
+                                String selectMode = getValue(KEY_SELECT_MODE);
+                                if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR && (selectMode != null && selectMode.equals("sat"))){
+                                    break;
+                                }
                                 rate = String.valueOf(r.getUpper());
                                 supported.add("hfr" + rate);
                                 supported.add("hsr" + rate);
