@@ -4496,6 +4496,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(MCXMODE){
             applyMcxMasterCb(builder);
         }
+        applyFaceContourVersion(builder);
     }
 
     private void applyCommonSettings(CaptureRequest.Builder builder, int id) {
@@ -9274,6 +9275,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void applyFaceContourVersion(CaptureRequest.Builder request) {
+        String facialContour = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
+        if ("1".equals(facialContour)) {
+            byte facialContour_version = 1;
+            request.set(CaptureModule.facialContourVersion, facialContour_version);
+        }
+    }
+
     private void applyFaceDetection(CaptureRequest.Builder request) {
         String value = mSettingsManager.getValue(SettingsManager.KEY_FACE_DETECTION);
         String mode = mSettingsManager.getValue(SettingsManager.KEY_FACE_DETECTION_MODE);
@@ -9312,22 +9321,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                 if (facialContour != null) {
                     final byte facialContour_enable;
                     if (FdEnable) {
-                        if ("0".equals(facialContour)) {
+                        if ("0".equals(facialContour) || "1".equals(facialContour)) {
                             facialContour_enable = 1;
-                            request.set(CaptureModule.facialContourEnable, facialContour_enable);
-                            request.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
-                                    CaptureRequest.STATISTICS_FACE_DETECT_MODE_FULL);
-                        } else if ("1".equals(facialContour)) {
-                            byte facialContour_version = 1;
-                            facialContour_enable = 1;
-                            request.set(CaptureModule.facialContourVersion, facialContour_version);
                             request.set(CaptureModule.facialContourEnable, facialContour_enable);
                             request.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
                                     CaptureRequest.STATISTICS_FACE_DETECT_MODE_FULL);
                         } else {
                             facialContour_enable = 0;
                             request.set(CaptureModule.facialContourEnable, facialContour_enable);
-                            request.set(CaptureModule.facialContourVersion, facialContour_enable);
                         }
                     }
 
