@@ -151,6 +151,10 @@ public class SettingsActivity extends PreferenceActivity {
                 } else {
                     updateSwitchIDInModePreference(true);
                 }
+                if (value.equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
+                    ListPreference eis = (ListPreference) findPreference(SettingsManager.KEY_EIS_VALUE);
+                    eis.setEnabled(false);
+                }
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
             if (list != null) {
@@ -176,7 +180,7 @@ public class SettingsActivity extends PreferenceActivity {
                 boolean enabled = values.overriddenValue == null;
                 Preference pref = findPreference(state.key);
                 if (pref == null) continue;
-                Log.i(TAG, "onsettingschange:" + pref.getKey());
+                Log.i(TAG, "onsettingschange:" + pref.getKey() + ",enabled:" + enabled);
 
                 pref.setEnabled(enabled);
 
