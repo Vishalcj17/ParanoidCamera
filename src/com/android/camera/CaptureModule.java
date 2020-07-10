@@ -4387,6 +4387,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                     public void run() {
                         if (mUI.getCurrentProMode() != ProMode.MANUAL_MODE)
                             mUI.clearFocus();
+                        if (mCurrentSceneMode.mode != CameraMode.PRO_MODE)
+                            mUI.enableZoomSeekBar(true);
                     }
                 });
             }
@@ -5011,6 +5013,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             mTakingPicture[i] = false;
         }
+        mUI.showZoomSeekBar();
         for (int i = 0; i < MAX_NUM_CAM; i++) {
             mState[i] = STATE_PREVIEW;
         }
@@ -5544,21 +5547,22 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     @Override
-    public void onZoomChanged(float requestedZoom) {
-        if (mIsRTBCameraId) return;
+    public boolean onZoomChanged(float requestedZoom) {
+        if (mIsRTBCameraId || isTakingPicture()) return false;
         mZoomValue = requestedZoom;
         mUI.updateZoomSeekBar(mZoomValue);
         applyZoomAndUpdate();
+        return true;
     }
 
-    public void updateZoomChanged(float requestedZoom) {
+    public boolean updateZoomChanged(float requestedZoom) {
         Log.i(TAG,"updateZoomChanged,mPaused:" + mPaused + ",mResumed:" +mResumed);
-        if (!mResumed)
-            return;
+        if (mIsRTBCameraId || isTakingPicture() || !mResumed) return false;
         if (Math.abs(mZoomValue - requestedZoom) > 0.05) {
             mZoomValue = requestedZoom;
             applyZoomAndUpdate();
         }
+        return true;
     }
 
     private boolean isInMode(int cameraId) {
@@ -8737,15 +8741,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
 
         Log.d(TAG,"onShutterButtonClick");
-
+        int id = getMainCameraId();
         if (mCurrentSceneMode.mode == CameraMode.HFR ||
                 mCurrentSceneMode.mode == CameraMode.VIDEO) {
             if (!isHighSpeedRateCapture() && mSettingsManager.isLiveshotSupported(mVideoSize,mSettingsManager.getVideoFPS())){
-                captureVideoSnapshot(getMainCameraId());
+                if (mUI.isShutterEnabled()) {
+                    captureVideoSnapshot(id);
+                }
             }
             return;
         }
-
         String timer = mSettingsManager.getValue(SettingsManager.KEY_TIMER);
         int seconds = Integer.parseInt(timer);
         // When shutter button is pressed, check whether the previous countdown is
@@ -8760,6 +8765,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 warningToast("It's still busy processing previous scene mode request.");
                 return;
             }
+            mTakingPicture[id] = true;
+            mUI.enableZoomSeekBar(false);
             checkSelfieFlashAndTakePicture();
         }
     }

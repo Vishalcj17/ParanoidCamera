@@ -618,7 +618,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mStatsNNFocusRenderer.setVisible(false);
         }
         mZoomSwitch = (TextView)mRootView.findViewById(R.id.zoom_switch);
-
         mZoomSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -629,10 +628,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mZoomIndex = mZoomIndex + 1;
                 if (mZoomIndex > values.length -1)
                     mZoomIndex = 0;
-                mZoomSwitch.setText(entries[mZoomIndex]);
-                mModule.onZoomChanged(Float.valueOf(values[mZoomIndex]));
-                if (mZoomRenderer != null) {
-                    mZoomRenderer.setZoom(Float.valueOf(values[mZoomIndex]));
+                if(mModule.onZoomChanged(Float.valueOf(values[mZoomIndex]))) {
+                    mZoomSwitch.setText(entries[mZoomIndex]);
+                    if (mZoomRenderer != null) {
+                        mZoomRenderer.setZoom(Float.valueOf(values[mZoomIndex]));
+                    }
                 }
             }
         });
@@ -820,6 +820,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 }
             }
         });
+    }
+
+    public void enableZoomSeekBar(boolean enable) {
+       if (mZoomSeekBar != null)
+           mZoomSeekBar.setEnabled(enable); 
     }
 
     public boolean getZoomFixedSupport() {
@@ -2601,9 +2606,10 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private class ZoomChangeListener implements ZoomRenderer.OnZoomChangedListener {
         @Override
         public void onZoomValueChanged(float mZoomValue) {
-            mModule.onZoomChanged(mZoomValue);
-            if (mZoomRenderer != null) {
-                mZoomRenderer.setZoom(mZoomValue);
+            if(mModule.onZoomChanged(mZoomValue)) {
+                if (mZoomRenderer != null) {
+                    mZoomRenderer.setZoom(mZoomValue);
+                }
             }
         }
 
