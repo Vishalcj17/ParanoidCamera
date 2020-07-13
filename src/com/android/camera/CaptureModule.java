@@ -523,6 +523,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.numPCRsBeforeStreamOn", Integer.class);
     public static final CaptureRequest.Key<Integer> mcxMasterCb =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableMCXMasterCb", Integer.class);
+    public static final CaptureRequest.Key<Integer> extendedMaxZoom =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.ExtendedMaxZoom", Integer.class);
 
     private static final CaptureResult.Key<Byte> is_depth_focus =
             new CaptureResult.Key<>("org.quic.camera.isDepthFocus.isDepthFocus", byte.class);
@@ -535,6 +537,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             "org.quic.camera2.VideoConfigurations.info.VideoConfigurationsTable",int[].class);
     public static final CameraCharacteristics.Key<Byte> is_camera_fd_supported = new CameraCharacteristics.Key<>(
             "org.quic.camera.FDRendering.isFDRenderingInCameraUISupported",byte.class);
+
+    // extended max zoom
+    public static CameraCharacteristics.Key<Float> extended_max_zoom =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.platformCapabilities.ExtendedMaxZoom", Float.class);
 
     public static final CaptureRequest.Key<Byte> sensor_mode_fs =
             new CaptureRequest.Key<>("org.quic.camera.SensorModeFS", byte.class);
@@ -4640,6 +4646,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             applyMcxMasterCb(builder);
         }
         applyFaceContourVersion(builder);
+        applyExtendMaxZoom(builder);
     }
 
     private void applyCommonSettings(CaptureRequest.Builder builder, int id) {
@@ -7144,6 +7151,19 @@ public class CaptureModule implements CameraModule, PhotoController,
         return result;
     }
 
+    public boolean isExtendedMaxZoomEnable() {
+        boolean result = true;
+        String value = mSettingsManager.getValue(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
+        if (value != null) {
+            result = value.equals(mActivity.getResources().getString(
+                    R.string.pref_camera2_extended_max_zoom_entry_value_enable));
+        } else {
+            result = false;
+        }
+        Log.v(TAG, "isExtendedMaxZoomEnable :" + result);
+        return result;
+    }
+
     private boolean isSendRequestAfterFlushEnable() {
         return PersistUtil.isSendRequestAfterFlush();
     }
@@ -8754,6 +8774,22 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "hal no vendorTag : " + mcxMasterCb);
         }
+    }
+
+    private void applyExtendMaxZoom(CaptureRequest.Builder request) {
+        int enableMaxZoom = 0;
+        if (isExtendedMaxZoomEnable()) {
+            Log.v(TAG, "applyExtendMaxZoom enableMaxZoom = 1" );
+            enableMaxZoom = 1;
+        }
+        try {
+            request.set(CaptureModule.extendedMaxZoom, enableMaxZoom);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "hal no vendorTag : " + extendedMaxZoom);
+        } catch (UnsupportedOperationException e) {
+            Log.w(TAG, "hal UnsupportedOperationException : " + extendedMaxZoom);
+        }
+
     }
 
     private void applySensorModeFS2(CaptureRequest.Builder request) {

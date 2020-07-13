@@ -747,6 +747,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             zoomRatioRange = mSettingsManager.getSupportedBokenRatioZoomRange(
                     mModule.getMainCameraId());
         }
+        if (mModule.isExtendedMaxZoomEnable()) {
+            float maxZoom = mSettingsManager.getSupportedExtendedMaxZoom(
+                    mModule.getMainCameraId());
+            Log.v(TAG, "initZoomSeekBar maxZoom :" + maxZoom);
+            if (zoomRatioRange != null) {
+                if (maxZoom > zoomRatioRange[1]) {
+                    zoomRatioRange[1] = maxZoom;
+                }
+            } else {
+                if (maxZoom > zoomMax) {
+                    zoomMax = maxZoom;
+                }
+            }
+        }
         float zoomMin = 1.0f;
         if(zoomRatioRange != null) {
             mZoomFixedValue = zoomRatioRange[0];
@@ -1133,6 +1147,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.RTB) {
             zoomRatioRange = mSettingsManager.getSupportedBokenRatioZoomRange(
                     mModule.getMainCameraId());
+        }
+        if (mModule.isExtendedMaxZoomEnable()) {
+            float maxZoom = mSettingsManager.getSupportedExtendedMaxZoom(
+                    mModule.getMainCameraId());
+            Log.v(TAG, "initializeZoom maxZoom :" + maxZoom);
+            if (zoomRatioRange != null) {
+                if (maxZoom > zoomRatioRange[1]) {
+                    zoomRatioRange[1] = maxZoom;
+                }
+            } else {
+                if (maxZoom > zoomMax) {
+                    zoomMax = maxZoom;
+                }
+            }
         }
         float zoomMin = 1.0f;
         if(zoomRatioRange != null) {

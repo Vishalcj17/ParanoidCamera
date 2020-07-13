@@ -193,6 +193,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
     public static final String KEY_SHDR = "pref_camera2_shdr_key";
+    public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
     public static final String KEY_ZOOM = "pref_camera2_zoom_key";
     public static final String KEY_SHARPNESS_CONTROL_MODE = "pref_camera2_sharpness_control_key";
@@ -246,7 +247,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_LIVE_PREVIEW = "pref_camera2_live_preview_key";
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
-    public static final String KEY_MASTRT_CB = "pref_camera2_master_cb_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
 
     private static final String TAG = "SnapCam_SettingsManager";
@@ -601,11 +601,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public boolean isT2TSupported() {
         boolean supportted = true;
         try {
-            supportted =
-                    (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
+            supportted = (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
         } catch (IllegalArgumentException | NullPointerException e) {
-            Log.d(TAG, "isT2TSupported no vendor tag");
-            supportted = true;
         }
         return supportted;
     }
@@ -2548,6 +2545,20 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     "CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_ZOOM_RATIO_RANGES");
         }
         return result;
+    }
+
+    public float getSupportedExtendedMaxZoom(int cameraId) {
+        float maxZoom = -1f;
+        try {
+            maxZoom = mCharacteristics.get(cameraId).get(CaptureModule.extended_max_zoom);
+        } catch(IllegalArgumentException e) {
+            maxZoom = -1;
+            Log.w(TAG, "getSupportedExtendedMaxZoom occurs IllegalArgumentException");
+        } catch(NullPointerException e) {
+            maxZoom = -1;
+            Log.w(TAG, "getSupportedExtendedMaxZoom occurs NullPointerException");
+        }
+        return maxZoom;
     }
 
     private void resetIfInvalid(ListPreference pref) {

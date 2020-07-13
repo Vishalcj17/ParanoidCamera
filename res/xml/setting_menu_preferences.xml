@@ -733,6 +733,15 @@
             android:summary="%s"/>
 
         <ListPreference
+            android:key="pref_camera2_extended_max_zoom_key"
+            android:defaultValue="@string/pref_camera2_extended_max_zoom_default"
+            android:title="@string/pref_camera2_extended_max_zoom_title"
+            android:entries="@array/pref_camera2_extended_max_zoom_entries"
+            android:entryValues="@array/pref_camera2_extended_max_zoom_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
             android:key="pref_camera2_statsnn_control_key"
             android:defaultValue="@string/pref_camera2_statsnn_control_default"
             android:title="@string/pref_camera2_statsnn_control_title"

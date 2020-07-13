@@ -1114,6 +1114,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_SHDR);
                         videoAddList.add(SettingsManager.KEY_VARIABLE_FPS);
                     }
+                    videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
                     addDeveloperOptions(developer, videoAddList);
@@ -1128,6 +1129,7 @@ public class SettingsActivity extends PreferenceActivity {
                 if (mDeveloperMenuEnabled) {
                     ArrayList<String> RTBList = new ArrayList<>(multiCameraSettingList);
                     RTBList.add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+                    RTBList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     addDeveloperOptions(developer, RTBList);
                 }
                 break;
@@ -1136,6 +1138,7 @@ public class SettingsActivity extends PreferenceActivity {
                 if (mDeveloperMenuEnabled) {
                     ArrayList<String> SATList = new ArrayList<>(multiCameraSettingList);
                     SATList.add(SettingsManager.KEY_HDR);
+                    SATList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     addDeveloperOptions(developer, SATList);
                 }
                 break;
@@ -1146,6 +1149,7 @@ public class SettingsActivity extends PreferenceActivity {
                     if (DEV_LEVEL_ALL) {
                         proModeOnlyList.add(SettingsManager.KEY_SWITCH_CAMERA);
                     }
+                    proModeOnlyList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     proModeOnlyList.add(SettingsManager.KEY_TONE_MAPPING);
                     addDeveloperOptions(developer, proModeOnlyList);
                 }
