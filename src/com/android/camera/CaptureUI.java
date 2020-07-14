@@ -640,7 +640,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mReviewDoneButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (intentMode == CaptureModule.INTENT_MODE_CAPTURE) {
+                    if (intentMode == CaptureModule.INTENT_MODE_CAPTURE || intentMode == CaptureModule.INTENT_MODE_CAPTURE_SECURE) {
                         mModule.onCaptureDone();
                     } else if (intentMode == CaptureModule.INTENT_MODE_VIDEO) {
                         mModule.onRecordingDone(true);
