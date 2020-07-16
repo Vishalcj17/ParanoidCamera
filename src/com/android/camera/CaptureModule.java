@@ -10238,7 +10238,12 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void onInfo(MediaRecorder mr, int what, int extra) {
         if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
             if (mIsRecordingVideo) {
-                stopRecordingVideo(getMainCameraId());
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        stopRecordingVideo(getMainCameraId());
+                    }
+                });
             }
         } else if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
            if (mIsRecordingVideo) {
