@@ -173,6 +173,16 @@
     "enable":{"pref_camera2_longshot_key":"off"},
     "disable":{}
   },
+  "pref_camera2_hdr_key":
+  {
+    "enable":{"pref_camera2_live_preview_key":"0"},
+    "disable":{}
+  },
+  "pref_camera2_live_preview_key":
+  {
+    "1":{"pref_camera2_hdr_key":"disable"},
+    "0":{}
+  },
   "pref_camera2_hfr_key":
   {
     "hfr90":{"pref_camera2_dis_key":"off"},
