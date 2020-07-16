@@ -144,7 +144,7 @@ public class PersistUtil {
     private static final boolean PERSIST_VIDEO_EIS =
             getBoolean("persist.sys.camera.video.eis",false);
     private static final int PERSIST_BURST_PREVIEW_REQUEST_NUMS =
-            getInt("persist.sys.camera.burst.preview.nums", 0);
+            getInt("persist.sys.camera.burst.preview.nums", 1);
     private static final boolean PERSIST_SSM_ENABLE =
             getBoolean("persist.sys.camera.ssm.enable", false);
 
