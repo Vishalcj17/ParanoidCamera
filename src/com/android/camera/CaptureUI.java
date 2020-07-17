@@ -1110,7 +1110,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 ((ViewGroup) mRootView).removeView(mFilterLayout);
                 mFilterLayout = null;
             }
-            if (mModule.getCurrentIntentMode() == CaptureModule.INTENT_MODE_NORMAL) {
+            if (mModule.getCurrentIntentMode() == CaptureModule.INTENT_MODE_NORMAL && !mModule.isRecordingVideo()) {
                 mModeSelectLayout.setVisibility(View.VISIBLE);
             }
             mModule.updateZoomSeekBarVisible();
