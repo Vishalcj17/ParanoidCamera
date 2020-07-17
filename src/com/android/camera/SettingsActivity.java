@@ -162,11 +162,25 @@ public class SettingsActivity extends PreferenceActivity {
                     updatePreferenceButton(dependentKey);
                 }
             }
-            if (key.equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE) ) {
-                if(isMFNREnabled()){
+            if (key.equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+                if(isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)){
                     ListPreference manualexp = (ListPreference) findPreference(SettingsManager.KEY_MANUAL_EXPOSURE);
                     manualexp.setEnabled(false);
                 }
+            }
+            // If Enable KEY_BURST_LIMIT, KEY_CAPTURE_MFNR_VALUE and KEY_LONGSHOT can same use
+            // if diable KEY_BURST_LIMIT, enable KEY_CAPTURE_MFNR_VALUE, KEY_LONGSHOT is diable
+            if (key.equals(SettingsManager.KEY_BURST_LIMIT) ||
+                    key.equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+                SwitchPreference longShot = (SwitchPreference) findPreference(
+                        SettingsManager.KEY_LONGSHOT);
+                if (isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+                    longShot.setEnabled(false);
+                }
+                if(isPrefEnabled(SettingsManager.KEY_BURST_LIMIT)){
+                    longShot.setEnabled(true);
+                }
+
             }
         }
     };
@@ -225,13 +239,13 @@ public class SettingsActivity extends PreferenceActivity {
         }
     };
 
-    private boolean isMFNREnabled() {
-        boolean mfnrEnable = false;
-        String mfnrValue = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
-        if (mfnrValue != null) {
-            mfnrEnable = mfnrValue.equals("1");
+    private boolean isPrefEnabled(String key) {
+        boolean result = false;
+        String prefValue = mSettingsManager.getValue(key);
+        if (prefValue != null) {
+            result = prefValue.equals("1");
         }
-        return mfnrEnable;
+        return result;
     }
 
     private void updateZslPreference() {
@@ -240,7 +254,7 @@ public class SettingsActivity extends PreferenceActivity {
         List<String> value_zsl = new ArrayList<String>(Arrays.asList( "disable", "hal-zsl"));
 
         if (ZSLPref != null) {
-            if (!isMFNREnabled()) {
+            if (!isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
                 key_zsl.add("APP-ZSL");
                 value_zsl.add("app-zsl");
             }
