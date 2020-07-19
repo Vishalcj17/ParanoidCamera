@@ -749,6 +749,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private long mRecordingTotalTime;
     private long mRecordingPauseTime;
     private long mRecordingPausingTime;
+    private long mHighRecordingPausingTime;
     private long mMaxDurationForCodec;
     private boolean mRecordingTimeCountsDown = false;
     private ImageReader mVideoSnapshotImageReader;
@@ -6859,8 +6860,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         mRecordingStartTime = SystemClock.uptimeMillis();
         mRecordingPausingTime += mRecordingStartTime - mRecordingPauseTime;
         if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
-            mRecordingPausingTime = mRecordingPausingTime * mHighSpeedCaptureRate / 30;
-            Log.d(TAG, "pause time is " + mRecordingPausingTime);
+            mHighRecordingPausingTime = mRecordingPausingTime * mHighSpeedCaptureRate / 30;
+            Log.d(TAG, "HFR pause time is " + mHighRecordingPausingTime);
         }
 
         updateRecordingTime();
@@ -7823,7 +7824,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                         startPtsUs = bufferInfo.presentationTimeUs + 1;
                     }
                     if (mRecordingPausingTime > 0) {
-                        bufferInfo.presentationTimeUs -= mRecordingPausingTime*1000;
+                        if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
+                            bufferInfo.presentationTimeUs -= mHighRecordingPausingTime*1000;
+                        } else {
+                            bufferInfo.presentationTimeUs -= mRecordingPausingTime*1000;
+                        }
                     }
                     frameNumber++;
                     if (mDynamicSettings.size() > 0) {
@@ -7977,7 +7982,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                         Log.d(TAG + "_audio", "prevPts is " + prevPtsUs);
                     }
                     if (mRecordingPausingTime > 0) {
-                        bufferInfo.presentationTimeUs -= mRecordingPausingTime * 1000;
+                        if (mHighSpeedCapture && !mHighSpeedRecordingMode) {
+                            bufferInfo.presentationTimeUs -= mHighRecordingPausingTime*1000;
+                        } else {
+                            bufferInfo.presentationTimeUs -= mRecordingPausingTime * 1000;
+                        }
                     }
                     if ((bufferInfo.presentationTimeUs - prevPtsUs) > 0 ) {
                         frameGap = bufferInfo.presentationTimeUs - prevPtsUs;
