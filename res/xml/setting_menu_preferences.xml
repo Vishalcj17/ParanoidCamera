@@ -724,11 +724,11 @@
             android:summary="%s"/>
 
         <ListPreference
-            android:key="pref_camera2_shdr_key"
-            android:defaultValue="@string/pref_camera2_shdr_default"
-            android:title="@string/pref_camera2_shdr_title"
-            android:entries="@array/pref_camera2_shdr_entries"
-            android:entryValues="@array/pref_camera2_shdr_entryvalues"
+            android:key="pref_camera2_mfhdr_key"
+            android:defaultValue="@string/pref_camera2_mfhdr_default"
+            android:title="@string/pref_camera2_mfhdr_title"
+            android:entries="@array/pref_camera2_mfhdr_entries"
+            android:entryValues="@array/pref_camera2_mfhdr_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"/>
 

@@ -1382,16 +1382,16 @@ for time lapse recording -->
         <item>@string/pref_camera2_select_mode_entry_value_single_rear</item>
     </string-array>
 
-    <string-array name="pref_camera2_shdr_entries" translatable="false">
-        <item>@string/pref_camera2_shdr_entry_off</item>
-        <item>@string/pref_camera2_shdr_entry_shdr</item>
-        <item>@string/pref_camera2_shdr_entry_mfhdr</item>
+    <string-array name="pref_camera2_mfhdr_entries" translatable="false">
+        <item>@string/pref_camera2_mfhdr_entry_off</item>
+        <item>@string/pref_camera2_mfhdr_entry_shdr</item>
+        <item>@string/pref_camera2_mfhdr_entry_mfhdr</item>
     </string-array>
 
-    <string-array name="pref_camera2_shdr_entryvalues" translatable="false">
-        <item>@string/pref_camera2_shdr_entry_value_off</item>
-        <item>@string/pref_camera2_shdr_entry_value_shdr</item>
-        <item>@string/pref_camera2_shdr_entry_value_mfhdr</item>
+    <string-array name="pref_camera2_mfhdr_entryvalues" translatable="false">
+        <item>@string/pref_camera2_mfhdr_entry_value_off</item>
+        <item>@string/pref_camera2_mfhdr_entry_value_shdr</item>
+        <item>@string/pref_camera2_mfhdr_entry_value_mfhdr</item>
     </string-array>
 
     <string-array name="pref_camera2_extended_max_zoom_entries" translatable="false">

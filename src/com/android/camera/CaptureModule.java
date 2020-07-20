@@ -388,6 +388,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.quadra_cfa.qcfa_dimension", int[].class);
     public static CameraCharacteristics.Key<int[]> support_video_hdr_modes =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.available_video_hdr_modes.video_hdr_modes", int[].class);
+    public static CameraCharacteristics.Key<int[]> support_video_mfhdr_modes =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.supportedHDRmodes.HDRModes", int[].class);
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
@@ -8977,7 +8979,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applySHDR(CaptureRequest.Builder request) {
-        String value = mSettingsManager.getValue(SettingsManager.KEY_SHDR);
+        String value = mSettingsManager.getValue(SettingsManager.KEY_MFHDR);
         if (value != null ) {
             Log.v(TAG, " applySHDR value :" + value);
             if (value.equals("shdr")) {

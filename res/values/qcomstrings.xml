@@ -1397,14 +1397,14 @@
     <string name="pref_camera2_abort_captures_entry_value_enable" translatable="false">1</string>
     <string name="pref_camera2_abort_captures_entry_value_disable" translatable="false">0</string>
 
-    <string name="pref_camera2_shdr_title" translatable="true">MFHDR Feature</string>
-    <string name="pref_camera2_shdr_default" translatable="false">0</string>
-    <string name="pref_camera2_shdr_entry_off" translatable="true">OFF</string>
-    <string name="pref_camera2_shdr_entry_shdr" translatable="true">SHDR</string>
-    <string name="pref_camera2_shdr_entry_mfhdr" translatable="false">MFHDR</string>
-    <string name="pref_camera2_shdr_entry_value_off" translatable="false">off</string>
-    <string name="pref_camera2_shdr_entry_value_shdr" translatable="false">shdr</string>
-    <string name="pref_camera2_shdr_entry_value_mfhdr" translatable="false">mfhdr</string>
+    <string name="pref_camera2_mfhdr_title" translatable="true">MFHDR Feature</string>
+    <string name="pref_camera2_mfhdr_default" translatable="false">0</string>
+    <string name="pref_camera2_mfhdr_entry_off" translatable="true">OFF</string>
+    <string name="pref_camera2_mfhdr_entry_shdr" translatable="true">SHDR</string>
+    <string name="pref_camera2_mfhdr_entry_mfhdr" translatable="false">MFHDR</string>
+    <string name="pref_camera2_mfhdr_entry_value_off" translatable="false">0</string>
+    <string name="pref_camera2_mfhdr_entry_value_shdr" translatable="false">1</string>
+    <string name="pref_camera2_mfhdr_entry_value_mfhdr" translatable="false">2</string>
 
     <string name="pref_camera2_extended_max_zoom_title" translatable="true">Extended max zoom</string>
     <string name="pref_camera2_extended_max_zoom_default" translatable="false">0</string>

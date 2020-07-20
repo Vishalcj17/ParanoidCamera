@@ -1112,8 +1112,8 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
-                        videoAddList.add(SettingsManager.KEY_SHDR);
                         videoAddList.add(SettingsManager.KEY_VARIABLE_FPS);
+                        videoAddList.add(SettingsManager.KEY_MFHDR);
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1309,6 +1309,7 @@ public class SettingsActivity extends PreferenceActivity {
         updatePictureSizePreferenceButton();
         updateVideoHDRPreference();
         updateVideoVariableFpsPreference();
+        updateVideoMFHDRPreference();
         updateFormatPreference();
         updateStoragePreference();
         initializePhysicalPreferences();
@@ -1418,6 +1419,22 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
         pref.setEnabled(mSettingsManager.isZZHDRSupported());
+    }
+
+    private void updateVideoMFHDRPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_MFHDR);
+        if (pref == null) {
+            return;
+        }
+        int[] modes = mSettingsManager.isMFHDRSupported();
+        pref.setEnabled(false);
+        if (modes != null && modes.length >= 1) {
+            pref.setEnabled(true);
+            mSettingsManager.filterVideoMFHDRModes(modes);
+            updatePreference(SettingsManager.KEY_MFHDR);
+        } else {
+            pref.setEnabled(false);
+        }
     }
 
     private void updateVideoVariableFpsPreference() {
