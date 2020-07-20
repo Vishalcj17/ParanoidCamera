@@ -6482,7 +6482,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         return true;
     }
 
-    private void startPhysicalRecorder(){
+    private void startPhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"startPhysicalRecorder");
         for (MediaRecorder recorder:mPhysicalMediaRecorders){
             if (recorder != null){
@@ -6491,7 +6491,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private void stopPhysicalRecorder(){
+    private void stopPhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"stopPhysicalRecorder");
         for (MediaRecorder recorder:mPhysicalMediaRecorders){
             if (recorder != null){
@@ -6503,7 +6503,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private void releasePhysicalRecorder(){
+    private void releasePhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"releasePhysicalRecorder");
         for (MediaRecorder recorder:mPhysicalMediaRecorders){
             if (recorder != null){
