@@ -704,6 +704,5 @@
             android:entryValues="@array/pref_camera2_shdr_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"/>
-
     </PreferenceCategory>
 </PreferenceScreen>

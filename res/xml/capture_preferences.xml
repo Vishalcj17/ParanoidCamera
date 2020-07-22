@@ -632,5 +632,4 @@
         camera:title="@string/pref_camera2_shdr_title"
         camera:entries="@array/pref_camera2_shdr_entries"
         camera:entryValues="@array/pref_camera2_shdr_entryvalues" />
-
 </PreferenceGroup>

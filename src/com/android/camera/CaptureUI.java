@@ -721,14 +721,14 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if(zoomRatioRange != null) {
             mZoomFixedValue = zoomRatioRange[0];
             Log.v(TAG, "initZoomSeekBar min:" + zoomRatioRange[0] + ", max :" + zoomRatioRange[1]);
-            mZoomSeekBar.setMax((int)((zoomRatioRange[1] -zoomRatioRange[0]) * 10));
+            mZoomSeekBar.setMax((int)((zoomRatioRange[1] -zoomRatioRange[0]) * 100));
             if (zoomRatioRange[0] > zoomMin) {
                 zoomMin = zoomRatioRange[0];
             }
             mZoomRatioSupport = true;
         } else {
             mZoomFixedValue = 1.0f;
-            mZoomSeekBar.setMax(zoomMax.intValue() * 10 - 10);
+            mZoomSeekBar.setMax(zoomMax.intValue() * 100 - 100);
             mZoomRatioSupport = false;
         }
         updateZoomSeekBar(zoomMin);
@@ -737,13 +737,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mZoomSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                float zoomValue = (progress + mZoomFixedValue * 10) / 10f;
+                float zoomValue = (progress + mZoomFixedValue * 100) / 100f;
                 mModule.updateZoomChanged(zoomValue);
                 if (mZoomRenderer != null) {
                     mZoomRenderer.setZoom(zoomValue);
                 }
-                int zoomSig = Math.round((progress + mZoomFixedValue * 10)) / 10;
-                int zoomFraction = Math.round(progress + mZoomFixedValue * 10) % 10;
+                int zoomSig = Math.round((progress + mZoomFixedValue * 100)) / 100;
+                int zoomFraction = Math.round(progress + mZoomFixedValue * 100) % 100;
                 String txt = zoomSig + "." + zoomFraction + "x";
                 if (mZoomValueText != null) {
                     mZoomValueText.setText(txt);
@@ -756,7 +756,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                float zoomValue = (seekBar.getProgress() + mZoomFixedValue * 10) / 10f;
+                float zoomValue = (seekBar.getProgress() + mZoomFixedValue * 100) / 100f;
                 mModule.updateZoomChanged(zoomValue);
                 if (mZoomRenderer != null) {
                     mZoomRenderer.setZoom(zoomValue);
@@ -769,7 +769,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public boolean getZoomFixedSupport() {
-        return mZoomRatioSupport && CaptureModule.MCXMODE;
+        return mZoomRatioSupport && CaptureModule.MCXMODE && !mModule.isSingleCameraMode();
     }
 
     public void hideZoomSeekBar() {
@@ -800,17 +800,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mZoomSwitch != null) {
             mZoomSwitch.setVisibility(View.VISIBLE);
         }
+        if(mFilterMenuStatus == FILTER_MENU_ON){
+            hideZoomSeekBar();
+        }
     }
 
     public void updateZoomSeekBar(float zoomValue) {
-        int zoomSig = Math.round(zoomValue * 10) / 10;
-        int zoomFraction = Math.round(zoomValue * 10) % 10;
+        int zoomSig = Math.round(zoomValue * 100) / 100;
+        int zoomFraction = Math.round(zoomValue * 100) % 100;
         String txt = zoomSig + "." + zoomFraction + "x";
         if (mZoomValueText != null) {
             mZoomValueText.setText(txt);
         }
         if (mZoomSeekBar != null) {
-            mZoomSeekBar.setProgress(zoomSig * 10 + zoomFraction - ((int)(10 * mZoomFixedValue)));
+            mZoomSeekBar.setProgress(zoomSig * 100 + zoomFraction - ((int)(100 * mZoomFixedValue)));
         }
     }
 
@@ -1684,6 +1687,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     public void showUIAfterCountDown() {
         hideCameraControls(false);
         mGestures.setZoomOnly(false);
+        updateMenus();
     }
 
     public void hideCameraControls(boolean hide) {
