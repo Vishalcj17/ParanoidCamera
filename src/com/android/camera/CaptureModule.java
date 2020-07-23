@@ -10585,6 +10585,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                     return;
                 } else if (zoomRatioRange != null && zoomRatioRange[0] != zoomRatioRange[1]) {
                     mUI.showZoomSeekBar();
+                    if (zoomRatioRange[0] > 1){
+                        mUI.hideZoomSwitch();
+                    }
                     Log.v(TAG, "updateZoomSeekBarVisible showZoomSeekBar");
                     return;
                 }

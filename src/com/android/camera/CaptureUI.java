@@ -781,6 +781,12 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         return mZoomRatioSupport && CaptureModule.MCXMODE && !mModule.isSingleCameraMode();
     }
 
+    public void hideZoomSwitch(){
+        if (mZoomSwitch != null){
+            mZoomSwitch.setVisibility(View.GONE);
+        }
+    }
+
     public void hideZoomSeekBar() {
         if (mZoomLinearLayout != null) {
             mZoomLinearLayout.setVisibility(View.GONE);
