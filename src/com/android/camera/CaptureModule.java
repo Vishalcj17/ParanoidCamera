@@ -5209,8 +5209,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         });
         mUI.enableShutter(true);
         setProModeVisible();
-        updateZoomSeekBarVisible();
         updateZoom();
+        updateZoomSeekBarVisible();
         updateMFNRText();//this must before showRelatedIcons, color filter based on mfnr
         mUI.showRelatedIcons(mCurrentSceneMode.mode);
         if(mIsCloseCamera) {
@@ -10724,6 +10724,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mUI.hideZoomSeekBar();
                     return;
                 } else if (zoomRatioRange != null && zoomRatioRange[0] != zoomRatioRange[1]) {
+                    mZoomValue = zoomRatioRange[0];
                     mUI.showZoomSeekBar();
                     if (zoomRatioRange[0] > 1){
                         mUI.hideZoomSwitch();
