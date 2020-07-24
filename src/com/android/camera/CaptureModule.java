@@ -3880,7 +3880,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                                                 pictureFormat = "heic";
                                             }
                                             if (mIntentMode == INTENT_MODE_STILL_IMAGE_CAMERA) {
-                                                title = title + "\\";
                                                 mIntentMode = INTENT_MODE_NORMAL;
                                             }
                                             mActivity.getMediaSaveService().addImage(bytes, title, date,
