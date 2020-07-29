@@ -6581,31 +6581,40 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void startPhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"startPhysicalRecorder");
-        for (MediaRecorder recorder:mPhysicalMediaRecorders){
-            if (recorder != null){
-                recorder.start();
+        if (mSettingsManager.getPhysicalFeatureEnableId
+                (SettingsManager.KEY_PHYSICAL_CAMCORDER) != null) {
+            for (MediaRecorder recorder:mPhysicalMediaRecorders){
+                if (recorder != null){
+                    recorder.start();
+                }
             }
         }
     }
 
     private void stopPhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"stopPhysicalRecorder");
-        for (MediaRecorder recorder:mPhysicalMediaRecorders){
-            if (recorder != null){
-                recorder.setOnErrorListener(null);
-                recorder.setOnInfoListener(null);
-                recorder.stop();
-                recorder.reset();
+        if (mSettingsManager.getPhysicalFeatureEnableId
+                (SettingsManager.KEY_PHYSICAL_CAMCORDER) != null) {
+            for (MediaRecorder recorder:mPhysicalMediaRecorders){
+                if (recorder != null){
+                    recorder.setOnErrorListener(null);
+                    recorder.setOnInfoListener(null);
+                    recorder.stop();
+                    recorder.reset();
+                }
             }
         }
     }
 
     private void releasePhysicalRecorder() throws RuntimeException{
         Log.d(TAG,"releasePhysicalRecorder");
-        for (MediaRecorder recorder:mPhysicalMediaRecorders){
-            if (recorder != null){
-                recorder.reset();
-                recorder.release();
+        if (mSettingsManager.getPhysicalFeatureEnableId
+                (SettingsManager.KEY_PHYSICAL_CAMCORDER) != null) {
+            for (MediaRecorder recorder:mPhysicalMediaRecorders){
+                if (recorder != null){
+                    recorder.reset();
+                    recorder.release();
+                }
             }
         }
     }

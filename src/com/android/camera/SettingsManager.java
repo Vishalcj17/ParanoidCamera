@@ -905,7 +905,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public boolean isLogicalEnable(){
         String ids  = getValue(KEY_PHYSICAL_CAMERA);
-        if (ids == null){
+        if (ids == null || "".equals(ids) || " ".equals(ids)){
             return true;
         } else {
             return ids.contains("logical");
