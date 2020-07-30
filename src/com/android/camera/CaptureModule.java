@@ -3933,7 +3933,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
 
-    private int getIndexByPhysicalId(String id){
+    public int getIndexByPhysicalId(String id){
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         int index = 0;
         int ret = -1;
