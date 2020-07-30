@@ -2028,8 +2028,18 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                     preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
                 } else {
                     if (i < physicalPreviewSizes.length + 1 && physicalPreviewSizes[i-1] != null){
-                        preview = new Size(physicalPreviewSizes[i-1].getHeight()/2,
-                                physicalPreviewSizes[i-1].getWidth()/2);
+                        if (physicalPreviewSizes[i-1].getWidth() <= 720 ||
+                                physicalPreviewSizes[i-1].getHeight() <= 540) {
+                            preview = new Size(physicalPreviewSizes[i-1].getHeight(),
+                                    physicalPreviewSizes[i-1].getWidth());
+                            if (physicalPreviewSizes[i-1].getWidth() <= 352 &&
+                                    physicalPreviewSizes[i-1].getHeight() <= 288){
+                                preview = new Size (540,720);
+                            }
+                        } else {
+                            preview = new Size(physicalPreviewSizes[i-1].getHeight()/2,
+                                    physicalPreviewSizes[i-1].getWidth()/2);
+                        }
                     } else {
                         preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
                     }
