@@ -6365,6 +6365,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         mActivity.updateStorageSpaceAndHint();
         if (mActivity.getStorageSpaceBytes() <= Storage.LOW_STORAGE_THRESHOLD_BYTES) {
             Log.w(TAG, "Storage issue, ignore the start request");
+            mStartRecPending = false;
+            mIsRecordingVideo = false;
+            mIsPreviewingVideo = true;
+            Toast.makeText(mActivity,"Storage space is not enough",Toast.LENGTH_SHORT).show();
             return false;
         }
         mStartRecPending = true;
@@ -8469,7 +8473,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 // Show ui when start recording failed.
                 mUI.showUIafterRecording();
                 if (PersistUtil.enableMediaRecorder()) {
-                    releaseMediaRecorder();
+                    mFrameProcessor.setVideoOutputSurface(null);
                 } else {
                     stopCodecThreads();
                     releaseMediaCodec();
