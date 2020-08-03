@@ -2025,6 +2025,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mPhysicalHolders[0] = mPhysicalViews[0].getHolder();
         Size logicalPreview = new Size(mPreviewHeight/2,mPreviewWidth/2);
         mPhysicalHolders[0].setFixedSize(logicalPreview.getWidth(),logicalPreview.getHeight());
+        Log.d(TAG,"logical surface "+0+" preview size="+logicalPreview.toString());
         mPhysicalViews[0].setVisibility(View.VISIBLE);
 
         int i = 1;

@@ -6011,7 +6011,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoSnapshotSize = getMaxPictureSizeLiveshot();
         }
 
-        if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
+                mSettingsManager.isMultiCameraEnabled()){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
@@ -6242,6 +6243,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
         List<OutputConfiguration> outConfigurations = new ArrayList<>();
         if (mSettingsManager.getPhysicalCameraId() != null) {
+            mVideoRecordRequestBuilder.removeTarget(mVideoPreviewSurface);
             if (mSettingsManager.isLogicalEnable()){
                 mVideoRecordRequestBuilder.addTarget(mUI.getPhysicalSurfaces().get(0));
                 outConfigurations.add(new OutputConfiguration(mUI.getPhysicalSurfaces().get(0)));
