@@ -8188,7 +8188,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
 
         mAudioRecord =  new AudioRecord.Builder()
-                .setAudioFormat((new AudioFormat.Builder().setChannelMask(AudioFormat.CHANNEL_IN_MONO))
+                .setAudioFormat((new AudioFormat.Builder().setChannelMask(AudioFormat.CHANNEL_IN_STEREO))
                         .setSampleRate(mProfile.audioSampleRate)
                         .setEncoding(mAudioFormatNumber)
                         .build())
