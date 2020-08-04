@@ -1294,9 +1294,9 @@ public class CaptureModule implements CameraModule, PhotoController,
 
             if (beRStats != null && beGStats != null && beBStats != null && mBEStatson) {
                 synchronized (be_r_statsdata) {
-                    System.arraycopy(beRStats, 0, be_r_statsdata, 0, BESTATS_DATA);
-                    System.arraycopy(beGStats, 0, be_g_statsdata, 0, BESTATS_DATA);
-                    System.arraycopy(beBStats, 0, be_b_statsdata, 0, BESTATS_DATA);
+                    System.arraycopy(beRStats, 0, be_r_statsdata, 0, beRStats.length);
+                    System.arraycopy(beGStats, 0, be_g_statsdata, 0, beRStats.length);
+                    System.arraycopy(beBStats, 0, be_b_statsdata, 0, beRStats.length);
 
                     int roi_x = (int)(norm_roi_x * 64.0f);
                     int roi_y = (int)(norm_roi_y * 48.0f);

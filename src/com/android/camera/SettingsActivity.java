@@ -151,10 +151,7 @@ public class SettingsActivity extends PreferenceActivity {
                 } else {
                     updateSwitchIDInModePreference(true);
                 }
-                if (value.equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
-                    ListPreference eis = (ListPreference) findPreference(SettingsManager.KEY_EIS_VALUE);
-                    eis.setEnabled(false);
-                }
+                updateEISPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
             if (list != null) {
@@ -232,7 +229,8 @@ public class SettingsActivity extends PreferenceActivity {
                 }
 
                 if(pref.getKey().equals(SettingsManager.KEY_VIDEO_QUALITY) ||
-                   pref.getKey().equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)){
+                   pref.getKey().equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE) ||
+                   pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)){
                     updateEISPreference();
                 }
             }
@@ -1309,7 +1307,6 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoHDRPreference();
         updateVideoVariableFpsPreference();
         updateFormatPreference();
-        updateEISPreference();
         updateStoragePreference();
         initializePhysicalPreferences();
         updatePhysicalPreferences();
@@ -1370,6 +1367,7 @@ public class SettingsActivity extends PreferenceActivity {
         }
         updateZslPreference();
         updateSwitchIDInModePreference(true);
+        updateEISPreference();
     }
 
     private void updateStoragePreference() {
@@ -1461,6 +1459,11 @@ public class SettingsActivity extends PreferenceActivity {
                 eisPref.setEnabled(false);
             } else {
                 eisPref.setEnabled(true);
+            }
+            CaptureModule.CameraMode mode = (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
+            ListPreference selectModePref = (ListPreference) findPreference(SettingsManager.KEY_SELECT_MODE);
+            if (selectModePref.getValue().equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
+                eisPref.setEnabled(false);
             }
         }
     }
