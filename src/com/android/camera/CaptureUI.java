@@ -1038,7 +1038,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
     public void onCameraOpened(int cameraId) {
         mGestures.setCaptureUI(this);
-        if (mModule.isDeepZoom() || mModule.getCurrenCameraMode() == CaptureModule.CameraMode.RTB) {
+        if (mModule.isDeepZoom()) {
             mGestures.setZoomEnabled(false);
         } else {
             mGestures.setZoomEnabled(mSettingsManager.isZoomSupported(cameraId));
