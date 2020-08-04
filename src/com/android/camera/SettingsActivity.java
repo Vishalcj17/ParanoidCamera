@@ -171,13 +171,16 @@ public class SettingsActivity extends PreferenceActivity {
                     key.equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
                 SwitchPreference longShot = (SwitchPreference) findPreference(
                         SettingsManager.KEY_LONGSHOT);
-                if (isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
-                    longShot.setEnabled(false);
-                }
                 if(isPrefEnabled(SettingsManager.KEY_BURST_LIMIT)){
                     longShot.setEnabled(true);
+                } else {
+                    if (isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+                        mSettingsManager.setValue(SettingsManager.KEY_LONGSHOT, "off");
+                        longShot.setEnabled(false);
+                    } else {
+                        longShot.setEnabled(true);
+                    }
                 }
-
             }
         }
     };
@@ -1310,6 +1313,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateStoragePreference();
         initializePhysicalPreferences();
         updatePhysicalPreferences();
+        updateLongShotPreference();
 
         Map<String, SettingsManager.Values> map = mSettingsManager.getValuesMap();
         if (map == null) return;
@@ -1464,6 +1468,19 @@ public class SettingsActivity extends PreferenceActivity {
             ListPreference selectModePref = (ListPreference) findPreference(SettingsManager.KEY_SELECT_MODE);
             if (selectModePref.getValue().equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
                 eisPref.setEnabled(false);
+            }
+        }
+    }
+
+    private void updateLongShotPreference() {
+        SwitchPreference longShot = (SwitchPreference) findPreference(
+                SettingsManager.KEY_LONGSHOT);
+        if(isPrefEnabled(SettingsManager.KEY_BURST_LIMIT)){
+            longShot.setEnabled(true);
+        } else {
+            if (isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+                mSettingsManager.setValue(SettingsManager.KEY_LONGSHOT, "off");
+                longShot.setEnabled(false);
             }
         }
     }
