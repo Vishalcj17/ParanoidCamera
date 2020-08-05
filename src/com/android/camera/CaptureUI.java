@@ -1288,7 +1288,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         });
     }
 
-    public void initFilterModeButton() {
+    private void initFilterModeButton() {
         mFilterModeSwitcher.setVisibility(View.INVISIBLE);
         String value = mSettingsManager.getValue(SettingsManager.KEY_COLOR_EFFECT);
         if (value == null) return;
@@ -1587,6 +1587,10 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mFrontBackSwitcher.setVisibility(View.INVISIBLE);
         }
         if(mModule.mMFNREnable && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
+            mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+        }
+        String mfHDR = mSettingsManager.getValue(SettingsManager.KEY_MFHDR);
+        if (mfHDR != null && (mfHDR.equals("1") || mfHDR.equals("2"))) {
             mFilterModeSwitcher.setVisibility(View.INVISIBLE);
         }
     }
