@@ -9896,27 +9896,40 @@ public class CaptureModule implements CameraModule, PhotoController,
 
         // inverse of matrix2 will translate from (-1000 to 1000) to camera 2 coordinates
         Matrix matrix2 = new Matrix();
-        matrix2.preTranslate(-mOriginalCropRegion[id].width() / 2f,
-                -mOriginalCropRegion[id].height() / 2f);
-        matrix2.postScale(2000f / mOriginalCropRegion[id].width(),
-                2000f / mOriginalCropRegion[id].height());
+        boolean postZoomFov = mUI.getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV();
+        Rect rect = new Rect();
+        if (postZoomFov) {
+            rect = cropRegion;
+        } else {
+            rect = mOriginalCropRegion[id];
+        }
+        matrix2.preTranslate(-rect.width() / 2f,
+                -rect.height() / 2f);
+        matrix2.postScale(2000f / rect.width(),
+                2000f / rect.height());
         matrix2.invert(matrix2);
 
         matrix1.mapRect(meteringRegionF);
         matrix2.mapRect(meteringRegionF);
 
-        meteringRegionF.left = meteringRegionF.left * cropRegion.width()
-                / mOriginalCropRegion[id].width() + cropRegion.left;
-        meteringRegionF.top = meteringRegionF.top * cropRegion.height()
-                / mOriginalCropRegion[id].height() + cropRegion.top;
-        meteringRegionF.right = meteringRegionF.right * cropRegion.width()
-                / mOriginalCropRegion[id].width() + cropRegion.left;
-        meteringRegionF.bottom = meteringRegionF.bottom * cropRegion.height()
-                / mOriginalCropRegion[id].height() + cropRegion.top;
+        if (!postZoomFov) {
+            meteringRegionF.left = meteringRegionF.left * cropRegion.width()
+                    / mOriginalCropRegion[id].width() + cropRegion.left;
+            meteringRegionF.top = meteringRegionF.top * cropRegion.height()
+                    / mOriginalCropRegion[id].height() + cropRegion.top;
+            meteringRegionF.right = meteringRegionF.right * cropRegion.width()
+                    / mOriginalCropRegion[id].width() + cropRegion.left;
+            meteringRegionF.bottom = meteringRegionF.bottom * cropRegion.height()
+                    / mOriginalCropRegion[id].height() + cropRegion.top;
+        }
 
         Rect meteringRegion = new Rect((int) meteringRegionF.left, (int) meteringRegionF.top,
                 (int) meteringRegionF.right, (int) meteringRegionF.bottom);
-
+        if (DEBUG) {
+            Log.v(TAG, " meteringRegion left :" + meteringRegion.left + ", top:" +
+                    meteringRegion.top + " right :" + meteringRegion.right +
+                    ", bottom :" + meteringRegion.bottom);
+        }
         meteringRegion.left = CameraUtil.clamp(meteringRegion.left, cropRegion.left,
                 cropRegion.right);
         meteringRegion.top = CameraUtil.clamp(meteringRegion.top, cropRegion.top,
@@ -9925,7 +9938,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                 cropRegion.right);
         meteringRegion.bottom = CameraUtil.clamp(meteringRegion.bottom, cropRegion.top,
                 cropRegion.bottom);
-
+        if (DEBUG) {
+            Log.v(TAG, " modify meteringRegion left :" + meteringRegion.left +
+                    ", top:" + meteringRegion.top + " right :" + meteringRegion.right +
+                    ", bottom :" + meteringRegion.bottom);
+        }
         MeteringRectangle[] meteringRectangle = new MeteringRectangle[1];
         meteringRectangle[0] = new MeteringRectangle(meteringRegion, 1);
         return meteringRectangle;

@@ -43,6 +43,7 @@ import android.util.Log;
 import com.android.camera.ExtendedFace;
 import com.android.camera.SettingsManager;
 import com.android.camera.util.CameraUtil;
+import com.android.camera.util.PersistUtil;
 
 public class Camera2FaceView extends FaceView {
 
@@ -75,6 +76,8 @@ public class Camera2FaceView extends FaceView {
     private boolean mFdSmileEnable = false;
     private boolean mFdGazeEnable = false;
     private boolean mFdBlinkEnable = false;
+    private boolean mPostZoomFov = false;
+    private boolean mZoomRationSupported = false;
 
     public Camera2FaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -91,6 +94,7 @@ public class Camera2FaceView extends FaceView {
                 SettingsManager.KEY_FD_GAZE));
         mFdBlinkEnable = "enable".equals(SettingsManager.getInstance().getValue(
                 SettingsManager.KEY_FD_BLINK));
+        mPostZoomFov = PersistUtil.isCameraPostZoomFOV();
     }
 
     public void setCameraBound(Rect cameraBound) {
@@ -103,6 +107,10 @@ public class Camera2FaceView extends FaceView {
 
     public void setZoom(float zoom) {
         mZoom = zoom;
+    }
+
+    public void setZoomRationSupported(boolean supported) {
+        mZoomRationSupported = supported;
     }
 
     public void setFaces(Face[] faces, ExtendedFace[] extendedFaces) {
@@ -132,8 +140,17 @@ public class Camera2FaceView extends FaceView {
     }
 
     private boolean isFDRectOutOfBound(Rect faceRect) {
-        return mCameraBound.left > faceRect.left || mCameraBound.top > faceRect.top ||
-                faceRect.right > mCameraBound.right || faceRect.bottom > mCameraBound.bottom;
+        boolean result = false;
+        if(mZoomRationSupported && mPostZoomFov) {
+            result = mOriginalCameraBound.left > faceRect.left ||
+                    mOriginalCameraBound.top > faceRect.top ||
+                    faceRect.right > mOriginalCameraBound.right ||
+                    faceRect.bottom > mOriginalCameraBound.bottom;
+        } else {
+            result = mCameraBound.left > faceRect.left || mCameraBound.top > faceRect.top ||
+                    faceRect.right > mCameraBound.right || faceRect.bottom > mCameraBound.bottom;
+        }
+        return result;
     }
 
     @Override
@@ -165,17 +182,33 @@ public class Camera2FaceView extends FaceView {
             // mMatrix assumes that the face coordinates are from -1000 to 1000.
             // so translate the face coordination to match the assumption.
             Matrix translateMatrix = new Matrix();
-            translateMatrix.preTranslate(-mCameraBound.width() / 2f, -mCameraBound.height() / 2f);
-            translateMatrix.postScale(2000f / mCameraBound.width(), 2000f / mCameraBound.height());
+            if(mZoomRationSupported && mPostZoomFov) {
+                translateMatrix.preTranslate(-mOriginalCameraBound.width() / 2f,
+                        -mOriginalCameraBound.height() / 2f);
+                translateMatrix.postScale(2000f / mOriginalCameraBound.width(),
+                        2000f / mOriginalCameraBound.height());
+            } else {
+                translateMatrix.preTranslate(-mCameraBound.width() / 2f,
+                        -mCameraBound.height() / 2f);
+                translateMatrix.postScale(2000f / mCameraBound.width(),
+                        2000f / mCameraBound.height());
+            }
 
             if (LOGV) {
                 Log.v(TAG, "onDraw w * H :" + mCameraBound.width() + " x " + mCameraBound.height());
             }
             Matrix bsgcTranslateMatrix = new Matrix();
-            bsgcTranslateMatrix.preTranslate(-mCameraBound.width() / 2f * mZoom,
-                    -mCameraBound.height() / 2f * mZoom);
-            bsgcTranslateMatrix.postScale(2000f / mCameraBound.width(),
-                    2000f / mCameraBound.height());
+            if(mZoomRationSupported && mPostZoomFov) {
+                bsgcTranslateMatrix.preTranslate(-mOriginalCameraBound.width() / 2f * mZoom,
+                        -mOriginalCameraBound.height() / 2f * mZoom);
+                bsgcTranslateMatrix.postScale(2000f / mOriginalCameraBound.width(),
+                        2000f / mOriginalCameraBound.height());
+            } else {
+                bsgcTranslateMatrix.preTranslate(-mCameraBound.width() / 2f * mZoom,
+                        -mCameraBound.height() / 2f * mZoom);
+                bsgcTranslateMatrix.postScale(2000f / mCameraBound.width(),
+                        2000f / mCameraBound.height());
+            }
 
             int dx = (getWidth() - mUncroppedWidth) / 2;
             dx -= (rw - mUncroppedWidth) / 2;
@@ -220,14 +253,13 @@ public class Camera2FaceView extends FaceView {
                 }
             }
 
-
             for (int i = 0; i < mFaces.length; i++) {
                 if (mFaces[i].getScore() < 50) continue;
                 Rect faceBound = mFaces[i].getBounds();
                 faceBound.offset(-mOriginalCameraBound.left, -mOriginalCameraBound.top);
                 if (isFDRectOutOfBound(faceBound)) continue;
                 mRect.set(faceBound);
-                if (mZoom != 1.0f) {
+                if (mZoom != 1.0f && !(mZoomRationSupported && mPostZoomFov)) {
                     mRect.left = mRect.left - mCameraBound.left;
                     mRect.right = mRect.right - mCameraBound.left;
                     mRect.top = mRect.top - mCameraBound.top;

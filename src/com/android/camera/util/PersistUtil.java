@@ -149,7 +149,8 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.ssm.enable", false);
     private static final boolean PERSIST_FD_RENDERING_SUPPORTED =
             getBoolean("persist.sys.camera.isFDRenderingSupported", false);
-
+    private static final boolean PERSIST_CAM_ENABLE_POST_ZOOM_FOV =
+            getBoolean("persist.sys.enable_post_zoom_fov", false);
     private static final boolean PERSIST_CAM_FD_SUPPORTED =
             getBoolean("persist.sys.camera.isCamFDSupported", false);
     private static final int PERSIST_MCTF_VALUE =
@@ -433,9 +434,14 @@ public class PersistUtil {
         return PERSIST_SSM_ENABLE;
     }
 
+    public static boolean isCameraPostZoomFOV() {
+        return PERSIST_CAM_ENABLE_POST_ZOOM_FOV;
+    }
+
     public static boolean isFDRENDERINGSUPPORTED() {return PERSIST_FD_RENDERING_SUPPORTED; }
 
     public static boolean isCameraFDSupported() {return PERSIST_CAM_FD_SUPPORTED; }
 
     public static int mctfValue() { return PERSIST_MCTF_VALUE; }
+
 }
