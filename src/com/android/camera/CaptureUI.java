@@ -2286,7 +2286,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (zoomValue < 1.0f) {
             zoomValue = 1.0f;
         }
-        zoomValue = 1.0f;
         mFaceView.setZoom(zoomValue);
         mFaceView.resume();
     }
@@ -2297,7 +2296,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (zoomValue < 1.0f) {
             zoomValue = 1.0f;
         }
-        zoomValue = 1.0f;
         mFaceView.setZoom(zoomValue);
     }
 
