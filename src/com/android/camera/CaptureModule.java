@@ -10432,12 +10432,17 @@ public class CaptureModule implements CameraModule, PhotoController,
                 });
             }
         } else if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
-           if (mIsRecordingVideo) {
-               stopRecordingVideo(getMainCameraId());
-           }
-            // Show the toast.
-            RotateTextToast.makeText(mActivity, R.string.video_reach_size_limit,
-                    Toast.LENGTH_LONG).show();
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mIsRecordingVideo) {
+                        stopRecordingVideo(getMainCameraId());
+                    }
+                     // Show the toast.
+                    RotateTextToast.makeText(mActivity, R.string.video_reach_size_limit,
+                            Toast.LENGTH_LONG).show();
+                }
+            });
         }
     }
 
