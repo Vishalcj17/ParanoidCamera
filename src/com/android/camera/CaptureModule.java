@@ -2150,7 +2150,10 @@ public class CaptureModule implements CameraModule, PhotoController,
                             List<Surface> surfaceList = new ArrayList<>();
                             surfaceList.add(previewSurfaces.get(0));
                             mPreviewRequestBuilder[id].addTarget(previewSurfaces.get(0));
-                            surfaceList.add(mImageReader[id].getSurface());
+                            if (mSettingsManager.isLogicalFeatureEnable(
+                                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK)){
+                                surfaceList.add(mImageReader[id].getSurface());
+                            }
                             for (Surface s : surfaceList) {
                                 outputConfigurations.add(new OutputConfiguration(s));
                             }
@@ -2172,7 +2175,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                             mSettingsManager.isLogicalEnable()) {
                         List<OutputConfiguration> physicalOutput =
                                 getPhysicalOutputConfiguration();
-                        outputConfigurations.addAll(physicalOutput);
+                        if (physicalOutput.size() != 0){
+                            outputConfigurations.addAll(physicalOutput);
+                        }
                     }
                     List<Surface> surfaces = mFrameProcessor.getInputSurfaces();
                     for(Surface surs : surfaces) {
@@ -2183,6 +2188,12 @@ public class CaptureModule implements CameraModule, PhotoController,
 
                     if (!mSettingsManager.isHeifWriterEncoding()) {
                         list.add(mImageReader[id].getSurface());
+                    }
+
+                    if (mSettingsManager.isMultiCameraEnabled() &&
+                            !mSettingsManager.isLogicalFeatureEnable(
+                                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK)) {
+                        list.remove(mImageReader[id].getSurface());
                     }
                     if (mSaveRaw) {
                         list.add(mRawImageReader[id].getSurface());
@@ -2254,8 +2265,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         if (jpeg_ids != null) {
+            Iterator<String> id=jpeg_ids.iterator();
             for (ImageReader reader : mPhysicalJpegReader) {
-                Iterator<String> id=jpeg_ids.iterator();
                 if (reader != null){
                     builder.addTarget(reader.getSurface());
                     targetCount++;
@@ -2293,28 +2304,27 @@ public class CaptureModule implements CameraModule, PhotoController,
         return targetCount;
     }
 
+    private boolean isLogicalId(String id){
+        return id != null && id.contains("logical");
+    }
+
     private List<OutputConfiguration> getPhysicalVideoOutputConfiguration() {
         List<OutputConfiguration> outputConfigurations = new ArrayList<>();
-        Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
-                SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
-        if (jpeg_ids != null) {
-            int i = 0;
-            for (String id : jpeg_ids) {
-                OutputConfiguration configuration = new OutputConfiguration(
-                        mPhysicalSnapshotImageReaders[i].getSurface());
-                configuration.setPhysicalCameraId(id);
-                outputConfigurations.add(configuration);
-                Log.d(TAG, "add output for physical live shot format=jpeg physicalId=" + id);
-                i++;
-            }
-        }
-        Set<String> physical_ids = mSettingsManager.getPhysicalCameraId();
+        Set<String> physical_ids = mSettingsManager.getPhysicalFeatureEnableId(
+                SettingsManager.KEY_PHYSICAL_CAMCORDER);
         if (physical_ids != null){
             int i = 0;
             for (String id : physical_ids){
                 if (mPhysicalMediaRecorders[i] != null){
                     OutputConfiguration configuration = new OutputConfiguration(
                             mPhysicalMediaRecorders[i].getSurface());
+                    configuration.setPhysicalCameraId(id);
+                    outputConfigurations.add(configuration);
+                    Log.d(TAG, "add output for physical recording physicalId=" + id);
+                }
+                if (mPhysicalSnapshotImageReaders[i] != null){
+                    OutputConfiguration configuration = new OutputConfiguration(
+                            mPhysicalSnapshotImageReaders[i].getSurface());
                     configuration.setPhysicalCameraId(id);
                     outputConfigurations.add(configuration);
                     Log.d(TAG, "add output for physical live shot format=jpeg physicalId=" + id);
@@ -2353,7 +2363,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             for (String id:yuv_ids){
                 OutputConfiguration configuration = new OutputConfiguration(
                         mPhysicalYuvReader[i].getSurface());
-                if (!"logical".equals(id)){
+                if (!isLogicalId(id)){
                     configuration.setPhysicalCameraId(id);
                 }
                 outputConfigurations.add(configuration);
@@ -2370,7 +2380,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             for (String id:raw_ids){
                 OutputConfiguration configuration = new OutputConfiguration(
                         mPhysicalRawReader[i].getSurface());
-                if (!"logical".equals(id)){
+                if (!isLogicalId(id)){
                     configuration.setPhysicalCameraId(id);
                 }
                 outputConfigurations.add(configuration);
@@ -3221,7 +3231,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else {
                 if (mSettingsManager.isMultiCameraEnabled()) {
                     int count = addPhysicalCaptureTarget(captureBuilder);
-                    if (mSettingsManager.isLogicalEnable()){
+                    if (mSettingsManager.isLogicalFeatureEnable(
+                            SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK)){
                         captureBuilder.addTarget(mImageReader[id].getSurface());
                     } else {
                         if(count == 0){
@@ -3955,10 +3966,22 @@ public class CaptureModule implements CameraModule, PhotoController,
         return ret;
     }
 
+    private void cleanPhysicalImageReaders() {
+        for (int i= 0; i < PHYSICAL_CAMERA_COUNT; i++){
+            mPhysicalJpegReader[i] = null;
+        }
+
+        for (int i=0; i< MAX_LOGICAL_PHYSICAL_CAMERA_COUNT; i++) {
+            mPhysicalYuvReader[i] = null;
+            mPhysicalRawReader[i] = null;
+        }
+    }
+
 
     private void setUpPhysicalOutput(){
         if (!mSettingsManager.isMultiCameraEnabled())
             return;
+        cleanPhysicalImageReaders();
         Set<String> jpeg_ids = mSettingsManager.getPhysicalFeatureEnableId(
                 SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
         if (jpeg_ids != null) {
@@ -4121,9 +4144,9 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void createPhysicalVideoSnapshotImageReader(){
         if (mSettingsManager.getPhysicalFeatureEnableId(
-                SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK) != null){
+                SettingsManager.KEY_PHYSICAL_CAMCORDER) != null){
             Set<String> ids = mSettingsManager.getPhysicalFeatureEnableId(
-                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
+                    SettingsManager.KEY_PHYSICAL_CAMCORDER);
             int count = ids.size();
             Iterator<String> iterator = ids.iterator();
             for (int i =0;i<count;i++){
@@ -4159,9 +4182,9 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private int addPhysicalVideoCaptureTarget(CaptureRequest.Builder builder){
         if (mSettingsManager.getPhysicalFeatureEnableId(
-                SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK) != null){
+                SettingsManager.KEY_PHYSICAL_CAMCORDER) != null){
             int count = mSettingsManager.getPhysicalFeatureEnableId(
-                    SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK).size();
+                    SettingsManager.KEY_PHYSICAL_CAMCORDER).size();
             int ret = 0;
             for (int i =0;i<count;i++){
                 if (mPhysicalSnapshotImageReaders[i] != null){
@@ -6258,7 +6281,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void configureCameraSessionWithParameters(int cameraId,
             List<Surface> outputSurfaces, CameraCaptureSession.StateCallback listener,
             Handler handler, CaptureRequest.Builder initialRequest) throws CameraAccessException {
-
         List<OutputConfiguration> outConfigurations = new ArrayList<>();
         if (mSettingsManager.getPhysicalCameraId() != null) {
             mVideoRecordRequestBuilder.removeTarget(mVideoPreviewSurface);
@@ -6632,6 +6654,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 if (recorder != null){
                     recorder.reset();
                     recorder.release();
+                    recorder = null;
                 }
             }
         }
@@ -7531,6 +7554,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 SettingsManager.KEY_PHYSICAL_CAMCORDER);
         if (ids == null || ids.size() == 0)
             return;
+        releasePhysicalRecorder();
         int count = ids.size();
         Log.d(TAG,"setUpPhysicalMediaRecorder count="+count);
         CamcorderProfile profile;

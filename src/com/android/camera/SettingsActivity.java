@@ -1111,7 +1111,6 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
-                        videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                         videoAddList.add(SettingsManager.KEY_VARIABLE_FPS);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                     }
@@ -1226,7 +1225,6 @@ public class SettingsActivity extends PreferenceActivity {
         final ArrayList<String> multiCameraVideoList = new ArrayList<String>() {
             {
                 add(SettingsManager.KEY_PHYSICAL_CAMERA);
-                add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 for(String id : SettingsManager.KEY_PHYSICAL_VIDEO_SIZE){
                     add(id);

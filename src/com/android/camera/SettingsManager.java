@@ -904,12 +904,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (getPhysicalCameraId() == null){
             if (!isLogicalEnable() &&
                     !KEY_PHYSICAL_YUV_CALLBACK.equals(key) &&
-                    !KEY_PHYSICAL_RAW_CALLBACK.equals(key) ){
+                    !KEY_PHYSICAL_RAW_CALLBACK.equals(key) &&
+                    !KEY_PHYSICAL_JPEG_CALLBACK.equals(key)){
                 return null;
             }
         }
         if (ids == null || "".equals(ids))
             return null;
+        if (KEY_PHYSICAL_JPEG_CALLBACK.equals(key)){
+            ids = ids.replace("logical;","");
+        }
         String[] physical_ids = ids.trim().split(";");
         if (physical_ids == null || physical_ids.length == 0)
             return null;
@@ -920,6 +924,15 @@ public class SettingsManager implements ListMenu.SettingsListener {
         String ids  = getValue(KEY_PHYSICAL_CAMERA);
         if (ids == null || "".equals(ids) || " ".equals(ids)){
             return true;
+        } else {
+            return ids.contains("logical");
+        }
+    }
+
+    public boolean isLogicalFeatureEnable(String key) {
+        String ids  = getValue(key);
+        if (ids == null){
+            return false;
         } else {
             return ids.contains("logical");
         }
@@ -1434,6 +1447,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         fullEntryValues.length);
                 physicalCamera.setEntries(newEntries);
                 physicalCamera.setEntryValues(newEntryValues);
+                physicalJpegCallback.setEntries(newEntries);
+                physicalJpegCallback.setEntryValues(newEntryValues);
                 physicalYuvCallback.setEntries(newEntries);
                 physicalYuvCallback.setEntryValues(newEntryValues);
                 physicalRawCallback.setEntries(newEntries);
