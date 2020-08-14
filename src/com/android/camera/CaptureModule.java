@@ -7424,10 +7424,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mSettingsManager.isMultiCameraEnabled()) {
             Set<String> ids = mSettingsManager.getPhysicalFeatureEnableId(
                     SettingsManager.KEY_PHYSICAL_CAMCORDER);
-            Iterator<String> iterator = ids.iterator();
+            Iterator<String> iterator = null;
+            if (ids != null && ids.size() >0){
+                iterator = ids.iterator();
+            }
             for (String physicalFileName : mPhysicalFileName){
-                if (iterator.hasNext() && physicalFileName != null) {
-                    String physicalId = iterator.next();
+                if (physicalFileName != null) {
+                    String physicalId = null;
+                    if (iterator != null && iterator.hasNext()){
+                        physicalId = iterator.next();
+                    }
                     File origFile = new File(physicalFileName);
                     if (origFile == null || !origFile.exists() || origFile.length() <= 0) {
                         Log.e(TAG, "Invalid file "+physicalFileName);
@@ -7436,9 +7442,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                     long dateTaken = System.currentTimeMillis();
                     ContentValues contentValues = new ContentValues(9);
                     contentValues.put(MediaStore.Video.Media.TITLE, origFile.getName());
-                    int index = getIndexByPhysicalId(physicalId);
-                    contentValues.put(MediaStore.Video.Media.RESOLUTION,
-                            mPhysicalVideoSizes[index].toString());
+                    if (physicalId != null){
+                        int index = getIndexByPhysicalId(physicalId);
+                        contentValues.put(MediaStore.Video.Media.RESOLUTION,
+                                mPhysicalVideoSizes[index].toString());
+                    }
                     contentValues.put(MediaStore.Video.Media.SIZE, origFile.length());
                     contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, origFile.getName());
                     contentValues.put(MediaStore.Video.Media.DATE_TAKEN, dateTaken);
