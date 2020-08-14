@@ -4595,7 +4595,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 .CONTROL_AF_TRIGGER_START);
         if (mCurrentSceneMode.mode == CameraMode.VIDEO ||
                 mCurrentSceneMode.mode == CameraMode.HFR) {
-            Range fpsRange = mHighSpeedCapture ? mHighSpeedFPSRange : new Range(60, 60);
+            Range fpsRange = mHighSpeedCapture ? mHighSpeedFPSRange : new Range(30, 30);
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
         }
         applyAFRegions(builder, id);
@@ -6693,7 +6693,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         } else {
-            mHighSpeedFPSRange = new Range(60, 60);
+            mHighSpeedFPSRange = new Range(30, 30);
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         }
