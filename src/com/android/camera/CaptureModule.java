@@ -3340,6 +3340,13 @@ public class CaptureModule implements CameraModule, PhotoController,
             Log.d(TAG, "Capture still picture has failed");
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
+            if (mSettingsManager.isMultiCameraEnabled()) {
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.contains("Invalid physical camera id")){
+                    warningToast("Please enable physical cameras of outputs first");
+                    unlockFocus(id);
+                }
+            }
             e.printStackTrace();
         }
     }
@@ -6567,6 +6574,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mCameraHandler);
             } else {
                 if (mSettingsManager.getPhysicalCameraId() != null){
+                    Set<String> physicalId = mSettingsManager.getPhysicalCameraId();
+                    Set<String> physicalRecorderId = mSettingsManager.getPhysicalFeatureEnableId(
+                            SettingsManager.KEY_PHYSICAL_CAMCORDER);
+                    if (physicalRecorderId != null && !physicalId.containsAll(physicalRecorderId)){
+                        mStartRecPending = false;
+                        mIsRecordingVideo = false;
+                        mIsPreviewingVideo = true;
+                        warningToast("Please enable physical cameras of outputs first");
+                        return false;
+                    }
                     if (mSettingsManager.isLogicalEnable()){
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                     }
@@ -6577,7 +6594,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                         i++;
                     }
-
                 } else {
                     if (PersistUtil.enableMediaRecorder()) {
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
@@ -7484,8 +7500,13 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mIntentMode != INTENT_MODE_VIDEO && !mPaused) {
             createSessions();
         }
-        mUI.showUIafterRecording();
-        mUI.resetTrackingFocus();
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mUI.showUIafterRecording();
+                mUI.resetTrackingFocus();
+            }
+        });
         mStopRecPending = false;
     }
 
@@ -10612,7 +10633,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void onError(MediaRecorder mr, int what, int extra) {
         Log.e(TAG, "MediaRecorder error. what=" + what + ". extra=" + extra);
         stopRecordingVideo(getMainCameraId());
-        mUI.showUIafterRecording();
         if (what == MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN) {
             // We may have run out of space on the sdcard.
             mActivity.updateStorageSpaceAndHint();
