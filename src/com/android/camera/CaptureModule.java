@@ -84,6 +84,7 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.provider.MediaStore;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -742,6 +743,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalRawSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
+    private Size mLogicalPreviewSize;
+    private Size mLogicalVideoPreviewSize;
     private Size[] mPhysicalVideoPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalYuvReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalRawReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
@@ -5129,6 +5132,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void updatePhysicalSize(){
         if (!mSettingsManager.isMultiCameraEnabled())
                 return;
+        mLogicalPreviewSize = getOptimalPhysicalPreviewSize(mPictureSize,
+                mSettingsManager.getSupportedOutputSize(
+                Integer.valueOf(getMainCameraId()),SurfaceHolder.class));
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         if (ids != null) {
             int i = 0;
@@ -5141,7 +5147,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 } else {
                     mPhysicalSizes[i] = mPictureSize;
                 }
-                mPhysicalPreviewSizes[i] = getOptimalPreviewSize(mPhysicalSizes[i],
+                mPhysicalPreviewSizes[i] = getOptimalPhysicalPreviewSize(mPhysicalSizes[i],
                         mSettingsManager.getSupportedOutputSize(
                                 Integer.valueOf(id),SurfaceHolder.class));
                 if (mPhysicalPreviewSizes[i] == null){
@@ -5165,6 +5171,11 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updatePhysicalVideoSize(){
+        if (!mSettingsManager.isMultiCameraEnabled())
+            return;
+        mLogicalVideoPreviewSize = getOptimalPhysicalPreviewSize(mVideoSize,
+                mSettingsManager.getSupportedOutputSize(
+                        Integer.valueOf(getMainCameraId()),SurfaceHolder.class));
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
         if (ids != null) {
             int i = 0;
@@ -5177,7 +5188,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 } else {
                     mPhysicalVideoSizes[i] = mVideoSize;
                 }
-                mPhysicalVideoPreviewSizes[i] = getOptimalPreviewSize(mPhysicalVideoSizes[i],
+                mPhysicalVideoPreviewSizes[i] = getOptimalPhysicalPreviewSize(mPhysicalVideoSizes[i],
                         mSettingsManager.getSupportedOutputSize(
                                 Integer.valueOf(id),SurfaceHolder.class));
                 if (mPhysicalVideoPreviewSizes[i] == null){
@@ -5332,9 +5343,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         initializeValues();
         updatePreviewSize();
         if (getCurrenCameraMode() == CameraMode.VIDEO){
-            mUI.initPhysicalSurfaces(mPhysicalVideoPreviewSizes);
+            mUI.initPhysicalSurfaces(mLogicalVideoPreviewSize,mPhysicalVideoPreviewSizes);
         } else {
-            mUI.initPhysicalSurfaces(mPhysicalPreviewSizes);
+            mUI.initPhysicalSurfaces(mLogicalPreviewSize,mPhysicalPreviewSizes);
         }
 
 
@@ -10416,6 +10427,38 @@ public class CaptureModule implements CameraModule, PhotoController,
             mState[i] = STATE_PREVIEW;
         }
         mUI.enableShutter(true);
+    }
+
+    public Size getOptimalPhysicalPreviewSize(Size pictureSize, Size[] prevSizes) {
+        Point[] points = new Point[prevSizes.length];
+        DisplayMetrics dm = mActivity.getResources().getDisplayMetrics();
+        double targetRatio = (double) pictureSize.getWidth() / pictureSize.getHeight();
+        int index = 0;
+        int point_max[]  = new int[]{dm.heightPixels/2,dm.widthPixels/2};
+        int max_size = -1;
+        if (point_max != null){
+            max_size = point_max[0] * point_max[1];
+        }
+        for (Size s : prevSizes) {
+            if (max_size != -1){
+                int size = s.getWidth() * s.getHeight();
+                if (s.getWidth() == s.getHeight()){
+                    if (s.getWidth() > Math.max(point_max[0],point_max[1]))
+                        continue;
+                } else if (size > max_size || size == 0 || s.getHeight() > point_max[1]) {
+                    continue;
+                }
+            }
+            points[index++] = new Point(s.getWidth(), s.getHeight());
+        }
+
+        int optimalPickIndex = CameraUtil.getOptimalPreviewSize(mActivity, points, targetRatio);
+        Size ret = (optimalPickIndex == -1) ? null :
+                new Size(points[optimalPickIndex].x,points[optimalPickIndex].y);
+        if (ret.getWidth() == ret.getHeight() && ret.getWidth() > dm.widthPixels/2){
+            ret = new Size(dm.widthPixels/2,dm.widthPixels/2);
+        }
+        return ret;
     }
 
     private Size getOptimalPreviewSize(Size pictureSize, Size[] prevSizes) {

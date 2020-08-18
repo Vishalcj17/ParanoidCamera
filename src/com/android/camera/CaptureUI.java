@@ -2019,7 +2019,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         return previewSurfaces;
     }
 
-    public void initPhysicalSurfaces(Size[] physicalPreviewSizes){
+    public void initPhysicalSurfaces(Size logicalPreviewSize,Size[] physicalPreviewSizes){
         if (mSettingsManager.getPhysicalCameraId() == null)
             return;
         mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
@@ -2028,14 +2028,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
         mPhysicalHolders[0] = mPhysicalViews[0].getHolder();
         Size logicalPreview;
-        if (mPreviewWidth <= 720 ||
-                mPreviewHeight <= 540) {
-            logicalPreview = new Size(mPreviewHeight,
-                    mPreviewWidth);
-            if (mPreviewWidth <= 352 &&
-                    mPreviewHeight <= 288){
-                logicalPreview = new Size (540,720);
-            }
+        if (logicalPreviewSize != null){
+            logicalPreview = new Size(logicalPreviewSize.getHeight(),logicalPreviewSize.getWidth());
         } else {
             logicalPreview = new Size(mPreviewHeight/2,mPreviewWidth/2);
         }
@@ -2051,18 +2045,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 int physicalSizeIndex = mModule.getIndexByPhysicalId(id);
                 if (physicalSizeIndex < physicalPreviewSizes.length
                         && physicalPreviewSizes[physicalSizeIndex] != null){
-                    if (physicalPreviewSizes[physicalSizeIndex].getWidth() <= 720 ||
-                            physicalPreviewSizes[physicalSizeIndex].getHeight() <= 540) {
-                        preview = new Size(physicalPreviewSizes[physicalSizeIndex].getHeight(),
+                      preview = new Size(physicalPreviewSizes[physicalSizeIndex].getHeight(),
                                 physicalPreviewSizes[physicalSizeIndex].getWidth());
-                        if (physicalPreviewSizes[physicalSizeIndex].getWidth() <= 352 &&
-                                physicalPreviewSizes[physicalSizeIndex].getHeight() <= 288){
-                            preview = new Size (540,720);
-                        }
-                    } else {
-                        preview = new Size(physicalPreviewSizes[physicalSizeIndex].getHeight()/2,
-                                physicalPreviewSizes[physicalSizeIndex].getWidth()/2);
-                    }
                 } else {
                     preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
                 }
