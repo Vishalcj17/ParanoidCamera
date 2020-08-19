@@ -1079,6 +1079,11 @@ public class SettingsActivity extends PreferenceActivity {
             removePreference(SettingsManager.KEY_TOUCH_TRACK_FOCUS, photoPre);
             removePreference(SettingsManager.KEY_TOUCH_TRACK_FOCUS, videoPre);
         }
+        if(!PersistUtil.isRawReprocessEnable() && developer != null){
+            removePreference(SettingsManager.KEY_RAW_REPROCESS_TYPE, developer);
+            removePreference(SettingsManager.KEY_RAWINFO_TYPE, developer);
+            removePreference(SettingsManager.KEY_RAW_FORMAT_TYPE, developer);
+        }
 
         switch (mode) {
             case DEFAULT:
