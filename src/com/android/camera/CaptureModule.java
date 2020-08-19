@@ -2469,6 +2469,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         CURRENT_MODE = mCurrentSceneMode.mode;
         CURRENT_ID = mCurrentSceneMode.getNextCameraId(CURRENT_MODE);
         Log.d(TAG, "reinitSceneMode: CURRENT_ID :" + CURRENT_ID);
+        mSettingsManager.init();
     }
 
     public void reinit() {
