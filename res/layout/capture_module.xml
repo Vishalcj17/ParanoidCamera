@@ -223,6 +223,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"/>
+        <com.android.camera.ui.StateNNTrackFocusRenderer
+            android:id="@+id/statsnn_track_focus"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
         <com.android.camera.Camera2GraphView
             android:id="@+id/graph_view_r"
             android:visibility="gone"
@@ -339,6 +344,22 @@
 
             <TextView
                 android:id="@+id/stats_aec_sensitivity_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/stats_nn_result_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dip"
+            android:layout_marginTop="272dip"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/stats_nn_result_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="15sp" />

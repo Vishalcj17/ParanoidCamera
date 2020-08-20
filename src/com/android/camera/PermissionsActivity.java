@@ -192,8 +192,12 @@ public class PermissionsActivity extends Activity {
         if (mIntent != null) {
             setRequestPermissionShow();
             mIsReturnResult = true;
-            mIntent.setClass(this, CameraActivity.class);
-            mIntent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+            if (TofCameraActivity.TOF_ACTION.equals(mIntent.getAction())) {
+                mIntent.setClass(this, TofCameraActivity.class);
+            } else {
+                mIntent.setClass(this, CameraActivity.class);
+                mIntent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+            }
             startActivity(mIntent);
             finish();
         } else {

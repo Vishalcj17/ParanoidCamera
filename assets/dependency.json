@@ -74,7 +74,8 @@
     ,
     "18":
     {"pref_camera2_coloreffect_key":"0",
-      "pref_camera2_zsl_key":"disable"}
+      "pref_camera2_zsl_key":"disable",
+      "pref_camera2_picture_format_key":"0"}
     ,
     "100":
     {"pref_camera2_longshot_key":"off",
@@ -164,8 +165,7 @@
   "pref_camera2_capture_mfnr_key":
   {
     "1":{"pref_camera2_manual_exp_key":"off",
-         "pref_camera2_selfiemirror_key":"off",
-         "pref_camera2_longshot_key":"off"},
+         "pref_camera2_selfiemirror_key":"off"},
     "0":{}
   },
   "pref_camera2_saveraw_key":
@@ -190,7 +190,15 @@
   {
     "1":{"pref_camera2_facedetection_key":"off",
          "pref_camera2_picture_format_key":"0",
-         "pref_camera2_touch_track_focus_key":"off"},
+         "pref_camera2_touch_track_focus_key":"off",
+         "pref_camera2_video_time_lapse_frame_interval_key":"0",
+         "pref_camera2_video_duration_key":"0",
+         "pref_camera2_dis_key":"off",
+         "pref_camera2_videoencoder_key":"h264",
+         "pref_camera2_audioencoder_key":"aac",
+         "pref_camera2_noise_reduction_key":"high-quality",
+         "pref_camera2_video_rotation_key":"0",
+         "pref_camera2_longshot_key":"off"},
     "0":{}
   }
 }

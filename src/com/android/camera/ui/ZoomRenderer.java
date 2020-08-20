@@ -140,7 +140,12 @@ public class ZoomRenderer extends OverlayRenderer
         mPaint.setStrokeWidth(mOuterStroke);
         canvas.drawCircle((float) mCenterX, (float) mCenterY,
                 mCircleSize, mPaint);
-        String txt = mZoomSig+"."+mZoomFraction+"x";
+        String txt = "";
+        if (mZoomFraction < 10) {
+            txt = mZoomSig+"."+ "0" + mZoomFraction+"x";
+        } else {
+            txt = mZoomSig+"."+mZoomFraction+"x";
+        }
         mTextPaint.getTextBounds(txt, 0, txt.length(), mTextBounds);
         canvas.drawText(txt, mCenterX - mTextBounds.centerX(), mCenterY - mTextBounds.centerY(),
                 mTextPaint);

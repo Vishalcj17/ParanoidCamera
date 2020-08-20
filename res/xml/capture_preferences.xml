@@ -400,9 +400,23 @@
         camera:title="@string/pref_camera2_qcfa_title" />
 
     <ListPreference
-        camera:key="pref_camera2_bsgc_key"
+        camera:key="pref_camera2_fd_smile_key"
         camera:defaultValue="@string/pref_camera2_bsgc_default"
-        camera:title="@string/pref_camera2_bsgc_title"
+        camera:title="@string/pref_camera2_fd_smile_title"
+        camera:entries="@array/pref_camera2_bsgc_entries"
+        camera:entryValues="@array/pref_camera2_bsgc_entryvalues" />
+
+    <ListPreference
+        camera:key="pref_camera2_fd_gaze_key"
+        camera:defaultValue="@string/pref_camera2_bsgc_default"
+        camera:title="@string/pref_camera2_fd_gaze_title"
+        camera:entries="@array/pref_camera2_bsgc_entries"
+        camera:entryValues="@array/pref_camera2_bsgc_entryvalues" />
+
+    <ListPreference
+        camera:key="pref_camera2_fd_blink_key"
+        camera:defaultValue="@string/pref_camera2_bsgc_default"
+        camera:title="@string/pref_camera2_fd_blink_title"
         camera:entries="@array/pref_camera2_bsgc_entries"
         camera:entryValues="@array/pref_camera2_bsgc_entryvalues" />
 
@@ -410,8 +424,8 @@
         camera:key="pref_camera2_facial_contour_key"
         camera:defaultValue="@string/pref_camera2_bsgc_default"
         camera:title="@string/pref_camera2_facial_contour_title"
-        camera:entries="@array/pref_camera2_bsgc_entries"
-        camera:entryValues="@array/pref_camera2_bsgc_entryvalues" />
+        camera:entries="@array/pref_camera2_facial_contour_entries"
+        camera:entryValues="@array/pref_camera2_facial_contour_entryvalues" />
 
     <ListPreference
         camera:key="pref_camera2_face_detection_mode"
@@ -592,6 +606,13 @@
         camera:entryValues="@array/pref_camera2_stats_visualizer_entryvalues" />
 
     <ListPreference
+        camera:key="pref_camera2_variable_fps_key"
+        camera:defaultValue="@string/pref_camera2_variable_fps_default"
+        camera:title="@string/pref_camera2_variable_fps_title"
+        camera:entries="@array/pref_camera2_variable_fps_entries"
+        camera:entryValues="@array/pref_camera2_variable_fps_entryvalues" />
+
+    <ListPreference
         camera:key="pref_camera2_capture_mfnr_key"
         camera:defaultValue="@string/pref_camera2_capture_mfnr_default"
         camera:title="@string/pref_camera2_capture_mfnr_title"
@@ -632,4 +653,18 @@
         camera:title="@string/pref_camera2_shdr_title"
         camera:entries="@array/pref_camera2_shdr_entries"
         camera:entryValues="@array/pref_camera2_shdr_entryvalues" />
+
+    <ListPreference
+        camera:key="pref_camera2_extended_max_zoom_key"
+        camera:defaultValue="@string/pref_camera2_extended_max_zoom_default"
+        camera:title="@string/pref_camera2_extended_max_zoom_title"
+        camera:entries="@array/pref_camera2_extended_max_zoom_entries"
+        camera:entryValues="@array/pref_camera2_extended_max_zoom_entryvalues" />
+
+    <ListPreference
+        camera:key="pref_camera2_statsnn_control_key"
+        camera:defaultValue="@string/pref_camera2_statsnn_control_default"
+        camera:title="@string/pref_camera2_statsnn_control_title"
+        camera:entries="@array/pref_camera2_statsnn_control_entries"
+        camera:entryValues="@array/pref_camera2_statsnn_control_entryvalues" />
 </PreferenceGroup>

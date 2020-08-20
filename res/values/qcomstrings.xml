@@ -1200,16 +1200,19 @@
     <string name="pref_camera_zoom_entry_8x">8x</string>
     <string name="pref_camera_zoom_entry_9x">9x</string>
     <string name="pref_camera_zoom_entry_10x">10x</string>
-    <string name="pref_camera2_bsgc_title" translatable="true">Smile/blink/gaze Detection</string>
-    <string name="pref_camera2_facial_contour_title" translatable="true">Facial contour</string>
-    <string name="pref_camera2_face_points_title" translatable="true">Face points</string>
-    <string name="pref_camera2_face_detection_mode_title" translatable="true">Face detection mode</string>
+    <string name="pref_camera2_fd_smile_title" translatable="true">FD Smile Detection</string>
+    <string name="pref_camera2_fd_gaze_title" translatable="true">FD Gaze Detection</string>
+    <string name="pref_camera2_fd_blink_title" translatable="true">FD Blink Detection</string>
+    <string name="pref_camera2_facial_contour_title" translatable="true">FD Facial contour</string>
+    <string name="pref_camera2_face_points_title" translatable="true">FD Face points</string>
+    <string name="pref_camera2_face_detection_mode_title" translatable="true">FD Face detection mode</string>
     <string name="pref_camera2_bsgc_default" translatable="false">disable</string>
     <string name="pref_camera2_bsgc_entry_enable" translatable="true">Enable</string>
     <string name="pref_camera2_bsgc_entry_disable" translatable="true">Disable</string>
     <string name="pref_camera2_bsgc_entry_value_enable" translatable="false">enable</string>
     <string name="pref_camera2_bsgc_entry_value_disable" translatable="false">disable</string>
     <string name="pref_camera2_facial_contour_default" translatable="false">disable</string>
+
     <string name="pref_camera2_face_points_default" translatable="false">disable</string>
     <string name="pref_camera2_face_detection_mode_default" translatable="false">1</string>
     <string name="pref_camera2_face_detection_entry_simple" translatable="true">Simple</string>
@@ -1359,6 +1362,13 @@
     <string name="stats_visualizer_bg_label">BG GraphView</string>
     <string name="stats_visualizer_be_label">BE GraphView</string>
 
+    <string name="pref_camera2_variable_fps_title" translatable="true">VARIABLE FPS</string>
+    <string name="pref_camera2_variable_fps_default" translatable="false">0</string>
+    <string name="pref_camera2_variable_fps_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_variable_fps_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_variable_fps_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_variable_fps_entry_value_disable" translatable="false">0</string>
+
     <string name="pref_camera2_capture_mfnr_title" translatable="true">MFNR</string>
     <string name="pref_camera2_capture_mfnr_default" translatable="false">0</string>
     <string name="pref_camera2_capture_mfnr_entry_enable" translatable="true">enable</string>
@@ -1395,6 +1405,13 @@
     <string name="pref_camera2_shdr_entry_value_off" translatable="false">off</string>
     <string name="pref_camera2_shdr_entry_value_shdr" translatable="false">shdr</string>
     <string name="pref_camera2_shdr_entry_value_mfhdr" translatable="false">mfhdr</string>
+
+    <string name="pref_camera2_extended_max_zoom_title" translatable="true">Extended max zoom</string>
+    <string name="pref_camera2_extended_max_zoom_default" translatable="false">0</string>
+    <string name="pref_camera2_extended_max_zoom_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_extended_max_zoom_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_extended_max_zoom_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_extended_max_zoom_entry_value_disable" translatable="false">0</string>
 
     <string name="pref_camera2_burst_limit_title" translatable="true">Burst Limit</string>
     <string name="pref_camera2_burst_limit_default" translatable="false">0</string>
@@ -1438,5 +1455,13 @@
     <string name="pref_camera2_master_cb_entry_enable" translatable="true">master</string>
     <string name="pref_camera2_master_cb_entry_value_disable" translatable="false">0</string>
     <string name="pref_camera2_master_cb_entry_value_enable" translatable="false">1</string>
+
+    <!-- stats nn control value-->
+    <string name="pref_camera2_statsnn_control_title" translatable="true">Stats NN Control</string>
+    <string name="pref_camera2_statsnn_control_default" translatable="false">0</string>
+    <string name="pref_camera2_statsnn_control_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_statsnn_control_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_statsnn_control_entry_value_disable" translatable="false">0</string>
+    <string name="pref_camera2_statsnn_control_entry_value_enable" translatable="false">1</string>
 </resources>
 

@@ -188,10 +188,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_AUTO_HDR = "pref_camera2_auto_hdr_key";
     public static final String KEY_HDR = "pref_camera2_hdr_key";
     public static final String KEY_VIDEO_HDR_VALUE = "pref_camera2_video_hdr_key";
+    public static final String KEY_VARIABLE_FPS = "pref_camera2_variable_fps_key";
     public static final String KEY_CAPTURE_MFNR_VALUE = "pref_camera2_capture_mfnr_key";
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
     public static final String KEY_SHDR = "pref_camera2_shdr_key";
+    public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
     public static final String KEY_ZOOM = "pref_camera2_zoom_key";
     public static final String KEY_SHARPNESS_CONTROL_MODE = "pref_camera2_sharpness_control_key";
@@ -234,7 +236,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_STATS_VISUALIZER_VALUE = "pref_camera2_stats_visualizer_key";
 
     public static final HashMap<String, Integer> KEY_ISO_INDEX = new HashMap<String, Integer>();
-    public static final String KEY_BSGC_DETECTION = "pref_camera2_bsgc_key";
+    public static final String KEY_FD_SMILE = "pref_camera2_fd_smile_key";
+    public static final String KEY_FD_GAZE = "pref_camera2_fd_gaze_key";
+    public static final String KEY_FD_BLINK = "pref_camera2_fd_blink_key";
     public static final String KEY_FACIAL_CONTOUR = "pref_camera2_facial_contour_key";
     public static final String KEY_FACE_DETECTION_MODE = "pref_camera2_face_detection_mode";
     public static final String KEY_ZSL = "pref_camera2_zsl_key";
@@ -243,7 +247,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_LIVE_PREVIEW = "pref_camera2_live_preview_key";
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
-    public static final String KEY_MASTRT_CB = "pref_camera2_master_cb_key";
+    public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
 
     private static final String TAG = "SnapCam_SettingsManager";
 
@@ -565,6 +569,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         filterChromaflashPictureSizeOptions();
         filterHeifSizeOptions();
         mVideoEisConfigs = getVideoEisConfigs(cameraId);
+        filterHFROptions();
     }
 
 
@@ -596,13 +601,50 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public boolean isT2TSupported() {
         boolean supportted = true;
         try {
-            supportted =
-                    (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
+            supportted = (mCharacteristics.get(mCameraId).get(CaptureModule.is_t2t_supported) == 1);
         } catch (IllegalArgumentException | NullPointerException e) {
-            Log.d(TAG, "isT2TSupported no vendor tag");
-            supportted = true;
         }
         return supportted;
+    }
+
+    public boolean isBurstShotSupported(){
+        boolean isBurstShotSupported = false;
+        try {
+            isBurstShotSupported = mCharacteristics.get(mCameraId).get(CaptureModule.is_burstshot_supported) == 1 ? true : false;
+        } catch (IllegalArgumentException | NullPointerException e) {
+            Log.e(TAG, "isBurstShotSupported no vendor tag");
+        }
+        return isBurstShotSupported;
+    }
+
+    public int getmaxBurstShotFPS(){
+        int maxBurstShotFPS = 0;
+        try {
+            maxBurstShotFPS = mCharacteristics.get(mCameraId).get(CaptureModule.max_burstshot_fps);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "getmaxBurstShotFPS no vendorTag maxBurstShotFPS:");
+        }
+        return maxBurstShotFPS;
+    }
+
+    public int[] getMaxPreviewSize(){
+        int[] maxPreviewSize = null;
+        try {
+            maxPreviewSize = mCharacteristics.get(mCameraId).get(CaptureModule.max_preview_size);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "getMaxPreviewSize no vendorTag max_preview_size:");
+        }
+        return maxPreviewSize;
+    }
+
+    public boolean isLiveshotSizeSameAsVideoSize(){
+        boolean isLiveshotSizeSameAsVideoSize = false;
+        try {
+            isLiveshotSizeSameAsVideoSize = mCharacteristics.get(mCameraId).get(CaptureModule.is_liveshot_size_same_as_video) == 1 ? true : false;
+        } catch (IllegalArgumentException | NullPointerException e) {
+            Log.e(TAG, "isLiveshotSizeSameAsVideoSize no vendorTag isLiveshotSizeSameAsVideoSize:");
+        }
+        return isLiveshotSizeSameAsVideoSize;
     }
 
     private Size parseSize(String value) {
@@ -834,6 +876,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     return null;
             }
             String[] physical_ids = ids.trim().split(";");
+            if (physical_ids == null || physical_ids.length == 0)
+                return null;
             List<String> idList = Arrays.asList(physical_ids);
             return new HashSet<>(Arrays.asList(physical_ids));
         }
@@ -854,6 +898,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (ids == null || "".equals(ids))
             return null;
         String[] physical_ids = ids.trim().split(";");
+        if (physical_ids == null || physical_ids.length == 0)
+            return null;
         return new HashSet<>(Arrays.asList(physical_ids));
     }
 
@@ -1092,7 +1138,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference hdr = mPreferenceGroup.findPreference(KEY_HDR);
         ListPreference zoom = mPreferenceGroup.findPreference(KEY_ZOOM);
         ListPreference qcfa = mPreferenceGroup.findPreference(KEY_QCFA);
-        ListPreference bsgc = mPreferenceGroup.findPreference(KEY_BSGC_DETECTION);
+        ListPreference fd_smile = mPreferenceGroup.findPreference(KEY_FD_SMILE);
+        ListPreference fd_gaze = mPreferenceGroup.findPreference(KEY_FD_GAZE);
+        ListPreference fd_blink = mPreferenceGroup.findPreference(KEY_FD_BLINK);
         ListPreference pictureFormat = mPreferenceGroup.findPreference(KEY_PICTURE_FORMAT);
         ListPreference faceDetectionMode = mPreferenceGroup.findPreference(KEY_FACE_DETECTION_MODE);
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
@@ -1130,11 +1178,15 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
-        if (bsgc != null) {
+        if (fd_smile != null && fd_gaze != null && fd_blink != null) {
             if (!isBsgcAvailable(mCameraId)) {
-                removePreference(mPreferenceGroup, KEY_BSGC_DETECTION);
+                removePreference(mPreferenceGroup, KEY_FD_SMILE);
+                removePreference(mPreferenceGroup, KEY_FD_GAZE);
+                removePreference(mPreferenceGroup, KEY_FD_BLINK);
                 removePreference(mPreferenceGroup, KEY_FACIAL_CONTOUR);
-                mFilteredKeys.add(bsgc.getKey());
+                mFilteredKeys.add(fd_smile.getKey());
+                mFilteredKeys.add(fd_gaze.getKey());
+                mFilteredKeys.add(fd_blink.getKey());
                 mFilteredKeys.add(KEY_FACIAL_CONTOUR);
             }
         }
@@ -1196,8 +1248,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (frontRearSwitcherPref != null && (!mIsFrontCameraPresent)) {
             removePreference(mPreferenceGroup, KEY_FRONT_REAR_SWITCHER_VALUE);
         }
-
         if (pictureSize != null) {
+
             if (filterUnsupportedOptions(pictureSize, getSupportedPictureSize(cameraId))) {
                 mFilteredKeys.add(pictureSize.getKey());
             } else {
@@ -1275,8 +1327,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
 
         if (faceDetection != null) {
-            if (!isFaceDetectionSupported(cameraId) ||
-            !isCameraFDSupported()) {
+            if (!isFaceDetectionSupported(cameraId) || !isCameraFDSupported()) {
                 removePreference(mPreferenceGroup, KEY_FACE_DETECTION);
             }
         }
@@ -1819,6 +1870,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         if (videoCapabilities != null) {
                             if (videoCapabilities.areSizeAndRateSupported(
                                     videoSize.getWidth(), videoSize.getHeight(), (int) r.getUpper())) {
+                                String selectMode = getValue(KEY_SELECT_MODE);
+                                if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR && (selectMode != null && selectMode.equals("sat"))){
+                                    break;
+                                }
                                 rate = String.valueOf(r.getUpper());
                                 supported.add("hfr" + rate);
                                 supported.add("hsr" + rate);
@@ -2492,6 +2547,20 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return result;
     }
 
+    public float getSupportedExtendedMaxZoom(int cameraId) {
+        float maxZoom = -1f;
+        try {
+            maxZoom = mCharacteristics.get(cameraId).get(CaptureModule.extended_max_zoom);
+        } catch(IllegalArgumentException e) {
+            maxZoom = -1;
+            Log.w(TAG, "getSupportedExtendedMaxZoom occurs IllegalArgumentException");
+        } catch(NullPointerException e) {
+            maxZoom = -1;
+            Log.w(TAG, "getSupportedExtendedMaxZoom occurs NullPointerException");
+        }
+        return maxZoom;
+    }
+
     private void resetIfInvalid(ListPreference pref) {
         // Set the value to the first entry if it is invalid.
         String value = pref.getValue();
@@ -2917,16 +2986,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
             return config.isEISSupported();
         }
         return true;
-    }
-
-    public int[] getMaxPreviewSize(){
-        int[] maxPreviewSize = null;
-        try {
-            maxPreviewSize = mCharacteristics.get(mCameraId).get(CaptureModule.max_preview_size);
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "getMaxPreviewSize no vendorTag max_preview_size:");
-        }
-        return maxPreviewSize;
     }
 
     public int getVideoFPS(){

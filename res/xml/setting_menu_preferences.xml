@@ -536,13 +536,31 @@
             android:entryValues="@array/pref_camera2_qcfa_entryvalues" />
 
         <ListPreference
-            android:key="pref_camera2_bsgc_key"
+            android:key="pref_camera2_fd_smile_key"
             android:defaultValue="@string/pref_camera2_bsgc_default"
             android:entries="@array/pref_camera2_bsgc_entries"
             android:entryValues="@array/pref_camera2_bsgc_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"
-            android:title="@string/pref_camera2_bsgc_title" />
+            android:title="@string/pref_camera2_fd_smile_title" />
+
+        <ListPreference
+            android:key="pref_camera2_fd_gaze_key"
+            android:defaultValue="@string/pref_camera2_bsgc_default"
+            android:entries="@array/pref_camera2_bsgc_entries"
+            android:entryValues="@array/pref_camera2_bsgc_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"
+            android:title="@string/pref_camera2_fd_gaze_title" />
+
+        <ListPreference
+            android:key="pref_camera2_fd_blink_key"
+            android:defaultValue="@string/pref_camera2_bsgc_default"
+            android:entries="@array/pref_camera2_bsgc_entries"
+            android:entryValues="@array/pref_camera2_bsgc_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"
+            android:title="@string/pref_camera2_fd_blink_title" />
 
 
         <ListPreference
@@ -551,8 +569,8 @@
             android:title="@string/pref_camera2_facial_contour_title"
             android:layout="@layout/preference"
             android:summary="%s"
-            android:entries="@array/pref_camera2_bsgc_entries"
-            android:entryValues="@array/pref_camera2_bsgc_entryvalues" />
+            android:entries="@array/pref_camera2_facial_contour_entries"
+            android:entryValues="@array/pref_camera2_facial_contour_entryvalues" />
 
         <ListPreference
             android:key="pref_camera2_face_detection_mode"
@@ -652,6 +670,15 @@
             android:summary="Choose stats to display"/>
 
         <ListPreference
+            android:key="pref_camera2_variable_fps_key"
+            android:defaultValue="@string/pref_camera2_variable_fps_default"
+            android:title="@string/pref_camera2_variable_fps_title"
+            android:entries="@array/pref_camera2_variable_fps_entries"
+            android:entryValues="@array/pref_camera2_variable_fps_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
             android:key="pref_camera2_capture_mfnr_key"
             android:defaultValue="@string/pref_camera2_capture_mfnr_default"
             android:title="@string/pref_camera2_capture_mfnr_title"
@@ -702,6 +729,24 @@
             android:title="@string/pref_camera2_shdr_title"
             android:entries="@array/pref_camera2_shdr_entries"
             android:entryValues="@array/pref_camera2_shdr_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
+            android:key="pref_camera2_extended_max_zoom_key"
+            android:defaultValue="@string/pref_camera2_extended_max_zoom_default"
+            android:title="@string/pref_camera2_extended_max_zoom_title"
+            android:entries="@array/pref_camera2_extended_max_zoom_entries"
+            android:entryValues="@array/pref_camera2_extended_max_zoom_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
+            android:key="pref_camera2_statsnn_control_key"
+            android:defaultValue="@string/pref_camera2_statsnn_control_default"
+            android:title="@string/pref_camera2_statsnn_control_title"
+            android:entries="@array/pref_camera2_statsnn_control_entries"
+            android:entryValues="@array/pref_camera2_statsnn_control_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"/>
     </PreferenceCategory>

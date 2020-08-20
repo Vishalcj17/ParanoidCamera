@@ -74,22 +74,31 @@
                 <intent-filter>
                     <action android:name="android.media.action.VIDEO_CAMERA" />
                     <category android:name="android.intent.category.DEFAULT" />
+                    <category android:name="android.intent.category.VOICE"/>
                 </intent-filter>
 
                 <intent-filter>
                     <action android:name="android.media.action.VIDEO_CAPTURE" />
                     <category android:name="android.intent.category.DEFAULT" />
+                    <category android:name="android.intent.category.VOICE"/>
                 </intent-filter>
 
                 <intent-filter>
                     <action android:name="android.media.action.IMAGE_CAPTURE" />
                     <category android:name="android.intent.category.DEFAULT" />
+                    <category android:name="android.intent.category.VOICE"/>
                 </intent-filter>
 
                 <intent-filter>
                     <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
                     <category android:name="android.intent.category.DEFAULT" />
+                    <category android:name="android.intent.category.VOICE"/>
                 </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.media.action.TOF_CAMERA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
 
                 <meta-data
                         android:name="android.support.PARENT_ACTIVITY"
@@ -180,6 +189,11 @@
 
         <activity
             android:name="com.android.camera.RefocusActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+
+        <activity
+            android:name="com.android.camera.TofCameraActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
 
