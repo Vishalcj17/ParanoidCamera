@@ -6969,28 +6969,34 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyCaptureMFNR(CaptureRequest.Builder builder) {
-        boolean isMfnrEnable = isMFNREnabled();
-        int noiseReduMode = (isMfnrEnable ? CameraMetadata.NOISE_REDUCTION_MODE_HIGH_QUALITY :
-                CameraMetadata.NOISE_REDUCTION_MODE_FAST);
-        Log.v(TAG, "applyCaptureMFNR mfnrEnable :" + isMfnrEnable + ", noiseReduMode :"
-                + noiseReduMode);
-        builder.set(CaptureRequest.NOISE_REDUCTION_MODE, noiseReduMode);
-        if (isMfnrEnable) {
-            try {
+        if (mSettingsManager.isMultiCameraEnabled()) {
+            Set<String> mfnr_ids = mSettingsManager.getPhysicalFeatureEnableId(
+                    SettingsManager.KEY_PHYSICAL_MFNR);
+            if (mfnr_ids != null){
+                builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                        CameraMetadata.NOISE_REDUCTION_MODE_HIGH_QUALITY);
                 builder.set(custom_noise_reduction, (byte) 0x01);
-            } catch (IllegalArgumentException e) {
-                Log.w(TAG, "capture can`t find vendor tag: " + custom_noise_reduction.toString());
+                for (String id:mfnr_ids){
+                    try {
+                        builder.setPhysicalCameraKey(CaptureRequest.NOISE_REDUCTION_MODE,
+                                CameraMetadata.NOISE_REDUCTION_MODE_HIGH_QUALITY,id);
+                        builder.setPhysicalCameraKey(custom_noise_reduction, (byte) 0x01,id);
+                    } catch (Exception e) {
+                        Log.w(TAG, "capture can`t find vendor tag: " + custom_noise_reduction.toString());
+                    }
+                }
             }
-        }
-        Set<String> mfnr_ids = mSettingsManager.getPhysicalFeatureEnableId(
-                SettingsManager.KEY_PHYSICAL_MFNR);
-        if (mfnr_ids != null){
-            for (String id:mfnr_ids){
+        } else {
+            boolean isMfnrEnable = isMFNREnabled();
+            int noiseReduMode = (isMfnrEnable ? CameraMetadata.NOISE_REDUCTION_MODE_HIGH_QUALITY :
+                    CameraMetadata.NOISE_REDUCTION_MODE_FAST);
+            Log.v(TAG, "applyCaptureMFNR mfnrEnable :" + isMfnrEnable + ", noiseReduMode :"
+                    + noiseReduMode);
+            builder.set(CaptureRequest.NOISE_REDUCTION_MODE, noiseReduMode);
+            if (isMfnrEnable) {
                 try {
-                    builder.setPhysicalCameraKey(CaptureRequest.NOISE_REDUCTION_MODE,
-                            noiseReduMode,id);
-                    builder.setPhysicalCameraKey(custom_noise_reduction, (byte) 0x01,id);
-                } catch (Exception e) {
+                    builder.set(custom_noise_reduction, (byte) 0x01);
+                } catch (IllegalArgumentException e) {
                     Log.w(TAG, "capture can`t find vendor tag: " + custom_noise_reduction.toString());
                 }
             }
