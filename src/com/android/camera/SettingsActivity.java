@@ -142,6 +142,7 @@ public class SettingsActivity extends PreferenceActivity {
                 } else {
                     mSettingsManager.filterVideoDuration();
                 }
+                updateVideoVariableFpsPreference();
                 updatePreference(SettingsManager.KEY_VIDEO_DURATION);
             } else if (key.equals(SettingsManager.KEY_SELECT_MODE)) {
                 value = ((ListPreference) p).getValue();
@@ -235,6 +236,7 @@ public class SettingsActivity extends PreferenceActivity {
                    pref.getKey().equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE) ||
                    pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)){
                     updateEISPreference();
+                    updateVideoVariableFpsPreference();
                 }
             }
         }
@@ -1027,9 +1029,9 @@ public class SettingsActivity extends PreferenceActivity {
             {
                 add(SettingsManager.KEY_EIS_VALUE);
                 add(SettingsManager.KEY_FOVC_VALUE);
+                add(SettingsManager.KEY_VARIABLE_FPS);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
-                add(SettingsManager.KEY_VARIABLE_FPS);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
                     add(key);
             }
@@ -1116,7 +1118,9 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
+                        videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
+                        videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1375,6 +1379,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateZslPreference();
         updateSwitchIDInModePreference(true);
         updateEISPreference();
+        updateVideoVariableFpsPreference();
     }
 
     private void updateStoragePreference() {
@@ -1444,7 +1449,19 @@ public class SettingsActivity extends PreferenceActivity {
         if (pref == null) {
             return;
         }
-        pref.setEnabled(!PersistUtil.enableMediaRecorder());
+        ListPreference hfrPref = (ListPreference)findPreference(
+                SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE);
+        if (hfrPref != null) {
+            String value = hfrPref.getValue();
+            if (!value.equals("off")) {
+                int fpsRate = Integer.parseInt(value.substring(3));
+                if (fpsRate == 60) {
+                    pref.setEnabled(true);
+                } else {
+                    pref.setEnabled(false);
+                }
+            }
+        }
     }
 
     private void updatePreferenceButton(String key) {

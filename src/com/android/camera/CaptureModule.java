@@ -496,6 +496,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final CaptureResult.Key<Float> aec_frame_control_lux_index =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
+    //Variable fps
+    private static final CaptureRequest.Key<int[]> dynamicFSPConfigKey =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.dynamicFPSConfig", int[].class);
+
     //Stats NN Result
     private static final CaptureRequest.Key<Byte> statsNNControl =
             new CaptureRequest.Key<>("org.quic.camera2.statsNNControl.Enable", Byte.class);
@@ -3680,7 +3684,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else {
                 applyZoom(captureBuilder, id);
             }
-            if (mHighSpeedCapture) {
+            if (mHighSpeedCapture && !isVariableFPSEnabled()) {
                 captureBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                         mHighSpeedFPSRange);
             }
@@ -4467,7 +4471,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         boolean variableFPSEnable = false;
         if (mSettingsManager != null) {
             String variableFPSValue = mSettingsManager.getValue(SettingsManager.KEY_VARIABLE_FPS);
-            if (variableFPSValue != null) {
+            if (variableFPSValue != null && mHighSpeedCaptureRate == 60) {
                 variableFPSEnable = variableFPSValue.equals("1");
             }
         }
@@ -4733,7 +4737,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         builder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest
                 .CONTROL_AF_TRIGGER_START);
         if (mCurrentSceneMode.mode == CameraMode.VIDEO ||
-                mCurrentSceneMode.mode == CameraMode.HFR) {
+                (mCurrentSceneMode.mode == CameraMode.HFR && !isVariableFPSEnabled())) {
             Range fpsRange = mHighSpeedCapture ? mHighSpeedFPSRange : new Range(30, 30);
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
         }
@@ -4771,6 +4775,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void applySessionParameters(CaptureRequest.Builder builder){
         applyEarlyPCR(builder);
+        applyVariableFPS(builder);
         if(CURRENT_MODE == CameraMode.RTB && MCXMODE){
             Log.i(TAG,"set bokeh mode for captureBuilder");
             builder.set(CaptureRequest.CONTROL_EXTENDED_SCENE_MODE, CameraMetadata.CONTROL_EXTENDED_SCENE_MODE_BOKEH_STILL_CAPTURE);
@@ -6251,6 +6256,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private Size getMaxPictureSizeLiveshot() {
         Size[] sizes = mSettingsManager.getSupportedOutputSize(getMainCameraId(), ImageFormat.JPEG);
+
         float ratio = (float) mVideoSize.getWidth() / mVideoSize.getHeight();
         Size optimalSize = null;
         for (Size size : sizes) {
@@ -6633,7 +6639,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                     }
                 }
-                applyVariableFPS();
                 mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
                         mCaptureCallback, mCameraHandler);
             }
@@ -6894,7 +6899,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     cameraId,mSettingsManager.getPhysicalCameraId());
         }
         mVideoRecordRequestBuilder.setTag(cameraId);
-        if (mHighSpeedCapture) {
+        if (mHighSpeedCapture && !isVariableFPSEnabled()) {
             mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         }
@@ -6924,7 +6929,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoPreviewRequestBuilder.addTarget(surface);
         }
         mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, mControlAFMode);
-        if (mHighSpeedCapture) {
+        if (mHighSpeedCapture && !isVariableFPSEnabled()) {
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         } else {
@@ -6937,25 +6942,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private void applyVariableFPS() {
-        if (!PersistUtil.enableMediaRecorder() && isVariableFPSEnabled()) {
-            Timer timer = new Timer();
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    Log.d(TAG, "variable fps run");
-                    // TODO Auto-generated method stub
-                    try {
-                        Range range = new Range(30, 60);
-                        mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-                                range);
-                        mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
-                                mCaptureCallback, mCameraHandler);
-                    } catch (CameraAccessException | IllegalStateException | NullPointerException e) {
-                    }
-                }
-            };
-            timer.schedule(task, 1000);
+    private void applyVariableFPS(CaptureRequest.Builder builder) {
+        if (isVariableFPSEnabled()) {
+            try {
+                int[] dynamicFpsConfig = new int[]{2, 30, 60, 0, 0};
+                builder.set(dynamicFSPConfigKey, dynamicFpsConfig);
+                Range range = new Range(30, 60);
+                builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, range);
+            } catch (IllegalArgumentException e) {
+            }
         }
     }
 
@@ -10495,7 +10490,6 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private Size getOptimalPreviewSize(Size pictureSize, Size[] prevSizes) {
         Point[] points = new Point[prevSizes.length];
-
         double targetRatio = (double) pictureSize.getWidth() / pictureSize.getHeight();
         int index = 0;
         int point_max[]  = mSettingsManager.getMaxPreviewSize();
