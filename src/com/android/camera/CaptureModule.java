@@ -2814,7 +2814,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
 
                     int defaultId;
-                    if (MCXMODE) {
+                    List<String> supported = mSettingsManager.getSupportedVideoSize(mLogicalId);
+                    if (MCXMODE && supported.size() > 0) {
                         defaultId = mLogicalId;
                     } else {
                         defaultId = mSingleRearId;
@@ -6179,8 +6180,11 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void updateVideoSize() {
         String videoSize = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_QUALITY);
-        if (videoSize == null) return;
-        mVideoSize = parsePictureSize(videoSize);
+        if (videoSize != null) {
+            mVideoSize = parsePictureSize(videoSize);
+        } else {
+            mVideoSize = new Size(1920, 1080);
+        }
         Point videoSize2 = PersistUtil.getCameraVideoSize();
         if (videoSize2 != null) {
             mVideoSize = new Size(videoSize2.x, videoSize2.y);

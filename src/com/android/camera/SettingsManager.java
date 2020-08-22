@@ -2276,7 +2276,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return supportModes;
     }
 
-    private List<String> getSupportedVideoSize(int cameraId) {
+    public List<String> getSupportedVideoSize(int cameraId) {
+        List<String> res = new ArrayList<>();
+        if (cameraId == -1) return res;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         Size[] outRes = map.getOutputSizes(MediaRecorder.class);
@@ -2297,7 +2299,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 }
             }
         }
-        List<String> res = new ArrayList<>();
         for (int i = 0; i < sizes.length; i++) {
             if (isHeifEnabled && heifCap != null ){
                 if (!heifCap.getSupportedWidths().contains(sizes[i].getWidth()) ||
