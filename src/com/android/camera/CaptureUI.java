@@ -373,11 +373,19 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void updateT2TCameraBound(Rect cameraBound) {
-        mT2TFocusRenderer.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if(getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV()) {
+            zoomValue = 1.0f;
+        }
+        mT2TFocusRenderer.setZoom(zoomValue);
     }
 
     public void updateStatsNNCameraBound(Rect cameraBound) {
-        mStatsNNFocusRenderer.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if(getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV()) {
+            zoomValue = 1.0f;
+        }
+        mStatsNNFocusRenderer.setZoom(zoomValue);
     }
 
     public Point getDisplaySize() {

@@ -89,6 +89,9 @@ public class StateNNTrackFocusRenderer extends View implements FocusIndicator {
     protected int mOrientation = 0;
     private float mZoom = 1.0f;
 
+    private boolean mPostZoomFov = false;
+    private boolean mZoomRationSupported = false;
+
     public StateNNTrackFocusRenderer(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -104,6 +107,7 @@ public class StateNNTrackFocusRenderer extends View implements FocusIndicator {
         mPaint.setDither(true);
         mPaint.setColor(Color.WHITE);//setColor(0xFFFFFF00);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
+        mPostZoomFov = PersistUtil.isCameraPostZoomFOV();
     }
 
     public void setVisible(boolean visible) {
@@ -170,8 +174,15 @@ public class StateNNTrackFocusRenderer extends View implements FocusIndicator {
         // mMatrix assumes that the face coordinates are from -1000 to 1000.
         // so translate the face coordination to match the assumption.
         Matrix translateMatrix = new Matrix();
-        translateMatrix.preTranslate(-mCameraBound.width() / 2f, -mCameraBound.height() / 2f);
-        translateMatrix.postScale(2000f / mCameraBound.width(), 2000f / mCameraBound.height());
+        if(mZoomRationSupported && mPostZoomFov) {
+            translateMatrix.preTranslate(-mOriginalCameraBound.width() / 2f,
+                    -mOriginalCameraBound.height() / 2f);
+            translateMatrix.postScale(2000f / mOriginalCameraBound.width(),
+                    2000f / mOriginalCameraBound.height());
+        } else {
+            translateMatrix.preTranslate(-mCameraBound.width() / 2f, -mCameraBound.height() / 2f);
+            translateMatrix.postScale(2000f / mCameraBound.width(), 2000f / mCameraBound.height());
+        }
 
         int dx = (getWidth() - rw) / 2;
         int dy = (getHeight() - rh) / 2;
@@ -185,7 +196,7 @@ public class StateNNTrackFocusRenderer extends View implements FocusIndicator {
         canvas.rotate(-mOrientation);
 
         mRect.offset(-mOriginalCameraBound.left, -mOriginalCameraBound.top);
-        if (mZoom != 1.0f) {
+        if (mZoom != 1.0f && !(mZoomRationSupported && mPostZoomFov)) {
             mRect.left = mRect.left - mCameraBound.left;
             mRect.right = mRect.right - mCameraBound.left;
             mRect.top = mRect.top - mCameraBound.top;
@@ -236,6 +247,10 @@ public class StateNNTrackFocusRenderer extends View implements FocusIndicator {
 
     public void setZoom(float zoom) {
         mZoom = zoom;
+    }
+
+    public void setZoomRationSupported(boolean supported) {
+        mZoomRationSupported = supported;
     }
 
     public void setOriginalCameraBound(Rect originalCameraBound) {
