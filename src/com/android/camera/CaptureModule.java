@@ -3524,7 +3524,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
                 }
 
-                if (mNumFramesArrived.get() < mShotNum && mLongshotActive) {
+                if (mNumFramesArrived.get() < mShotNum && mLongshotActive && !mBurstLimit) {
                     captureStillPicture(CURRENT_ID);
                 }else {
                     mLongshoting = false;
