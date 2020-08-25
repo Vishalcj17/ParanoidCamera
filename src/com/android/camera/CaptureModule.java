@@ -5017,8 +5017,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         // must change cameraId before "mPaused = false;"
         int facingOfIntentExtras = CameraUtil.getFacingOfIntentExtras(mActivity);
         if (facingOfIntentExtras != -1) {
-            mSettingsManager.setValue(SettingsManager.KEY_FRONT_REAR_SWITCHER_VALUE,
-                    facingOfIntentExtras == CameraUtil.FACING_BACK ? "rear" : "front");
+            mCurrentSceneMode.setSwithCameraId(facingOfIntentExtras);
         }
         mPaused = false;
         for (int i = 0; i < MAX_NUM_CAM; i++) {
@@ -11123,19 +11122,20 @@ public class CaptureModule implements CameraModule, PhotoController,
         public int rearCameraId = -1;
         public int frontCameraId = -1;
         public int auxCameraId = 0;
+        public int swithCameraId = -1;
         int getCurrentId() {
             int cameraId = isBackCamera() ? rearCameraId : frontCameraId;
             cameraId = isForceAUXOn(this.mode) ? auxCameraId : cameraId;
             if ((this.mode == CameraMode.DEFAULT || this.mode == CameraMode.VIDEO ||
                       this.mode == CameraMode.HFR || this.mode == CameraMode.PRO_MODE)
-                    && mSettingsManager.isDeveloperEnabled()) {
+                    && (mSettingsManager.isDeveloperEnabled() || swithCameraId != -1)) {
                 String value = mSettingsManager.getValue(SettingsManager.KEY_SWITCH_CAMERA);
                 if (value != null && !value.equals("-1")) {
                     cameraId = Integer.valueOf(value);
                 }
             }
-            if (cameraId == -1){
-                cameraId = 0;
+            if (swithCameraId != -1){
+                cameraId = swithCameraId;
             }
             return cameraId;
         }
@@ -11145,7 +11145,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             cameraId = isForceAUXOn(this.mode) ? auxCameraId : cameraId;
             if ((this.mode == CameraMode.DEFAULT || this.mode == CameraMode.VIDEO ||
                     this.mode == CameraMode.HFR || this.mode == CameraMode.PRO_MODE)
-                    && (mSettingsManager.isDeveloperEnabled())) {
+                    && (mSettingsManager.isDeveloperEnabled() || swithCameraId != -1)) {
                 final SharedPreferences pref = mActivity.getSharedPreferences(
                         ComboPreferences.getLocalSharedPreferencesName(mActivity,
                                 mSettingsManager.getNextPrepNameKey(nextMode)), Context.MODE_PRIVATE);
@@ -11154,10 +11154,18 @@ public class CaptureModule implements CameraModule, PhotoController,
                     return mSingleRearId;
                 } else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1) {
                     return mLogicalId;
-            }
+                }
+                if (swithCameraId != -1) {
+                    cameraId = swithCameraId;
+                }
             }
             return cameraId;
         }
+
+        public void setSwithCameraId(int swithCameraId) {
+            this.swithCameraId = swithCameraId;
+        }
+
     }
 
     private boolean isForceAUXOn(CameraMode mode) {
