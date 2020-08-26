@@ -5779,6 +5779,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         return false;
     }
 
+    private boolean isRTBModeInSelectMode() {
+        String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+        if(selectMode != null && selectMode.equals("rtb")){
+            return true;
+        }
+        return false;
+    }
+
     private boolean isTouchToFocusAllowed() {
         if ((isTakingPicture() || isTouchAfEnabledSceneMode()) &&
                 !(mT2TFocusRenderer != null && mT2TFocusRenderer.isShown())) {
@@ -11045,9 +11053,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     public void updateZoomSeekBarVisible() {
-        if (mCurrentSceneMode.mode == CameraMode.PRO_MODE ||
-                mCurrentSceneMode.mode == CameraMode.RTB || mIsRTBCameraId) {
-            if (mCurrentSceneMode.mode == CameraMode.RTB) {
+        if (mCurrentSceneMode.mode == CameraMode.PRO_MODE || mIsRTBCameraId ||
+                mCurrentSceneMode.mode == CameraMode.RTB || isRTBModeInSelectMode()) {
+            if (mCurrentSceneMode.mode == CameraMode.RTB || isRTBModeInSelectMode()) {
                 float[] zoomRatioRange = mSettingsManager.getSupportedBokenRatioZoomRange(
                         getMainCameraId());
                 if (zoomRatioRange != null && zoomRatioRange[0] == zoomRatioRange[1]) {
