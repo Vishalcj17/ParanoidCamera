@@ -5776,7 +5776,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private boolean isTouchToFocusAllowed() {
-        if (isTakingPicture() || isTouchAfEnabledSceneMode()) {
+        if ((isTakingPicture() || isTouchAfEnabledSceneMode()) &&
+                !(mT2TFocusRenderer != null && mT2TFocusRenderer.isShown())) {
             return false;
         }
         return true;
@@ -9197,9 +9198,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         String value = mSettingsManager.getValue(SettingsManager.KEY_MFHDR);
         if (value != null ) {
             Log.v(TAG, " applySHDR value :" + value);
-            if (value.equals("shdr")) {
+            if (value.equals("1")) {
                 VendorTagUtil.setSHDRMode(request, 1);
-            } else if (value.equals("mfhdr")) {
+            } else if (value.equals("2")) {
                 VendorTagUtil.setMFHDRMode(request, 1);
             }
         }
