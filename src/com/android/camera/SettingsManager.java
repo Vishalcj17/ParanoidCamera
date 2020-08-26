@@ -1428,7 +1428,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
 
         if (physicalCamera != null) {
-            if (!buildPhysicalCamera(cameraId, physicalCamera)){
+            if (!buildPhysicalCamera(cameraId, physicalCamera) ||
+                    !PersistUtil.isMultiCameraEnabled()){
                 removePreference(mPreferenceGroup, KEY_MULTI_CAMERA_MODE);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMERA);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_CAMCORDER);
