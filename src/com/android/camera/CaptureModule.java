@@ -5332,6 +5332,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void onResumeAfterSuper(boolean resumeFromRestartAll) {
         reinit();
+        setCameraModeSwitcherAllowed(false);
         Log.d(TAG, "onResume " + (mCurrentSceneMode != null ? mCurrentSceneMode.mode : "null")
                 + (resumeFromRestartAll ? " isResumeFromRestartAll" : ""));
         if(mCurrentSceneMode.mode == CameraMode.VIDEO){
@@ -11151,6 +11152,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public void setCameraModeSwitcherAllowed(boolean allow) {
         mCameraModeSwitcherAllowed = allow;
+        mUI.updateFlashEnable(allow);
     }
 
     public boolean getCameraModeSwitcherAllowed() {
