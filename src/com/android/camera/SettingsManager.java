@@ -642,8 +642,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return isBurstShotSupported;
     }
 
-    public int getmaxBurstShotFPS(){
-        int maxBurstShotFPS = 0;
+    public float getmaxBurstShotFPS(){
+        float maxBurstShotFPS = 0;
         try {
             maxBurstShotFPS = mCharacteristics.get(mCameraId).get(CaptureModule.max_burstshot_fps);
         } catch (IllegalArgumentException e) {
