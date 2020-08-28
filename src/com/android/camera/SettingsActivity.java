@@ -128,6 +128,7 @@ public class SettingsActivity extends PreferenceActivity {
             if (key.equals(SettingsManager.KEY_VIDEO_QUALITY)) {
                 updatePreference(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE);
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER);
+                updateVideoMFHDRPreference();
             } else if (key.equals(SettingsManager.KEY_VIDEO_ENCODER) ) {
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER_PROFILE);
             } else if (key.equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)) {
@@ -237,6 +238,11 @@ public class SettingsActivity extends PreferenceActivity {
                    pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)){
                     updateEISPreference();
                     updateVideoVariableFpsPreference();
+                }
+
+                if (pref.getKey().equals(SettingsManager.KEY_MFHDR)) {
+                    mSettingsManager.updatePictureAndVideoSize();
+                    updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
                 }
             }
         }
@@ -1440,6 +1446,10 @@ public class SettingsActivity extends PreferenceActivity {
             mSettingsManager.filterVideoMFHDRModes(modes);
             updatePreference(SettingsManager.KEY_MFHDR);
         } else {
+            pref.setEnabled(false);
+        }
+        ListPreference videoPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
+        if (videoPref != null && videoPref.getValue() != null && videoPref.getValue().equals("3840x2160")) {
             pref.setEnabled(false);
         }
     }

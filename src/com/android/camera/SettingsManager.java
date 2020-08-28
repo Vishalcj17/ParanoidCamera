@@ -2331,6 +2331,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
             if (CameraSettings.VIDEO_QUALITY_TABLE.containsKey(sizes[i].toString())) {
                 Integer profile = CameraSettings.VIDEO_QUALITY_TABLE.get(sizes[i].toString());
                 if (profile != null && CamcorderProfile.hasProfile(cameraId, profile)) {
+                    if(getValue(SettingsManager.KEY_MFHDR) != null && getValue(SettingsManager.KEY_MFHDR).equals("2") && sizes[i].toString().equals("3840x2160")){
+                        continue;
+                    }
                     res.add(sizes[i].toString());
                 }
             }
