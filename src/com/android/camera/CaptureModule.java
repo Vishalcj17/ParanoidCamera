@@ -533,6 +533,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static final CaptureRequest.Key<Integer> extendedMaxZoom =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.ExtendedMaxZoom", Integer.class);
 
+    public static final CaptureRequest.Key<Integer> mcxRawCbInfo =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.McxRawCallbackInfo", Integer.class);
     public static final CaptureRequest.Key<Byte> mctf =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableMCTFwithReferenceFrame", byte.class);
     private static final CaptureResult.Key<Byte> is_depth_focus =
@@ -4787,6 +4789,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         applySHDR(builder);
         if(MCXMODE){
             applyMcxMasterCb(builder);
+        }
+        Set<String> raw_ids = mSettingsManager.getPhysicalFeatureEnableId(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
+        if(raw_ids != null && raw_ids.size() > 0){
+            applyMcxRawCbInfo(builder);
         }
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
@@ -9045,6 +9051,15 @@ public class CaptureModule implements CameraModule, PhotoController,
             request.set(CaptureModule.mcxMasterCb, 1);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "hal no vendorTag : " + mcxMasterCb);
+        }
+    }
+
+    private void applyMcxRawCbInfo(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_RAW_CB_INFO);
+        try {
+            request.set(CaptureModule.mcxRawCbInfo, value != null ? Integer.parseInt(value) : 0);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "hal no vendorTag : " + mcxRawCbInfo);
         }
     }
 

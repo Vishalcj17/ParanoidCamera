@@ -161,6 +161,8 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.raw_reprocess_enable", false);
     private static final boolean PERSIST_RAW_REPROCESS_QCFA =
             getBoolean("persist.sys.camera.raw_reprocess_qcfa", false);
+    private static final boolean PERSIST_RAW_CB_INFO_SUPPORTED =
+            getBoolean("persist.sys.camera.rawcbinfo", false);
 
     public static int getMemoryLimit() {
         return PERSIST_MEMORY_LIMIT;
@@ -455,4 +457,6 @@ public class PersistUtil {
     public static boolean isRawReprocessEnable() {
         return PERSIST_RAW_REPROCESS_ENABLE;
     }
+
+    public static boolean isRawCbInfoSupported() {return PERSIST_RAW_CB_INFO_SUPPORTED; }
 }

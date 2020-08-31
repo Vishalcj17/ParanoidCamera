@@ -1456,6 +1456,19 @@
     <string name="pref_camera2_master_cb_entry_value_disable" translatable="false">0</string>
     <string name="pref_camera2_master_cb_entry_value_enable" translatable="false">1</string>
 
+    <string name="pref_camera2_raw_cb_info_title" translatable="true">Mcx Raw Callback Info</string>
+    <string name="pref_camera2_raw_cb_info_default" translatable="false">0</string>
+    <string name="pref_camera2_raw_cb_info_entry_default" translatable="true">McxCbModeDefault</string>
+    <string name="pref_camera2_raw_cb_info_entry_primary" translatable="true">McxCbModePrimaryOnly</string>
+    <string name="pref_camera2_raw_cb_info_entry_master" translatable="false">McxCbModeMasterOnly</string>
+    <string name="pref_camera2_raw_cb_info_entry_all_active" translatable="false">McxCbModeAllActiveStreams</string>
+    <string name="pref_camera2_raw_cb_info_entry_logical_master" translatable="true">McxCbModeLogicalMasterSlave</string>
+    <string name="pref_camera2_raw_cb_info_entry_value_default" translatable="true">0</string>
+    <string name="pref_camera2_raw_cb_info_entry_value_primary" translatable="false">1</string>
+    <string name="pref_camera2_raw_cb_info_entry_value_master" translatable="false">2</string>
+    <string name="pref_camera2_raw_cb_info_entry_value_all_active" translatable="true">3</string>
+    <string name="pref_camera2_raw_cb_info_entry_value_logical_master" translatable="true">4</string>
+
     <!-- stats nn control value-->
     <string name="pref_camera2_statsnn_control_title" translatable="true">Stats NN Control</string>
     <string name="pref_camera2_statsnn_control_default" translatable="false">0</string>

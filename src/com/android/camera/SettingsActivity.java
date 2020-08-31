@@ -1093,6 +1093,9 @@ public class SettingsActivity extends PreferenceActivity {
             removePreference(SettingsManager.KEY_RAW_FORMAT_TYPE, developer);
         }
 
+        if(!PersistUtil.isRawCbInfoSupported()&& developer != null){
+            removePreference(SettingsManager.KEY_RAW_CB_INFO, developer);
+        }
         switch (mode) {
             case DEFAULT:
                 removePreferenceGroup("video", parentPre);
