@@ -550,6 +550,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public List<String> getSupportList(List<String> supported, String[] supportList) {
         List<String> resultList = new ArrayList<String>();
+        if (supportList == null)return resultList;
         for (String item : supportList) {
             if (supported.indexOf(item) >= 0) {
                 resultList.add(item);
@@ -2183,6 +2184,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     private List<String> getSupportedPictureSize(int cameraId) {
+        if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         Size[] sizes = map.getOutputSizes(ImageFormat.JPEG);
@@ -2249,12 +2251,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     public Size[] getSupportedOutputSize(int cameraId, int format) {
+        if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         return map.getOutputSizes(format);
     }
 
     public Size[] getSupportedOutputSize(int cameraId, Class cl) {
+        if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         return map.getOutputSizes(cl);
@@ -2294,6 +2298,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     public List<String> getSupportedVideoSize(int cameraId) {
+        if (cameraId > mCharacteristics.size())return null;
         List<String> res = new ArrayList<>();
         if (cameraId == -1) return res;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(

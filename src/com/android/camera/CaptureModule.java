@@ -10489,6 +10489,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private Size getOptimalPreviewSize(Size pictureSize, Size[] prevSizes) {
+        if (prevSizes == null)return null;
         Point[] points = new Point[prevSizes.length];
         double targetRatio = (double) pictureSize.getWidth() / pictureSize.getHeight();
         int index = 0;
