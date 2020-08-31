@@ -242,6 +242,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final int STATE_WAITING_AF_LOCKING = 7;
     private static final int STATE_WAITING_AF_AE_LOCK = 8;
     private static final int STATE_WAITING_AE_PRECAPTURE = 9;
+    private static final int STATE_WAITING_AF_AE_RELEASE = 10;
     private static final String TAG = "SnapCam_CaptureModule";
 
     // Used for check memory status for longshot mode
@@ -593,6 +594,8 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public static final CameraCharacteristics.Key<Byte> swmctf =
             new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.SWMCTFEnable", byte.class);
+    public static CaptureRequest.Key<Byte> isAfLock =
+            new CaptureRequest.Key<>("org.quic.camera2.statsconfigs.isAFLock", Byte.class);
 
     private static final CaptureRequest.Key<byte[]> rawinfo_idealraw_request =
           new CaptureRequest.Key<>("com.qti.chi.rawcbinfo.IdealRaw", byte[].class);
@@ -878,6 +881,13 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean mDeepPortraitMode = false;
     private boolean mIsCloseCamera = true;
     TotalCaptureResult mRawInputMeta;
+    private static final int LOCK_AF_AE_STATE_NONE = 0;
+    private static final int LOCK_AF_AE_STATE_START = 1;
+    private static final int LOCK_AF_AE_STATE_LOCK_DONE = 2;
+
+    private int mLockAFAE = LOCK_AF_AE_STATE_NONE;
+    private TextView mLockAFAEText;
+    private int[] mClickPosition = new int[2];
 
     private class SelfieThread extends Thread {
         public void run() {
@@ -1561,7 +1571,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     }
                 } else if (aeState == null ||
-                        aeState == CaptureResult.CONTROL_AE_STATE_INACTIVE) {
+                        aeState == CaptureResult.CONTROL_AE_STATE_INACTIVE ||
+                        aeState == CaptureResult.CONTROL_AE_STATE_LOCKED) {
                     // AE Mode is OFF, the AE state is always CONTROL_AE_STATE_INACTIVE
                     // then begain capture and ignore lock AE.
                     checkAfAeStatesAndCapture(id);
@@ -1573,14 +1584,24 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             case STATE_WAITING_AE_LOCK: {
                 // CONTROL_AE_STATE can be null on some devices
-                Log.d(TAG, "STATE_WAITING_AE_LOCK id: " + id + " afState: " + afState + " aeState:" + aeState);
+                Log.d(TAG, "STATE_WAITING_AE_LOCK id: " + id + " afState: " + afState + " aeState:" + aeState + ",mLockAFAE:" + mLockAFAE);
+                if(mLockAFAE == LOCK_AF_AE_STATE_START || mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+                    mState[id] = STATE_AF_AE_LOCKED;
+                    break;
+                }
                 if (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_LOCKED) {
                     checkAfAeStatesAndCapture(id);
                 }
                 break;
             }
             case STATE_AF_AE_LOCKED: {
-                Log.d(TAG, "STATE_AF_AE_LOCKED id: " + id + " afState:" + afState + " aeState:" + aeState);
+                Log.d(TAG, "STATE_AF_AE_LOCKED id: " + id + " afState:" + afState + " aeState:" + aeState + "mLockAFAE" + mLockAFAE);
+                if(afState != null && CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState && aeState != null && aeState == CaptureResult.CONTROL_AE_STATE_LOCKED && mLockAFAE == LOCK_AF_AE_STATE_START){
+                    if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE && mCurrentSceneMode.mode == CameraMode.VIDEO){
+                        applyIsAfLock(true);
+                    }
+                    mLockAFAE = LOCK_AF_AE_STATE_LOCK_DONE;
+                }
                 break;
             }
             case STATE_WAITING_TOUCH_FOCUS: {
@@ -1614,6 +1635,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                             Log.i(TAG, "SET CONTROL_AE_PRECAPTURE_TRIGGER_CANCEL END");
 
                         }
+                    }
+                    if(afState!= null && aeState != null && CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState && aeState == CaptureResult.CONTROL_AE_STATE_LOCKED && mLockAFAE == LOCK_AF_AE_STATE_START){
+                        mState[id] = STATE_AF_AE_LOCKED;
                     }
                 } catch (CameraAccessException e) {
                     e.printStackTrace();
@@ -1655,6 +1679,21 @@ public class CaptureModule implements CameraModule, PhotoController,
                     } else {
                         runPrecaptureSequence(id);
                     }
+                }
+                break;
+            }
+            case STATE_WAITING_AF_AE_RELEASE: {
+                Log.d(TAG, "STATE_WAITING_AF_AE_RELEASE id: " + id + " afState: " + afState +
+                        " aeState:" + aeState);
+                if(afState != null && CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED != afState && aeState != null && aeState != CaptureResult.CONTROL_AE_STATE_LOCKED){
+                    if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE && mCurrentSceneMode.mode == CameraMode.VIDEO){
+                        applyIsAfLock(true);
+                    }
+                    mInTAF = true;
+                    mUI.onFocusStarted();
+                    mUI.setFocusPosition(mClickPosition[0], mClickPosition[1]);
+                    lockExposure(mCurrentSceneMode.getCurrentId());
+                    triggerFocusAtPoint(mClickPosition[0], mClickPosition[1], mCurrentSceneMode.getCurrentId());
                 }
                 break;
             }
@@ -1866,6 +1905,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mBeStatsLabel = (TextView) mRootView.findViewById(R.id.be_stats_graph_label);
         mDrawAutoHDR2 = (DrawAutoHDR2 )mRootView.findViewById(R.id.autohdr_view);
         mMFNRDrawer = (MFNRDrawer )mRootView.findViewById(R.id.mfnr_view);
+        mLockAFAEText = (TextView ) mRootView.findViewById(R.id.lock_af_ae_label);
         mGraphViewR.setDataSection(0,256);
         mGraphViewGB.setDataSection(256,512);
         mGraphViewB.setDataSection(512,768);
@@ -1922,6 +1962,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (valueF < 0) return;
         builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
         builder.set(CaptureRequest.LENS_FOCUS_DISTANCE, valueF);
+        if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+            mLockAFAE = LOCK_AF_AE_STATE_NONE;
+            applySettingsForUnlockExposure(builder, mCurrentSceneMode.getCurrentId());
+            updateLockAFAEVisibility();
+        }
     }
 
     private void createSessions() {
@@ -2466,7 +2511,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             mCameraHandler.removeMessages(CANCEL_TOUCH_FOCUS, mCameraId[cameraId]);
             mState[cameraId] = STATE_PREVIEW;
-            mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO;
+            if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO;
+            }
 
             mActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -2971,7 +3018,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 !isFlashOn(getMainCameraId()) && (mPreviewCaptureResult != null &&
                 mPreviewCaptureResult.get(CaptureResult.CONTROL_AE_STATE) !=
                      CameraMetadata.CONTROL_AE_STATE_FLASH_REQUIRED &&
-                mPreviewCaptureResult.getRequest().get(CaptureRequest.CONTROL_AE_LOCK) != Boolean.TRUE)) {
+                mPreviewCaptureResult.getRequest().get(CaptureRequest.CONTROL_AE_LOCK) != Boolean.TRUE || mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE)) {
             takeZSLPictureInHAL();
         } else {
             int cameraId = getMainCameraId();
@@ -3138,11 +3185,17 @@ public class CaptureModule implements CameraModule, PhotoController,
             builder.setTag(id);
             addPreviewSurface(builder, null, id);
 
-            applySettingsForLockFocus(builder, id);
+            if (mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                applySettingsForLockFocus(builder, id);
+            }
             CaptureRequest request = builder.build();
-            mLockRequestHashCode[id] = request.hashCode();
+            if (mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                mLockRequestHashCode[id] = request.hashCode();
+                mCaptureSession[id].capture(request, mCaptureCallback, mCameraHandler);
+            }else{
+                mLockRequestHashCode[id] = 0;
+            }
             mState[id] = STATE_WAITING_AF_LOCK;
-            mCaptureSession[id].capture(request, mCaptureCallback, mCameraHandler);
             if (mHiston) {
                 updateGraghViewVisibility(View.INVISIBLE);
             }
@@ -3202,9 +3255,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mCaptureSession[id].capture(builder.build(), mCaptureCallback, mCameraHandler);
             }
             setAFModeToPreview(id, mControlAFMode);
-            Message message =
-                    mCameraHandler.obtainMessage(CANCEL_TOUCH_FOCUS, id, 0, mCameraId[id]);
-            mCameraHandler.sendMessageDelayed(message, CANCEL_TOUCH_FOCUS_DELAY);
+            Log.i(TAG,"autoFocusTrigger,mLockAFAE:" + mLockAFAE);
+            if(mLockAFAE == LOCK_AF_AE_STATE_NONE) {
+                Message message =
+                        mCameraHandler.obtainMessage(CANCEL_TOUCH_FOCUS, id, 0, mCameraId[id]);
+                mCameraHandler.sendMessageDelayed(message, CANCEL_TOUCH_FOCUS_DELAY);
+            }
         } catch (CameraAccessException | IllegalStateException | IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -3255,7 +3311,9 @@ public class CaptureModule implements CameraModule, PhotoController,
 
             CaptureRequest.Builder captureBuilder = getRequestBuilder(
                 CameraDevice.TEMPLATE_STILL_CAPTURE, id, mSettingsManager.getPhysicalCameraId());
-
+            if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+                applySettingsForLockExposure(captureBuilder, id);
+            }
             if (mSettingsManager.isZSLInHALEnabled() || isActionImageCapture()) {
                 captureBuilder.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
             } else {
@@ -3705,6 +3763,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             captureBuilder.set(CaptureRequest.JPEG_THUMBNAIL_SIZE, mVideoSnapshotThumbSize);
             captureBuilder.set(CaptureRequest.JPEG_THUMBNAIL_QUALITY, (byte)80);
             applyVideoSnapshot(captureBuilder, id);
+            if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+                applySettingsForLockExposure(captureBuilder, id);
+            }
             if (mUI.getZoomFixedSupport()) {
                 applyZoomRatio(captureBuilder, mZoomValue, id);
             } else {
@@ -3839,6 +3900,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             CaptureRequest.Builder builder = getRequestBuilder(id);
             builder.setTag(id);
             addPreviewSurface(builder, null, id);
+            if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+                applySettingsForLockExposure(builder, id);
+            }
             applySettingsForPrecapture(builder, id);
             CaptureRequest request = builder.build();
             mPrecaptureRequestHashCode[id] = request.hashCode();
@@ -4420,7 +4484,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                 builder.setTag(id);
                 addPreviewSurface(builder, null, id);
                 applySettingsForUnlockFocus(builder, id);
-                mCaptureSession[id].capture(builder.build(), mCaptureCallback, mCameraHandler);
+                if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+                    applySettingsForLockExposure(builder, id);
+                }
+                if (mCaptureSession[id] instanceof CameraConstrainedHighSpeedCaptureSession) {
+                    List requestList = ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
+                            .createHighSpeedRequestList(builder.build());
+                    mCaptureSession[id].captureBurst(requestList, mCaptureCallback, mCameraHandler);
+                } else {
+                    mCaptureSession[id].capture(builder.build(), mCaptureCallback, mCameraHandler);
+                }
             }
 
             mState[id] = STATE_PREVIEW;
@@ -4428,24 +4501,30 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (mUI.getCurrentProMode() != ProMode.MANUAL_MODE)
+                        if (mUI.getCurrentProMode() != ProMode.MANUAL_MODE && mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE)
                             mUI.clearFocus();
                         if (mCurrentSceneMode.mode != CameraMode.PRO_MODE)
                             mUI.enableZoomSeekBar(true);
                     }
                 });
             }
-            mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
-            mIsAutoFocusStarted = false;
+            if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
+                mIsAutoFocusStarted = false;
+            }
             applyFlash(mPreviewRequestBuilder[id], id);
-            applySettingsForUnlockExposure(mPreviewRequestBuilder[id], id);
+            if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                applySettingsForUnlockExposure(mPreviewRequestBuilder[id], id);
+            }
             if (mSettingsManager.isDeveloperEnabled()) {
                 applyCommonSettings(mPreviewRequestBuilder[id], id);
             }
-            int afMode = (mSettingsManager.isDeveloperEnabled() && getDevAfMode() != -1) ?
-                    getDevAfMode() : mControlAFMode;
-            setAFModeToPreview(id, mUI.getCurrentProMode() == ProMode.MANUAL_MODE ?
-                    CaptureRequest.CONTROL_AF_MODE_OFF : afMode);
+            if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                int afMode = (mSettingsManager.isDeveloperEnabled() && getDevAfMode() != -1) ?
+                        getDevAfMode() : mControlAFMode;
+                setAFModeToPreview(id, mUI.getCurrentProMode() == ProMode.MANUAL_MODE ?
+                        CaptureRequest.CONTROL_AF_MODE_OFF : afMode);
+            }
             mTakingPicture[id] = false;
             enableShutterAndVideoOnUiThread(id);
         } catch (NullPointerException | IllegalStateException | CameraAccessException e) {
@@ -4707,8 +4786,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             applySettingsForLockExposure(mPreviewRequestBuilder[id], id);
             mState[id] = STATE_WAITING_AE_LOCK;
-            mCaptureSession[id].setRepeatingRequest(mPreviewRequestBuilder[id].build(),
-                    mCaptureCallback, mCameraHandler);
+            if (isHighSpeedRateCapture()) {
+                List<CaptureRequest> slowMoRequests = mSuperSlomoCapture ?
+                    createSSMBatchRequest(mVideoRecordRequestBuilder) :
+                    ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession).
+                        createHighSpeedRequestList(mVideoRecordRequestBuilder.build());
+                mCaptureSession[id].setRepeatingBurst(slowMoRequests, mCaptureCallback,
+                        mCameraHandler);
+            } else {
+                mCaptureSession[id].setRepeatingRequest(mPreviewRequestBuilder[id].build(),
+                        mCaptureCallback, mCameraHandler);
+            }
         } catch (CameraAccessException | IllegalStateException e) {
             e.printStackTrace();
         }
@@ -4731,7 +4819,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void applySettingsForPrecapture(CaptureRequest.Builder builder, int id) {
         String redeye = mSettingsManager.getValue(SettingsManager.KEY_REDEYE_REDUCTION);
-        if (redeye != null && redeye.equals("on") && !isFlashRequiredInDriver) {
+        if (redeye != null && redeye.equals("on") && !isFlashRequiredInDriver || mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
             if (DEBUG)
             Log.d(TAG, "Red Eye Reduction is On. " +
                     "Don't set CONTROL_AE_PRECAPTURE_TRIGGER to Start");
@@ -4752,8 +4840,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         builder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
         applyAFRegions(builder, id);
         applyAERegions(builder, id);
-        builder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-                CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+        if(mLockAFAE == LOCK_AF_AE_STATE_NONE){
+            builder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                    CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+        }
 
         applyFlash(builder, id);
         applyCommonSettings(builder, id);
@@ -4768,8 +4858,10 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applySettingsForUnlockFocus(CaptureRequest.Builder builder, int id) {
-        builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
+        if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+            builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
+        }
         applyFlash(builder, id);
         applyCommonSettings(builder, id);
     }
@@ -4811,7 +4903,11 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyVideoSnapshot(CaptureRequest.Builder builder, int id) {
-        builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+        if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+            builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+        }else{
+            builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+        }
         applyFaceDetection(builder);
         applyColorEffect(builder);
         applyVideoFlash(builder, id);
@@ -5014,6 +5110,11 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void onPauseAfterSuper(boolean isExitCamera) {
         Log.d(TAG, "onPause " + (isExitCamera ? "exit camera" : ""));
         if (isExitCamera) {
+            if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+                mLockAFAE = LOCK_AF_AE_STATE_NONE;
+                updateLockAFAEVisibility();
+                mUI.initFlashButton();
+            }
             writeXMLForWarmAwb();
         }
         if (mLocationManager != null) mLocationManager.recordLocation(false);
@@ -5089,7 +5190,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         } else {
             if (mState[getMainCameraId()] == STATE_WAITING_TOUCH_FOCUS ||
-                    mState[getMainCameraId()] == STATE_PREVIEW) {
+                    mState[getMainCameraId()] == STATE_PREVIEW || mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
                 cancelTouchFocus(getMainCameraId());
             }
         }
@@ -5416,6 +5517,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(mCurrentSceneMode.mode == CameraMode.VIDEO){
             enableVideoButton(false);//disable the video button before media recorder is ready
         }
+	    if (mCurrentSceneMode.mode != CameraMode.HFR){
+            mHighSpeedCapture = false;
+        }
         if(!MCXMODE) {
             checkRTBCameraId();
         }
@@ -5650,6 +5754,14 @@ public class CaptureModule implements CameraModule, PhotoController,
         return true;
     }
 
+    public void onZoomEnd() {
+        if (mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+            mUI.setFocusPosition(mClickPosition[0], mClickPosition[1]);
+            mUI.onFocusStarted();
+            mUI.onFocusSucceeded(false);
+        }
+    }
+
     private boolean isInMode(int cameraId) {
         if (isBackCamera()) {
             switch (getCameraMode()) {
@@ -5815,6 +5927,14 @@ public class CaptureModule implements CameraModule, PhotoController,
             return;
         }
         Log.d(TAG, "onSingleTapUp " + x + " " + y);
+        if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+            mLockAFAE = LOCK_AF_AE_STATE_NONE;
+            applyIsAfLock(false);
+            cancelTouchFocus(mCurrentSceneMode.getCurrentId());
+            applySettingsForUnlockExposure(mPreviewRequestBuilder[mCurrentSceneMode.getCurrentId()], mCurrentSceneMode.getCurrentId());
+            updateLockAFAEVisibility();
+            mUI.initFlashButton();
+        }
         int[] newXY = {x, y};
         if (mUI.isOverControlRegion(newXY)) return;
         if (!mUI.isOverSurfaceView(newXY)) return;
@@ -5831,6 +5951,45 @@ public class CaptureModule implements CameraModule, PhotoController,
         mInTAF = true;
         mUI.onFocusStarted();
         triggerFocusAtPoint(x, y, getMainCameraId());
+    }
+
+    @Override
+    public void onLongPress(View view, int x, int y) {
+        if (mPaused || !mCamerasOpened || !mFirstTimeInitialized || !mAutoFocusRegionSupported
+                || !mAutoExposureRegionSupported || !isTouchToFocusAllowed()) {
+            return;
+        }
+        Log.d(TAG, "onLongPress " + x + " " + y);
+        mClickPosition[0] = x;
+        mClickPosition[1] = y;
+        mUI.hideFlashButton();
+        int[] newXY = {x, y};
+        if (mUI.isOverControlRegion(newXY)) return;
+        if (!mUI.isOverSurfaceView(newXY)) return;
+        if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+            Log.i(TAG,"set af lock start");
+            applyIsAfLock(false);
+            mLockAFAE = LOCK_AF_AE_STATE_START;
+            applySettingsForUnlockExposure(mPreviewRequestBuilder[mCurrentSceneMode.getCurrentId()], mCurrentSceneMode.getCurrentId());
+            cancelTouchFocus(mCurrentSceneMode.getCurrentId());
+            mState[mCurrentSceneMode.getCurrentId()] = STATE_WAITING_AF_AE_RELEASE;
+            updateLockAFAEVisibility();
+        } else{
+            mLockAFAE = LOCK_AF_AE_STATE_START;
+            applyIsAfLock(true);
+            mUI.setFocusPosition(x, y);
+            mUI.onFocusStarted();
+            triggerFocusAtPoint(x, y, mCurrentSceneMode.getCurrentId());
+            lockExposure(mCurrentSceneMode.getCurrentId());
+        }
+    }
+
+    private void updateLockAFAEVisibility() {
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                mLockAFAEText.setVisibility(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE ? View.VISIBLE : View.INVISIBLE);
+            }
+        });
     }
 
     public int getMainCameraId() {
@@ -6735,7 +6894,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         checkAndPlayRecordSound(cameraId, true);
 
         try {
-            mUI.clearFocus();
+            if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                mUI.clearFocus();
+            }
             mUI.hideUIwhileRecording();
             if (isHighSpeedRateCapture()) {
                 //This should be not needed since setRepeatingBurst don't change
@@ -6791,7 +6952,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mUI.clearFocus();
+                    if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+                        mUI.clearFocus();
+                    }
                     mUI.resetPauseButton();
                     mRecordingTotalTime = 0L;
                     mRecordingStartTime = SystemClock.uptimeMillis();
@@ -7043,9 +7206,28 @@ public class CaptureModule implements CameraModule, PhotoController,
             mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
         }
-        mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest
-                .CONTROL_AF_MODE_CONTINUOUS_VIDEO);
-        applyVideoCommentSettings(mVideoRecordRequestBuilder, cameraId);
+        if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+            mVideoRecordRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest
+                    .CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+            applyVideoCommentSettings(mVideoRecordRequestBuilder, cameraId);
+        } else {
+            //relock af ae when lock
+            autoFocusTrigger(cameraId);
+            applyAERegions(mVideoRecordRequestBuilder, cameraId);
+            applySettingsForLockExposure(mVideoRecordRequestBuilder, cameraId);
+            applyAntiBandingLevel(mVideoRecordRequestBuilder);
+            applyVideoStabilization(mVideoRecordRequestBuilder);
+            applyNoiseReduction(mVideoRecordRequestBuilder);
+            applyColorEffect(mVideoRecordRequestBuilder);
+            applyVideoFlash(mVideoRecordRequestBuilder, cameraId);
+            applyFaceDetection(mVideoRecordRequestBuilder);
+            applyZoom(mVideoRecordRequestBuilder, cameraId);
+            applyVideoEncoderProfile(mVideoRecordRequestBuilder);
+            applyVideoEIS(mVideoRecordRequestBuilder);
+            applyVideoHDR(mVideoRecordRequestBuilder);
+            applyTouchTrackFocus(mVideoRecordRequestBuilder);
+            applyToneMapping(mVideoRecordRequestBuilder);
+        }
     }
 
     private void setUpVideoPreviewRequestBuilder(Surface surface, int cameraId) {
@@ -7068,7 +7250,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             mVideoPreviewRequestBuilder.addTarget(surface);
         }
-        mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, mControlAFMode);
+        if (mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+            mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, mControlAFMode);
+        }
         if (mHighSpeedCapture && !isVariableFPSEnabled()) {
             mVideoPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     mHighSpeedFPSRange);
@@ -7094,9 +7278,23 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void lockAfAeForRequestBuilder(CaptureRequest.Builder builder, int id){
+        builder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest
+                .CONTROL_AF_TRIGGER_CANCEL);
+        builder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest
+                .CONTROL_AF_TRIGGER_START);
+        applyAFRegions(builder, id);
+        applyAERegions(builder, id);
+        applySettingsForLockExposure(builder, id);
+    }
+
     private void applyVideoCommentSettings(CaptureRequest.Builder builder, int cameraId) {
-        builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
-        builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+        if(mLockAFAE != LOCK_AF_AE_STATE_LOCK_DONE) {
+            builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+            builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+        }else{
+            lockAfAeForRequestBuilder(builder, cameraId);
+        }
         applyAntiBandingLevel(builder);
         applyVideoStabilization(builder);
         applyNoiseReduction(builder);
@@ -7158,6 +7356,37 @@ public class CaptureModule implements CameraModule, PhotoController,
                     Log.w(TAG, "capture can`t find vendor tag: " + custom_noise_reduction.toString());
                 }
             }
+        }
+    }
+
+    private void applyIsAfLock(boolean isLock){
+        CaptureRequest.Builder builder = mPreviewRequestBuilder[mCurrentSceneMode.getCurrentId()];
+        int id = mCurrentSceneMode.getCurrentId();
+        if (!checkSessionAndBuilder(mCaptureSession[id], builder)) {
+            return;
+        }
+        try {
+            builder.set(CaptureModule.isAfLock, (byte)(isLock? 0x01 : 0x00));
+            if(id == MONO_ID && !canStartMonoPreview()) {
+                mCaptureSession[id].capture(builder.build(), mCaptureCallback, mCameraHandler);
+            } else {
+                CameraCaptureSession session = mCaptureSession[id];
+                if (session instanceof CameraConstrainedHighSpeedCaptureSession) {
+                    List list = ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
+                            .createHighSpeedRequestList(builder.build());
+                    ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
+                            , mCaptureCallback, mCameraHandler);
+                } else if (isSSMEnabled()) {
+                    session.setRepeatingBurst(createSSMBatchRequest(builder),
+                            mCaptureCallback, mCameraHandler);
+                } else {
+                    mCaptureSession[id].setRepeatingRequest(builder
+                            .build(), mCaptureCallback, mCameraHandler);
+                }
+
+            }
+        } catch (CameraAccessException | IllegalStateException | IllegalArgumentException e) {
+            e.printStackTrace();
         }
     }
 
@@ -9562,7 +9791,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (!checkSessionAndBuilder(mCaptureSession[id], captureRequest)) {
             return;
         }
-        if (mState[id] == STATE_PREVIEW) {
+        if (mState[id] == STATE_WAITING_TOUCH_FOCUS) {
             cancelTouchFocus(id);
         }
         if (mUI.getZoomFixedSupport()) {
@@ -10285,6 +10514,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         mInTAF = false;
         mState[id] = STATE_PREVIEW;
+        if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+            return;
+        }
         mControlAFMode = mCurrentSceneMode.mode == CameraMode.VIDEO ?
                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO :
                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
@@ -10370,12 +10602,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mIsDepthFocus = false;
                 }
             }
-            if(DEBUG) Log.d(TAG, "isDepthFocus is " + mIsDepthFocus + ", inTAF is " + mInTAF);
         } catch (IllegalArgumentException e) {
             mIsDepthFocus = false;
             if (DEBUG) e.printStackTrace();
         }
-
+        if(resultAFState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED && mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
+            updateLockAFAEVisibility();
+        }
         if (mIsDepthFocus && !mInTAF) {
             resultAFState = CaptureResult.CONTROL_AF_STATE_INACTIVE;
         }
@@ -10608,7 +10841,14 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void restartAll() {
         mResumed = false;
         int nextCameraId = getNextScreneModeId(mNextModeIndex);
-        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId);
+        Exception e = new Exception();
+        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId +",mLockAFAE" +  mLockAFAE,e);
+        if(mLockAFAE != LOCK_AF_AE_STATE_NONE) {
+            mLockAFAE = LOCK_AF_AE_STATE_NONE;
+            applyIsAfLock(false);
+            applySettingsForUnlockExposure(mPreviewRequestBuilder[CURRENT_ID], CURRENT_ID);
+            updateLockAFAEVisibility();
+        }
         if(CURRENT_ID == nextCameraId && mCameraDevice[CURRENT_ID] != null){
             mIsCloseCamera = false;
         }else{
@@ -11347,6 +11587,12 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             if (swithCameraId != -1){
                 cameraId = swithCameraId;
+            }
+            String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+            if (selectMode != null && selectMode.equals("single_rear_cameraid") && mSingleRearId !=-1) {
+                cameraId = mSingleRearId;
+            } else if (selectMode != null && selectMode.equals("sat") && mLogicalId != -1) {
+                cameraId = mLogicalId;
             }
             return checkCameraId(cameraId);
         }

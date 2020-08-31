@@ -68,6 +68,7 @@ public class PreviewGestures
             // Open pie
             if (!mZoomOnly && mPie != null && !mPie.showsItems()) {
                 openPie();
+                mTapListener.onLongPress(null, (int) e.getX(), (int) e.getY());
             }
         }
 
@@ -91,32 +92,33 @@ public class PreviewGestures
 
             int deltaX = (int) (e1.getX() - e2.getX());
             int deltaY = (int) (e1.getY() - e2.getY());
-
-            int orientation = 0;
-            if (mCaptureUI != null)
-                orientation = mCaptureUI.getOrientation();
-
-            if (isLeftSwipe(orientation, deltaX, deltaY)) {
-                waitUntilNextDown = true;
+            if((Math.abs(deltaX) > 40 || Math.abs(deltaY) > 40)) {
+                int orientation = 0;
                 if (mCaptureUI != null)
-                    mCaptureUI.swipeCameraMode(-1);
-                return true;
-            }
-            if (isRightSwipe(orientation, deltaX, deltaY)) {
-                waitUntilNextDown = true;
-                if (mCaptureUI != null)
-                    mCaptureUI.swipeCameraMode(1);
-                return true;
-            }
-            if (isUpSwipe(orientation, deltaX, deltaY) ||
-                    isDownSwipe(orientation, deltaX, deltaY)) {
-                if (e1.getY() < 200) {
-                    return false;
+                    orientation = mCaptureUI.getOrientation();
+
+                if (isLeftSwipe(orientation, deltaX, deltaY)) {
+                    waitUntilNextDown = true;
+                    if (mCaptureUI != null)
+                        mCaptureUI.swipeCameraMode(-1);
+                    return true;
                 }
-                waitUntilNextDown = true;
-                if (mCaptureUI != null)
-                    mCaptureUI.switchFrontBackCamera();
-                return true;
+                if (isRightSwipe(orientation, deltaX, deltaY)) {
+                    waitUntilNextDown = true;
+                    if (mCaptureUI != null)
+                        mCaptureUI.swipeCameraMode(1);
+                    return true;
+                }
+                if (isUpSwipe(orientation, deltaX, deltaY) ||
+                        isDownSwipe(orientation, deltaX, deltaY)) {
+                    if (e1.getY() < 200) {
+                        return false;
+                    }
+                    waitUntilNextDown = true;
+                    if (mCaptureUI != null)
+                        mCaptureUI.switchFrontBackCamera();
+                    return true;
+                }
             }
             return false;
         }
@@ -180,6 +182,7 @@ public class PreviewGestures
 
     public interface SingleTapListener {
         public void onSingleTapUp(View v, int x, int y);
+        public void onLongPress(View v, int x, int y);
     }
 
     public PreviewGestures(CameraActivity ctx, SingleTapListener tapListener,

@@ -1289,6 +1289,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         enableView(mFlashButton, SettingsManager.KEY_FLASH_MODE);
     }
 
+    public void hideFlashButton() {
+        mFlashButton.setVisibility(View.GONE);
+        String key;
+        boolean isVideoFlash = mModule.getCurrenCameraMode() == CaptureModule.CameraMode.VIDEO ||
+                mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE ||
+                mModule.getCurrenCameraMode() == CaptureModule.CameraMode.HFR;
+        if (isVideoFlash) {
+            key = SettingsManager.KEY_VIDEO_FLASH_MODE;
+        } else {
+            key = SettingsManager.KEY_FLASH_MODE;
+        }
+        mSettingsManager.setValue(key, "off");
+    }
+
     public void initSceneModeButton() {
         mSceneModeSwitcher.setVisibility(View.INVISIBLE);
         String value = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
@@ -2448,6 +2462,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mModule.onSingleTapUp(view, x, y);
     }
 
+    @Override
+    public void onLongPress(View view, int x, int y) {
+        mModule.onLongPress(view, x, y);
+    }
+
     public boolean isOverControlRegion(int[] xy) {
         int x = xy[0];
         int y = xy[1];
@@ -2640,6 +2659,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (mPieRenderer != null) {
                 mPieRenderer.setBlockFocus(false);
             }
+            mModule.onZoomEnd();
         }
 
         @Override
