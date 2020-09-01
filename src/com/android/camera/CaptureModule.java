@@ -497,8 +497,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
     //Variable fps
-    private static final CaptureRequest.Key<int[]> dynamicFSPConfigKey =
-            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.dynamicFPSConfig", int[].class);
+    private static final CaptureRequest.Key<float[]> dynamicFSPConfigKey =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.dynamicFPSConfig", float[].class);
 
     //Stats NN Result
     private static final CaptureRequest.Key<Byte> statsNNControl =
@@ -6952,7 +6952,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void applyVariableFPS(CaptureRequest.Builder builder) {
         if (isVariableFPSEnabled()) {
             try {
-                int[] dynamicFpsConfig = new int[]{2, 30, 60, 0, 0};
+                float[] dynamicFpsConfig = new float[]{2.0f, 30.0f, 60.0f, 0.0f , 0.0f};
                 builder.set(dynamicFSPConfigKey, dynamicFpsConfig);
                 Range range = new Range(30, 60);
                 builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, range);
