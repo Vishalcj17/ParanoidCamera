@@ -1425,7 +1425,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
         if (mfhdr != null) {
             int[] modes = isMFHDRSupported();
-            if (!(modes != null && modes.length > 0)) {
+            if (!(modes != null && modes.length > 0) || isFacingFront(mCameraId)) {
                 removePreference(mPreferenceGroup, KEY_MFHDR);
             }
         }
