@@ -2987,7 +2987,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean takeZSLPicture(int cameraId) {
         if(mPostProcessor.isZSLEnabled() && mPostProcessor.takeZSLPicture()) {
             checkAndPlayShutterSound(getMainCameraId());
+            mTakingPicture[cameraId] = false;
             mUI.enableShutter(true);
+            mUI.enableZoomSeekBar(true);
             return true;
         }
         return false;
