@@ -1184,6 +1184,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
         ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
+        ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1405,6 +1406,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
             int[] modes = isMFHDRSupported();
             if (!(modes != null && modes.length > 0)) {
                 removePreference(mPreferenceGroup, KEY_MFHDR);
+            }
+        }
+
+        if (extendedMaxZoom != null) {
+            if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR) {
+                removePreference(mPreferenceGroup, KEY_EXTENDED_MAX_ZOOM);
             }
         }
 
