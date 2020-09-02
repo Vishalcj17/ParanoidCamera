@@ -9433,14 +9433,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                 request.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_HDR);
                 request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
         }
-        if(getPostProcFilterId(mode) != PostProcessor.FILTER_NONE || mCaptureHDRTestEnable) {
+        if(getPostProcFilterId(mode) != PostProcessor.FILTER_NONE) {
             request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
             request.set(CaptureRequest.CONTROL_SCENE_MODE, mode);
             return;
         }
         if (mode != CaptureRequest.CONTROL_SCENE_MODE_DISABLED
                 && mode != SettingsManager.SCENE_MODE_DUAL_INT
-                && mode != SettingsManager.SCENE_MODE_PROMODE_INT) {
+                && mode != SettingsManager.SCENE_MODE_PROMODE_INT && !mCaptureHDRTestEnable) {
             request.set(CaptureRequest.CONTROL_SCENE_MODE, mode);
             request.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
         } else {
