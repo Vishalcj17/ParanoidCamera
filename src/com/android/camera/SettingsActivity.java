@@ -1127,7 +1127,6 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
-                        videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                         videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
                     }
