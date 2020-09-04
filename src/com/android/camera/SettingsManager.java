@@ -3088,6 +3088,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return videoSize;
     }
 
+    public int getVideoPreviewFPS(Size videoSize,int fps) {
+        int previewFPS = 60;
+        SettingsManager.VideoEisConfig config =
+                getVideoEisConfig(videoSize,fps);
+        if (config != null)
+            previewFPS = config.getMaxPreviewFPS();
+        Log.d(TAG,"videoSize="+videoSize.toString()+" fps="+fps+ " previewFPS="+previewFPS);
+        return previewFPS;
+    }
+
     public Size parsePictureSize(String value) {
         int indexX = value.indexOf('x');
         int width = Integer.parseInt(value.substring(0, indexX));

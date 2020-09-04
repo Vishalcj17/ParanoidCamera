@@ -6383,6 +6383,19 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     };
 
+    private void limitPreviewFPS() {
+        try {
+            List<CaptureRequest> burstList = new ArrayList<>();
+            burstList.add(mVideoRecordRequestBuilder.build());
+            mVideoRecordRequestBuilder.removeTarget(mVideoPreviewSurface);
+            burstList.add(mVideoRecordRequestBuilder.build());
+            mCurrentSession.setRepeatingBurst(burstList, mCaptureCallback, mCameraHandler);
+            mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "limit preview fps failed.");
+        }
+    }
+
     private final CameraCaptureSession.StateCallback mSessionListener = new CameraCaptureSession
             .StateCallback() {
         @Override
@@ -6405,8 +6418,20 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mCurrentSession.setRepeatingBurst(slowMoRequests, mCaptureCallback,
                             mCameraHandler);
                 } else {
-                    mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
-                            mCaptureCallback, mCameraHandler);
+                    int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
+                            mSettingsManager.getVideoFPS());
+                    if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
+                        if (PersistUtil.enableMediaRecorder())  {
+                            mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+                        }
+                        limitPreviewFPS();
+                        if (PersistUtil.enableMediaRecorder())  {
+                            mVideoRecordRequestBuilder.removeTarget(mVideoRecordingSurface);
+                        }
+                    } else {
+                        mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
+                                mCaptureCallback, mCameraHandler);
+                    }
                 }
                 setVideoState(VideoState.VIDEO_PREVIEW);
                 if (PersistUtil.enableMediaRecorder()) {
@@ -6649,8 +6674,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
                     }
                 }
-                mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
-                        mCaptureCallback, mCameraHandler);
+                int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
+                            mSettingsManager.getVideoFPS());
+                if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
+                    limitPreviewFPS();
+                } else {
+                    mCurrentSession.setRepeatingRequest(mVideoRecordRequestBuilder.build(),
+                            mCaptureCallback, mCameraHandler);
+                }
             }
             mCameraHandler.removeMessages(CANCEL_TOUCH_FOCUS, mCameraId[cameraId]);
             if (!mFrameProcessor.isFrameListnerEnabled() && !startVideoRecording() ||
@@ -7237,6 +7268,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (noNeedEndofStreamWhenPause || noNeedEndOfStreamInHFR) {
             if (PersistUtil.enableMediaRecorder() && mMediaRecorder != null) {
                 mMediaRecorder.pause();
+                int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
+                            mSettingsManager.getVideoFPS());
+                if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
+                    limitPreviewFPS();
+                }
             } else {
                 setVideoState(VideoState.VIDEO_PAUSE);
             }
