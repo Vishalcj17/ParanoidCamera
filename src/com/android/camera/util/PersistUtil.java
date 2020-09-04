@@ -151,10 +151,16 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.isFDRenderingSupported", false);
     private static final boolean PERSIST_CAM_ENABLE_POST_ZOOM_FOV =
             getBoolean("persist.sys.enable_post_zoom_fov", false);
+    public static final boolean PERSIST_MULTI_CAMERA_ENABLED =
+            getBoolean("persist.sys.camera.multiCameraEnabled", false);
     private static final boolean PERSIST_CAM_FD_SUPPORTED =
             getBoolean("persist.sys.camera.isCamFDSupported", false);
     private static final int PERSIST_MCTF_VALUE =
             getInt("persist.sys.camera.sessionParameters.mctf", 0);
+    private static final boolean PERSIST_RAW_REPROCESS_ENABLE =
+            getBoolean("persist.sys.camera.raw_reprocess_enable", false);
+    private static final boolean PERSIST_RAW_REPROCESS_QCFA =
+            getBoolean("persist.sys.camera.raw_reprocess_qcfa", false);
 
     public static int getMemoryLimit() {
         return PERSIST_MEMORY_LIMIT;
@@ -268,10 +274,6 @@ public class PersistUtil {
 
     public static int getDevOptionLevel() {
         return PERSIST_CAMERA_DEV_DEBUG_OPTION;
-    }
-
-    public static boolean getYUVCallbackEnable() {
-        return PERSIST_YUV_CALLBACK_ENABLE;
     }
 
     public static float getStillmoreBrColor(){
@@ -438,10 +440,19 @@ public class PersistUtil {
         return PERSIST_CAM_ENABLE_POST_ZOOM_FOV;
     }
 
+    public static boolean isMultiCameraEnabled() {return  PERSIST_MULTI_CAMERA_ENABLED;}
+
     public static boolean isFDRENDERINGSUPPORTED() {return PERSIST_FD_RENDERING_SUPPORTED; }
 
     public static boolean isCameraFDSupported() {return PERSIST_CAM_FD_SUPPORTED; }
 
     public static int mctfValue() { return PERSIST_MCTF_VALUE; }
 
+    public static boolean isRawReprocessQcfa() {
+        return PERSIST_RAW_REPROCESS_QCFA;
+    }
+
+    public static boolean isRawReprocessEnable() {
+        return PERSIST_RAW_REPROCESS_ENABLE;
+    }
 }

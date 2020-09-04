@@ -96,7 +96,7 @@ public class PostProcessor{
 
     private CaptureModule mController;
 
-    private static final String TAG = "PostProcessor";
+    private static final String TAG = "SnapCam_PostProcessor";
     public static final int FILTER_NONE = 0;
     public static final int FILTER_OPTIZOOM = 1;
     public static final int FILTER_SHARPSHOOTER = 2;
@@ -434,7 +434,7 @@ public class PostProcessor{
     public void onSessionConfigured(CameraDevice cameraDevice, CameraCaptureSession captureSession) {
         mCameraDevice = cameraDevice;
         mCaptureSession = captureSession;
-        if(mUseZSL) {
+        if(mUseZSL || mController.isRawReprocess()) {
             mImageWriter = ImageWriter.newInstance(captureSession.getInputSurface(), mMaxRequiredImageNum);
         }
     }
@@ -443,8 +443,11 @@ public class PostProcessor{
         mImageReader = imageReader;
         if(mUseZSL) {
             mZSLReprocessImageReader = ImageReader.newInstance(pictureSize.getWidth(), pictureSize.getHeight(), ImageFormat.JPEG, mMaxRequiredImageNum);
-            mZSLReprocessImageReader.setOnImageAvailableListener(processedImageAvailableListener, mHandler);
         }
+        if(mController.isRawReprocess()){
+            mZSLReprocessImageReader = mImageReader;
+        }
+        mZSLReprocessImageReader.setOnImageAvailableListener(processedImageAvailableListener, mHandler);
         if (mIsDeepPortrait) {
             ImageFilter imageFilter = mController.getFrameFilters().get(0);
             DeepPortraitFilter deepPortraitFilter =
@@ -520,13 +523,13 @@ public class PostProcessor{
         mPendingContinuousRequestCount = 0;
     }
 
-    private void reprocessImage(Image image, TotalCaptureResult metadata) {
+    public void reprocessImage(Image image, TotalCaptureResult metadata) {
         if(mController.isLongShotActive()) {
             mController.checkAndPlayShutterSound(mController.getMainCameraId());
         }
         synchronized (lock) {
             if(mCameraDevice == null || mCaptureSession == null || mImageReader == null) {
-                Log.e(TAG, "Reprocess request is called even before taking picture");
+                Log.e(TAG, "Reprocess request is called even before taking picture,device:" + mCameraDevice + ",session:" + mCaptureSession + ",reader:" + mImageReader);
                 image.close();
                 return;
             }
@@ -546,8 +549,13 @@ public class PostProcessor{
                         CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
                 builder.set(CaptureRequest.EDGE_MODE,
                         CaptureRequest.EDGE_MODE_HIGH_QUALITY);
-                builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
-                        CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY);
+                if(mController.isRawReprocess()){
+                    builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                            CameraMetadata.NOISE_REDUCTION_MODE_FAST);
+                }else {
+                    builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                            CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY);
+                }
                 VendorTagUtil.setCdsMode(builder, 2); // CDS 0-OFF, 1-ON, 2-AUTO
                 VendorTagUtil.setJpegCropEnable(builder, (byte)1);
                 Rect cropRect = image.getCropRect();
@@ -581,6 +589,7 @@ public class PostProcessor{
                 } catch (IllegalStateException e) {
                     Log.e(TAG, "Queueing more than it can have");
                 }
+                Log.i(TAG, "reprocess capture request");
                 mCaptureSession.capture(builder.build(), new CameraCaptureSession.CaptureCallback(){
                     @Override
                     public void onCaptureCompleted(CameraCaptureSession session,
@@ -1268,30 +1277,59 @@ public class PostProcessor{
                     PhotoModule.NamedImages.NamedEntity name = mNamedImages.getNextNameEntity();
                     String title = (name == null) ? null : name.title;
                     long date = (name == null) ? -1 : name.date;
-                    image.getPlanes()[0].getBuffer().rewind();
-                    int size = image.getPlanes()[0].getBuffer().remaining();
-                    byte[] bytes = new byte[size];
-                    image.getPlanes()[0].getBuffer().get(bytes, 0, size);
-                    ExifInterface exif = Exif.getExif(bytes);
-                    int orientation = Exif.getOrientation(exif);
-                    if (mController.getCurrentIntentMode() != CaptureModule.INTENT_MODE_NORMAL) {
-                        mController.setJpegImageData(bytes);
-                        if (mController.isQuickCapture()) {
-                            mController.onCaptureDone();
+                    if(mController.mRawReprocessType == 2 || mController.mRawReprocessType == 3 || mController.mRawReprocessType == 5 ||mController.mRawReprocessType == 0){
+                        image.getPlanes()[0].getBuffer().rewind();
+                        int size = image.getPlanes()[0].getBuffer().remaining();
+                        byte[] bytes = new byte[size];
+                        image.getPlanes()[0].getBuffer().get(bytes, 0, size);
+                        ExifInterface exif = Exif.getExif(bytes);
+                        int orientation = Exif.getOrientation(exif);
+                        if (mController.getCurrentIntentMode() != CaptureModule.INTENT_MODE_NORMAL) {
+                            mController.setJpegImageData(bytes);
+                            if (mController.isQuickCapture()) {
+                                mController.onCaptureDone();
+                            } else {
+                                mController.showCapturedReview(bytes, orientation);
+                            }
                         } else {
-                            mController.showCapturedReview(bytes, orientation);
+                            String saveFormat = mController.mRawReprocessType == 3? "heic" : "jpeg";
+                            mActivity.getMediaSaveService().addImage(
+                                    bytes, title, date, null, image.getCropRect().width(), image.getCropRect().height(),
+                                    orientation, exif, mController.getMediaSavedListener(), mActivity.getContentResolver(), saveFormat);
+                            mController.updateThumbnailJpegData(bytes);
+                            image.close();
                         }
-                    } else {
-                        mActivity.getMediaSaveService().addImage(
-                                bytes, title, date, null, image.getCropRect().width(), image.getCropRect().height(),
-                                orientation, exif, mController.getMediaSavedListener(), mActivity.getContentResolver(), "jpeg");
-                        mController.updateThumbnailJpegData(bytes);
+                    }else{
+                        byte[] bytes = getYUVFromImage(image);
+                        mActivity.getMediaSaveService().addRawImage(bytes, title,
+                                "yuv");
                         image.close();
                     }
                 }
             });
         }
     };
+
+    public static byte[] getYUVFromImage(Image image) {
+        try{
+            int width = image.getWidth();
+            int height = image.getHeight();
+            ByteBuffer dataY= image.getPlanes()[0].getBuffer();
+            ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
+            dataY.rewind();
+            dataUV.rewind();
+            byte[] bytesY = new byte[dataY.remaining()];
+            dataY.get(bytesY);
+            byte[] bytesUV = new byte[dataUV.remaining()];
+            dataUV.get(bytesUV);
+            byte[] data = new byte[bytesY.length+bytesUV.length];
+            System.arraycopy(bytesY,0,data,0,bytesY.length);
+            System.arraycopy(bytesUV,0,data,bytesY.length,bytesUV.length);
+            return data;
+        }catch (IllegalStateException e) {
+            return null;
+        }
+    }
 
     public byte[] nv21ToJpeg(ImageFilter.ResultImage resultImage, int orientation, TotalCaptureResult result) {
         BitmapOutputStream bos = new BitmapOutputStream(1024);

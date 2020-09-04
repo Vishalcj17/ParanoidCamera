@@ -540,8 +540,8 @@ public class PanoCaptureModule implements CameraModule, PhotoController {
     }
 
     @Override
-    public void onZoomChanged(float requestedZoom) {
-
+    public boolean onZoomChanged(float requestedZoom) {
+        return false;
     }
 
     @Override

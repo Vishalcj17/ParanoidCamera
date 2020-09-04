@@ -282,9 +282,6 @@ public class Camera2FaceView extends FaceView {
                     int delta_x = faceBound.width() / 12;
                     int delta_y = faceBound.height() / 12;
 
-                    delta_x = (int)(delta_x * mZoom);
-                    delta_y = (int)(delta_y * mZoom);
-
                     Log.e(TAG, "blink: (" + exFace.getLeyeBlink()+ ", " +
                             exFace.getReyeBlink() + ")");
                     if (face.getLeftEyePosition() != null) {

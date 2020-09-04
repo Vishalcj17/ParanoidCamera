@@ -37,7 +37,7 @@ public interface PhotoController extends OnShutterButtonListener {
     // returns the actual set zoom value
     public int onZoomChanged(int requestedZoom);
 
-    public void onZoomChanged(float requestedZoom);
+    public boolean onZoomChanged(float requestedZoom);
 
     public boolean isImageCaptureIntent();
 

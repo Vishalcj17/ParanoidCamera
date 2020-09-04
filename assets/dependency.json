@@ -232,5 +232,15 @@
          "pref_camera2_flashmode_key":"off",
          "pref_camera2_longshot_key":"off"},
     "0":{}
+  },
+  "pref_camera2_raw_reprocess_key":
+  {
+    "0":{"pref_camera2_rawinfo_type_key":"off",
+         "pref_camera2_raw_format_key":"off"},
+    "1": {},
+    "2": {},
+    "3": {},
+    "4": {},
+    "5": {}
   }
 }
