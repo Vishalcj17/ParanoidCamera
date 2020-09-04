@@ -2118,6 +2118,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                             }
                             Toast.makeText(mActivity, "Camera Initialization Failed",
                                     Toast.LENGTH_SHORT).show();
+                            mCurrentSessionClosed = false;
                         }
 
                         @Override
@@ -5340,7 +5341,6 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void onResumeAfterSuper(boolean resumeFromRestartAll) {
         reinit();
-        setCameraModeSwitcherAllowed(false);
         Log.d(TAG, "onResume " + (mCurrentSceneMode != null ? mCurrentSceneMode.mode : "null")
                 + (resumeFromRestartAll ? " isResumeFromRestartAll" : ""));
         if(mCurrentSceneMode.mode == CameraMode.VIDEO){
@@ -5433,6 +5433,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    mCurrentSessionClosed = true;
                     createSessions();
                 }
             });
@@ -7087,7 +7088,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updateVideoFlash(int id) {
-        if (!mIsRecordingVideo && !mIsPreviewingVideo) return;
+        if (!mIsRecordingVideo && !mIsPreviewingVideo || mCurrentSessionClosed) return;
         applyVideoFlash(mVideoRecordRequestBuilder, id);
         applyVideoFlash(mVideoPreviewRequestBuilder, id);
         CaptureRequest captureRequest = null;
@@ -9749,7 +9750,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     //response to switch flash mode options in UI, repeat request as soon as switching
     private void applyFlashForUIChange(CaptureRequest.Builder request, int id) {
-        if (!checkSessionAndBuilder(mCaptureSession[id], request)) {
+        if (!checkSessionAndBuilder(mCaptureSession[id], request) || mCurrentSessionClosed) {
             return;
         }
         String redeye = mSettingsManager.getValue(SettingsManager.KEY_REDEYE_REDUCTION);
@@ -11169,7 +11170,6 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public void setCameraModeSwitcherAllowed(boolean allow) {
         mCameraModeSwitcherAllowed = allow;
-        mUI.updateFlashEnable(allow);
     }
 
     public boolean getCameraModeSwitcherAllowed() {

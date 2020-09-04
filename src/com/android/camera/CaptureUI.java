@@ -1047,17 +1047,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         });
     }
 
-    public void updateFlashEnable(boolean enable) {
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                if(mFlashButton != null) {
-                    enableView(mFlashButton, SettingsManager.KEY_FLASH_MODE);
-                    mFlashButton.setEnabled(enable);
-                }
-            }
-        });
-    }
-
     public float getDeepZoomValue() {
         return mDeepZoomValue;
     }
