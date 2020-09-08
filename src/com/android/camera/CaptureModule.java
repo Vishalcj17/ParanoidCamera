@@ -3547,12 +3547,13 @@ public class CaptureModule implements CameraModule, PhotoController,
         float maxFps = mSettingsManager.getmaxBurstShotFPS();
         if(maxFps > 0) {
             double size = mPictureSize.getWidth() * mPictureSize.getHeight();
-            double maxsizefloat = mSupportedMaxPictureSize.getWidth() * mSupportedMaxPictureSize.getHeight();
+            Size maxPictureSize = mSettingsManager.getMaxPictureSize(getMainCameraId(), SurfaceHolder.class);
+            double maxsizefloat = maxPictureSize.getWidth() * maxPictureSize.getHeight();
             maxFps = (float)((maxsizefloat * maxFps) / size);
             if (DEBUG) {
-                Log.i(TAG, "maxsize:" + mSupportedMaxPictureSize.getWidth() + ",height:" + mSupportedMaxPictureSize.getHeight() + "maxsize:" + maxsizefloat);
-                Log.i(TAG, "size:" + mPictureSize.getWidth() + ",height:" + mPictureSize.getHeight() + ",size:" + size);
-                Log.i(TAG,"maxFps:" + maxFps);
+                Log.i(TAG, "calculateMaxFps,maxsize:" + maxPictureSize.getWidth() + ",height:" + maxPictureSize.getHeight() + "maxsize:" + maxsizefloat);
+                Log.i(TAG, "calculateMaxFps,size:" + mPictureSize.getWidth() + ",height:" + mPictureSize.getHeight() + ",size:" + size);
+                Log.i(TAG,"calculateMaxFps,maxFps:" + maxFps);
             }
             maxFps = maxFps > 30 ? 30 : maxFps;
         }

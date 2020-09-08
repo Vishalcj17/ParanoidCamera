@@ -2272,6 +2272,22 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return map.getOutputSizes(cl);
     }
 
+     public Size getMaxPictureSize(int cameraId, Class cl){
+        StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+        Size[] picSize = map.getOutputSizes(cl);
+        Size[] highResSizes = map.getHighResolutionOutputSizes(ImageFormat.JPEG);
+        Size[] allPicSizes = new Size[picSize.length + highResSizes.length];
+        System.arraycopy(picSize, 0, allPicSizes, 0, picSize.length);
+        System.arraycopy(highResSizes, 0, allPicSizes, picSize.length, highResSizes.length);
+        List<Size> allPicSizesList = Arrays.asList(allPicSizes);
+        allPicSizesList.sort((o1,o2) -> o2.getWidth()*o2.getHeight() - o1.getWidth()*o1.getHeight());
+        Size maxPictureSize = allPicSizesList.get(0);
+
+        return maxPictureSize;
+    }
+
     private List<String> getSupportedVideoDuration() {
         int[] videoDurations = {-1, 10, 30, 0};
         List<String> modes = new ArrayList<>();
