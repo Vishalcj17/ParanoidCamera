@@ -4909,11 +4909,12 @@ public class PhotoModule
     }
 
     @Override
-    public void onZoomChanged(float requestedZoom) {
+    public boolean onZoomChanged(float requestedZoom) {
         if ( mFocusManager != null
                 && mFocusManager.getCurrentFocusState() == FocusOverlayManager.STATE_FOCUSING ) {
             mFocusManager.cancelAutoFocus();
         }
+        return true;
     }
 
     @Override

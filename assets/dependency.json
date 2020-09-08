@@ -75,7 +75,8 @@
     "18":
     {"pref_camera2_coloreffect_key":"0",
       "pref_camera2_zsl_key":"disable",
-      "pref_camera2_picture_format_key":"0"}
+      "pref_camera2_picture_format_key":"0",
+      "pref_camera2_multi_camera_mode_key":"0"}
     ,
     "100":
     {"pref_camera2_longshot_key":"off",
@@ -148,6 +149,11 @@
     "on":{"pref_camera2_longshot_key":"off"},
     "off":{}
   },
+  "pref_camera2_longshot_key":
+  {
+    "on":{"pref_camera2_flashmode_key":"off"},
+    "off":{}
+  },
   "pref_camera2_zsl_key":
   {
     "app-zsl": {"pref_camera2_saveraw_key": "disable",
@@ -173,6 +179,16 @@
     "enable":{"pref_camera2_longshot_key":"off"},
     "disable":{}
   },
+  "pref_camera2_hdr_key":
+  {
+    "enable":{"pref_camera2_live_preview_key":"0"},
+    "disable":{}
+  },
+  "pref_camera2_live_preview_key":
+  {
+    "1":{"pref_camera2_hdr_key":"disable"},
+    "0":{}
+  },
   "pref_camera2_hfr_key":
   {
     "hfr90":{"pref_camera2_dis_key":"off"},
@@ -186,6 +202,21 @@
     "hsr480":{"pref_camera2_dis_key":"off"},
     "hsr960":{"pref_camera2_dis_key":"off"}
   },
+  "pref_camera2_mfhdr_key":
+  {
+    "1": {"pref_camera2_zsl_key":"hal-zsl",
+             "pref_camera2_coloreffect_key":"0",
+             "pref_camera2_saveraw_key": "disable",
+             "pref_camera2_manual_exp_key": "off",
+             "pref_camera2_video_hdr_key": "0",
+             "pref_camera2_manual_wb_key": "0"},
+    "2": {"pref_camera2_zsl_key":"hal-zsl",
+              "pref_camera2_coloreffect_key":"0",
+              "pref_camera2_saveraw_key": "disable",
+              "pref_camera2_manual_exp_key": "off",
+              "pref_camera2_video_hdr_key": "0",
+              "pref_camera2_manual_wb_key": "0"}
+  },
   "pref_camera2_multi_camera_mode_key":
   {
     "1":{"pref_camera2_facedetection_key":"off",
@@ -198,7 +229,18 @@
          "pref_camera2_audioencoder_key":"aac",
          "pref_camera2_noise_reduction_key":"high-quality",
          "pref_camera2_video_rotation_key":"0",
+         "pref_camera2_flashmode_key":"off",
          "pref_camera2_longshot_key":"off"},
     "0":{}
+  },
+  "pref_camera2_raw_reprocess_key":
+  {
+    "0":{"pref_camera2_rawinfo_type_key":"off",
+         "pref_camera2_raw_format_key":"off"},
+    "1": {},
+    "2": {},
+    "3": {},
+    "4": {},
+    "5": {}
   }
 }
