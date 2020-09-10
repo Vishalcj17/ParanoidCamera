@@ -395,6 +395,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.available_video_hdr_modes.video_hdr_modes", int[].class);
     public static CameraCharacteristics.Key<int[]> support_video_mfhdr_modes =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.supportedHDRmodes.HDRModes", int[].class);
+    public static CameraCharacteristics.Key<Integer> support_swcapability_qll =
+            new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.isQLLSupported", Integer.class);
+
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
@@ -4836,6 +4839,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
         applyMctf(builder);
+        applyQLL(builder);
     }
 
     private void applyMctf(CaptureRequest.Builder builder){
@@ -9351,6 +9355,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                 VendorTagUtil.setSHDRMode(request, 1);
             } else if (value.equals("2")) {
                 VendorTagUtil.setMFHDRMode(request, 1);
+            }
+        }
+    }
+
+    private void applyQLL(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_QLL);
+        if (value != null ) {
+            Log.v(TAG, " applyQLL value :" + value);
+            if (value.equals("1")) {
+                VendorTagUtil.setQLLMode(request, 1);
             }
         }
     }
