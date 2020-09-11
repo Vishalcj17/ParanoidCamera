@@ -218,6 +218,13 @@
               "pref_camera2_video_hdr_key": "0",
               "pref_camera2_manual_wb_key": "0"}
   },
+  "pref_camera2_eis_key":
+  {
+    "disable": {},
+    "V2": {},
+    "V3": {"pref_camera2_video_duration_key":"0"},
+    "V3SetWhenPause": {"pref_camera2_video_duration_key":"0"}
+  },
   "pref_camera2_multi_camera_mode_key":
   {
     "1":{"pref_camera2_facedetection_key":"off",
