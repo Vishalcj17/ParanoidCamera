@@ -2333,6 +2333,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         System.arraycopy(highRes,0,sizes,0,highRes.length);
         System.arraycopy(outRes,0,sizes,highRes.length,outRes.length);
         boolean isHeifEnabled = getSavePictureFormat() == HEIF_FORMAT;
+        String eisValue = getValue(SettingsManager.KEY_EIS_VALUE);
+        boolean isEISV3Enabled = "V3".equals(eisValue) ||"V3SetWhenPause".equals(eisValue);
         VideoCapabilities heifCap = null;
         if (isHeifEnabled) {
             MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
@@ -2361,6 +2363,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
                             getValue(SettingsManager.KEY_SELECT_MODE) != null &&
                             !getValue(SettingsManager.KEY_SELECT_MODE).equals(
                                     "single_rear_cameraid")){
+                        continue;
+                    }
+                    if (isEISV3Enabled && Math.min(sizes[i].getWidth(),sizes[i].getHeight()) < 720) {
+                        //video size should't be larger than 720p when EIS V3 is enabled
                         continue;
                     }
                     res.add(sizes[i].toString());
