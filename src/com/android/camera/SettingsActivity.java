@@ -259,12 +259,18 @@ public class SettingsActivity extends PreferenceActivity {
     }
 
     private void updateZslPreference() {
+        boolean isInSATOrRTBMode = false;
+        CaptureModule.CameraMode mode =
+                (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
+        if (mode != null && (mode == RTB || mode ==SAT)) {
+            isInSATOrRTBMode = true;
+        }
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
         List<String> key_zsl = new ArrayList<String>(Arrays.asList("Off", "HAL-ZSL" ));
         List<String> value_zsl = new ArrayList<String>(Arrays.asList( "disable", "hal-zsl"));
 
         if (ZSLPref != null) {
-            if (!isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+            if (!isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE) && !isInSATOrRTBMode) {
                 key_zsl.add("APP-ZSL");
                 value_zsl.add("app-zsl");
             }
