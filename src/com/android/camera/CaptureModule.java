@@ -8815,7 +8815,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 return;
             }
             mTakingPicture[id] = true;
-            mUI.enableZoomSeekBar(false);
+            if (mCurrentSceneMode.mode != CameraMode.PRO_MODE)
+                mUI.enableZoomSeekBar(false);
             checkSelfieFlashAndTakePicture();
         }
     }
