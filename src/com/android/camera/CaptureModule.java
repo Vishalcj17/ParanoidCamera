@@ -11174,7 +11174,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             if (swithCameraId != -1){
                 cameraId = swithCameraId;
             }
-            return cameraId;
+            return checkCameraId(cameraId);
         }
 
         public int getNextCameraId(CameraMode nextMode) {
@@ -11196,7 +11196,19 @@ public class CaptureModule implements CameraModule, PhotoController,
                     cameraId = swithCameraId;
                 }
             }
-            return cameraId;
+            return checkCameraId(cameraId);
+        }
+
+        private int checkCameraId(int cameraId) {
+            int retId = cameraId;
+            if (retId == -1) {
+                if (rearCameraId != -1) {
+                    retId = rearCameraId;
+                } else if (frontCameraId != -1) {
+                    retId =  frontCameraId;
+                }
+            }
+            return retId;
         }
 
         public void setSwithCameraId(int swithCameraId) {
