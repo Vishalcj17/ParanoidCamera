@@ -240,7 +240,8 @@ public class SettingsActivity extends PreferenceActivity {
                     updateVideoVariableFpsPreference();
                 }
 
-                if (pref.getKey().equals(SettingsManager.KEY_MFHDR)) {
+                if (pref.getKey().equals(SettingsManager.KEY_MFHDR) ||
+                        pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)) {
                     mSettingsManager.updatePictureAndVideoSize();
                     updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
                 }
@@ -1451,8 +1452,13 @@ public class SettingsActivity extends PreferenceActivity {
             pref.setEnabled(false);
         }
         ListPreference videoPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
-        if (videoPref != null && videoPref.getValue() != null && videoPref.getValue().equals("3840x2160")) {
-            pref.setEnabled(false);
+        ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        if (videoPref != null && videoPref.getValue() != null &&
+                videoPref.getValue().equals("3840x2160")) {
+            if (selectModePref != null && selectModePref.getValue() != null &&
+                    !selectModePref.getValue().equals("single_rear_cameraid")) {
+                pref.setEnabled(false);
+            }
         }
     }
 
