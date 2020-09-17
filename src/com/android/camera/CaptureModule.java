@@ -9420,6 +9420,12 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         if (mRecordingPausing && isUseVideoPreview) {
             captureRequest = mVideoPreviewRequestBuilder;
+            String value = mSettingsManager.getValue(SettingsManager.KEY_EIS_VALUE);
+            boolean noNeedEndofStreamWhenPause = value != null && value.equals("V3");
+            // app use preview + video buffers when select EIS V3 usecase
+            if (noNeedEndofStreamWhenPause) {
+                captureRequest = mVideoRecordRequestBuilder;
+            }
         }
         if (!checkSessionAndBuilder(mCaptureSession[id], captureRequest)) {
             return;
