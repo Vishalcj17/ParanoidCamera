@@ -1414,6 +1414,22 @@ for time lapse recording -->
         <item>@string/pref_camera2_master_cb_entry_value_enable</item>
     </string-array>
 
+    <string-array name="pref_camera2_raw_cb_info_entries" translatable="false">
+        <item>@string/pref_camera2_raw_cb_info_entry_default</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_primary</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_master</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_all_active</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_logical_master</item>
+    </string-array>
+
+    <string-array name="pref_camera2_raw_cb_info_entryvalues" translatable="false">
+        <item>@string/pref_camera2_raw_cb_info_entry_value_default</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_value_primary</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_value_master</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_value_all_active</item>
+        <item>@string/pref_camera2_raw_cb_info_entry_value_logical_master</item>
+    </string-array>
+
     <string-array name="pref_camera2_statsnn_control_entries" translatable="false">
         <item>@string/pref_camera2_statsnn_control_entry_disable</item>
         <item>@string/pref_camera2_statsnn_control_entry_enable</item>

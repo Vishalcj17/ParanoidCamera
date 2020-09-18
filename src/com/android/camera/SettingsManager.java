@@ -248,6 +248,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String MAUNAL_ABSOLUTE_ISO_VALUE = "absolute";
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
+    public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -1424,7 +1425,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
         if (mfhdr != null) {
             int[] modes = isMFHDRSupported();
-            if (!(modes != null && modes.length > 0)) {
+            if (!(modes != null && modes.length > 0) || isFacingFront(mCameraId)) {
                 removePreference(mPreferenceGroup, KEY_MFHDR);
             }
         }
@@ -2269,6 +2270,22 @@ public class SettingsManager implements ListMenu.SettingsListener {
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         return map.getOutputSizes(cl);
+    }
+
+     public Size getMaxPictureSize(int cameraId, Class cl){
+        StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+        Size[] picSize = map.getOutputSizes(cl);
+        Size[] highResSizes = map.getHighResolutionOutputSizes(ImageFormat.JPEG);
+        Size[] allPicSizes = new Size[picSize.length + highResSizes.length];
+        System.arraycopy(picSize, 0, allPicSizes, 0, picSize.length);
+        System.arraycopy(highResSizes, 0, allPicSizes, picSize.length, highResSizes.length);
+        List<Size> allPicSizesList = Arrays.asList(allPicSizes);
+        allPicSizesList.sort((o1,o2) -> o2.getWidth()*o2.getHeight() - o1.getWidth()*o1.getHeight());
+        Size maxPictureSize = allPicSizesList.get(0);
+
+        return maxPictureSize;
     }
 
     private List<String> getSupportedVideoDuration() {

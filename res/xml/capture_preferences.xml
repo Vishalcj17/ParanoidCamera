@@ -688,4 +688,11 @@
         camera:title="@string/pref_camera2_statsnn_control_title"
         camera:entries="@array/pref_camera2_statsnn_control_entries"
         camera:entryValues="@array/pref_camera2_statsnn_control_entryvalues" />
+
+    <ListPreference
+        camera:key="pref_camera2_raw_cb_info_key"
+        camera:defaultValue="@string/pref_camera2_raw_cb_info_default"
+        camera:title="@string/pref_camera2_raw_cb_info_title"
+        camera:entries="@array/pref_camera2_raw_cb_info_entries"
+        camera:entryValues="@array/pref_camera2_raw_cb_info_entryvalues" />
 </PreferenceGroup>

@@ -1093,6 +1093,9 @@ public class SettingsActivity extends PreferenceActivity {
             removePreference(SettingsManager.KEY_RAW_FORMAT_TYPE, developer);
         }
 
+        if(!PersistUtil.isRawCbInfoSupported()&& developer != null){
+            removePreference(SettingsManager.KEY_RAW_CB_INFO, developer);
+        }
         switch (mode) {
             case DEFAULT:
                 removePreferenceGroup("video", parentPre);
@@ -1124,7 +1127,6 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
-                        videoAddList.add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                         videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
                     }

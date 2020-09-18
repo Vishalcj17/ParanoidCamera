@@ -829,7 +829,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public boolean getZoomFixedSupport() {
-        return mZoomRatioSupport && CaptureModule.MCXMODE && !mModule.isSingleCameraMode();
+        return mZoomRatioSupport && CaptureModule.MCXMODE && !mModule.isSingleCameraMode() &&
+                mModule.getCurrenCameraMode() != CaptureModule.CameraMode.HFR;
     }
 
     private boolean isRTBModeInSelectMode() {
@@ -1042,17 +1043,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 } else {
                     mMakeupButton.setImageResource(R.drawable.beautify);
                     mMakeupSeekBarLayout.setVisibility(View.GONE);
-                }
-            }
-        });
-    }
-
-    public void updateFlashEnable(boolean enable) {
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                if(mFlashButton != null) {
-                    enableView(mFlashButton, SettingsManager.KEY_FLASH_MODE);
-                    mFlashButton.setEnabled(enable);
                 }
             }
         });

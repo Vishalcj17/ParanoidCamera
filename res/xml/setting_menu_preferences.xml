@@ -776,5 +776,14 @@
             android:entryValues="@array/pref_camera2_statsnn_control_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"/>
+
+        <ListPreference
+            android:key="pref_camera2_raw_cb_info_key"
+            android:defaultValue="@string/pref_camera2_raw_cb_info_default"
+            android:title="@string/pref_camera2_raw_cb_info_title"
+            android:entries="@array/pref_camera2_raw_cb_info_entries"
+            android:entryValues="@array/pref_camera2_raw_cb_info_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
     </PreferenceCategory>
 </PreferenceScreen>
