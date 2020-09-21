@@ -795,6 +795,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private int mTimeBetweenTimeLapseFrameCaptureMs = 0;
     private boolean mCaptureTimeLapse = false;
     private CamcorderProfile mProfile;
+    private static final int KEEP_SCREEN_ON = 3;
     private static final int CLEAR_SCREEN_DELAY = 4;
     private static final int UPDATE_RECORD_TIME = 5;
     private static final int VOICE_INTERACTION_CAPTURE = 7;
@@ -7559,18 +7560,22 @@ public class CaptureModule implements CameraModule, PhotoController,
             releaseMediaCodec();
         }
         releaseAudioFocus();
-        mUI.showRecordingUI(false, false);
-        mUI.enableShutter(true);
-
-        if (mIntentMode == INTENT_MODE_VIDEO) {
-            if (isQuickCapture()) {
-                onRecordingDone(true);
-            } else {
-                mTempHoldVideoInVideoIntent = true;
-                Bitmap thumbnail = getVideoThumbnail();
-                mUI.showRecordVideoForReview(thumbnail);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mUI.showRecordingUI(false, false);
+                mUI.enableShutter(true);
+                if (mIntentMode == INTENT_MODE_VIDEO) {
+                    if (isQuickCapture()) {
+                        onRecordingDone(true);
+                    } else {
+                        mTempHoldVideoInVideoIntent = true;
+                        Bitmap thumbnail = getVideoThumbnail();
+                        mUI.showRecordVideoForReview(thumbnail);
+                    }
+                }
             }
-        }
+        });
         if(mFrameProcessor != null) {
             mFrameProcessor.onOpen(getFrameProcFilterId(), mPreviewSize);
         }
@@ -10733,6 +10738,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
+                case KEEP_SCREEN_ON:
+                    mActivity.getWindow().addFlags(
+                            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    break;
                 case CLEAR_SCREEN_DELAY: {
                     mActivity.getWindow().clearFlags(
                             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -10954,7 +10963,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void keepScreenOnAwhile() {
         mHandler.removeMessages(CLEAR_SCREEN_DELAY);
-        mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mHandler.sendEmptyMessage(KEEP_SCREEN_ON);
         mHandler.sendEmptyMessageDelayed(CLEAR_SCREEN_DELAY, SCREEN_DELAY);
     }
 
