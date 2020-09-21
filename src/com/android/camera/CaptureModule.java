@@ -3272,7 +3272,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     addPreviewSurface(captureBuilder, null, id);
                 }
             }
-            if(mRawReprocessType != 0){
+            if(mRawReprocessType != 0 && !PersistUtil.isRawReprocessQcfa()){
                 addPreviewSurface(captureBuilder, null, id);
             }
             if (mUI.getCurrentProMode() == ProMode.MANUAL_MODE) {
