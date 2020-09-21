@@ -2428,6 +2428,21 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 .get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
     }
 
+    public int[] getStatsSize(int cameraId) {
+        int[] ret = null;
+        try {
+            ret = new int[2];
+            int width = mCharacteristics.get(cameraId).get(CaptureModule.stats_width);
+            int height = mCharacteristics.get(cameraId).get(CaptureModule.stats_height);
+            ret[0] = width;
+            ret[1] = height;
+        } catch (IllegalArgumentException e){
+            e.printStackTrace();
+            ret = null;
+        }
+        return ret;
+    }
+
     private List<String> getSupportedSavePaths(int cameraId) {
         boolean writeable = SDCard.instance().isWriteable();
         List<String> savePaths = new ArrayList<>();

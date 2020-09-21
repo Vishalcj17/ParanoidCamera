@@ -350,6 +350,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.histogram.max_count", Integer.class);
     public static CaptureResult.Key<int[]> histogramStats =
             new CaptureResult.Key<>("org.codeaurora.qcamera3.histogram.stats", int[].class);
+    public static CameraCharacteristics.Key<Integer> stats_width =
+            new CameraCharacteristics.Key<>("org.quic.camera2.statsVisualizer.StatsWidth",int.class);
+    public static CameraCharacteristics.Key<Integer> stats_height =
+            new CameraCharacteristics.Key<>("org.quic.camera2.statsVisualizer.StatsHeight",int.class);
 
     public static CaptureResult.Key<int[]> bgRStats =
 	new CaptureResult.Key<>("org.codeaurora.qcamera3.bayer_grid.r_stats", int[].class);
@@ -832,19 +836,20 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean mInTAF = false;
 
     // BG stats
-    private static final int BGSTATS_DATA = 64*48;
-    public static final int BGSTATS_WIDTH = 480;
-    public static final int BGSTATS_HEIGHT = 640;
+    private static int BGSTATS_DATA = 64*48;
+    public static int BGSTATS_WIDTH = 480;
+    public static int BGSTATS_HEIGHT = 640;
     public static int bg_statsdata[]   = new int[BGSTATS_DATA*10*10];
     public static int bg_r_statsdata[] = new int[BGSTATS_DATA];
     public static int bg_g_statsdata[] = new int[BGSTATS_DATA];
     public static int bg_b_statsdata[] = new int[BGSTATS_DATA];
     public static String bgstatsdata_string = new String();
-
+    private static int STATS_DATA_BIT_SHIFT = 6;
+    public static final int SCALE_STATS = 10;
     // BE stats
-    private static final int BESTATS_DATA = 64*48;
-    public static final int BESTATS_WIDTH = 480;
-    public static final int BESTATS_HEIGHT = 640;
+    private static int BESTATS_DATA = 64*48;
+    public static int BESTATS_WIDTH = 480;
+    public static int BESTATS_HEIGHT = 640;
     public static int be_statsdata[]   = new int[BESTATS_DATA*10*10];
     public static int be_r_statsdata[] = new int[BESTATS_DATA];
     public static int be_g_statsdata[] = new int[BESTATS_DATA];
@@ -1279,18 +1284,20 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             if (bgRStats != null && bgGStats != null && bgBStats != null && mBGStatson) {
                 synchronized (bg_r_statsdata) {
-                    System.arraycopy(bgRStats, 0, bg_r_statsdata, 0, BGSTATS_DATA);
-                    System.arraycopy(bgGStats, 0, bg_g_statsdata, 0, BGSTATS_DATA);
-                    System.arraycopy(bgBStats, 0, bg_b_statsdata, 0, BGSTATS_DATA);
+                    System.arraycopy(bgRStats, 0, bg_r_statsdata, 0, bgRStats.length);
+                    System.arraycopy(bgGStats, 0, bg_g_statsdata, 0, bgGStats.length);
+                    System.arraycopy(bgBStats, 0, bg_b_statsdata, 0, bgBStats.length);
 
-                    for (int el = 0; el < 3072; el++) {
-                        r = bg_r_statsdata[el] >> 6;
-                        g = bg_g_statsdata[el] >> 6;
-                        b = bg_b_statsdata[el] >> 6;
+                    int width = BGSTATS_WIDTH / 10;
+                    int height = BGSTATS_HEIGHT / 10;
+                    for (int el = 0; el < BGSTATS_DATA; el++) {
+                        r = bg_r_statsdata[el] >> STATS_DATA_BIT_SHIFT;
+                        g = bg_g_statsdata[el] >> STATS_DATA_BIT_SHIFT;
+                        b = bg_b_statsdata[el] >> STATS_DATA_BIT_SHIFT;
 
-                        for (int hi = 0; hi < 10; hi++) {
-                            for (int wi = 0; wi < 10; wi++) {
-                                index = 10 * (int) (el / 64) + 48 * 10 * hi + 48 * 10 * 10 * (el % 64) + wi;
+                        for (int hi = 0; hi < SCALE_STATS; hi++) {
+                            for (int wi = 0; wi < SCALE_STATS; wi++) {
+                                index = SCALE_STATS * (int) (el / height) + width * SCALE_STATS * hi + width * SCALE_STATS * SCALE_STATS * (el % height) + wi;
                                 bg_statsdata[index] = Color.argb(255, r, g, b);
                             }
                         }
@@ -1328,25 +1335,27 @@ public class CaptureModule implements CameraModule, PhotoController,
                     System.arraycopy(beGStats, 0, be_g_statsdata, 0, beRStats.length);
                     System.arraycopy(beBStats, 0, be_b_statsdata, 0, beRStats.length);
 
-                    int roi_x = (int)(norm_roi_x * 64.0f);
-                    int roi_y = (int)(norm_roi_y * 48.0f);
-                    int roi_w = (int)((norm_roi_x + norm_roi_dx) * 64.0f);
-                    int roi_h = (int)((norm_roi_y + norm_roi_dy) * 48.0f);
+                    int width = BESTATS_WIDTH / 10;
+                    int height = BESTATS_HEIGHT / 10;
+                    int roi_x = (int)(norm_roi_x * height);
+                    int roi_y = (int)(norm_roi_y * width);
+                    int roi_w = (int)((norm_roi_x + norm_roi_dx) * height);
+                    int roi_h = (int)((norm_roi_y + norm_roi_dy) * width);
 
-                    for (int el = 0; el < 3072; el++) {
-                        r = be_r_statsdata[el] >> 6;
-                        g = be_g_statsdata[el] >> 6;
-                        b = be_b_statsdata[el] >> 6;
+                    for (int el = 0; el < BESTATS_DATA; el++) {
+                        r = be_r_statsdata[el] >> STATS_DATA_BIT_SHIFT;
+                        g = be_g_statsdata[el] >> STATS_DATA_BIT_SHIFT;
+                        b = be_b_statsdata[el] >> STATS_DATA_BIT_SHIFT;
 
-                        for (int hi = 0; hi < 10; hi++) {
-                            for (int wi = 0; wi < 10; wi++) {
-                                index = 10 * (int) (el / 64) + 48 * 10 * hi + 48 * 10 * 10 * (el % 64) + wi;
+                        for (int hi = 0; hi < SCALE_STATS; hi++) {
+                            for (int wi = 0; wi < SCALE_STATS; wi++) {
+                                index = SCALE_STATS * (int) (el / height) + width * SCALE_STATS * hi + width * SCALE_STATS * SCALE_STATS * (el % height) + wi;
                                 be_statsdata[index] = Color.argb(255, r, g, b);
                                 if (roi_w > 0 && roi_h > 0 &&
-                                        ((el % 64 == roi_x && el / 64 >= roi_y && el / 64 <= roi_h)
-                                                || (el % 64 == roi_w && el / 64 >= roi_y && el / 64 <= roi_h) ||
-                                                (el / 64 == roi_y && el % 64 >= roi_x && el % 64 <= roi_w) ||
-                                                (el / 64 == roi_h && el % 64 >= roi_x && el % 64 <= roi_w))) {
+                                        ((el % height == roi_x && el / height >= roi_y && el / height <= roi_h)
+                                                || (el % height == roi_w && el / height >= roi_y && el / height <= roi_h) ||
+                                                (el / height == roi_y && el % height >= roi_x && el % height <= roi_w) ||
+                                                (el / height == roi_h && el % height >= roi_x && el % height <= roi_w))) {
                                     // red color for ROI border
                                     be_statsdata[index] = Color.argb(255, 255, 0, 0);
                                 }
@@ -5141,7 +5150,33 @@ public class CaptureModule implements CameraModule, PhotoController,
         updateTimeLapseSetting();
         estimateJpegFileSize();
         updateMaxVideoDuration();
+        updateStatsRegions();
         mSettingsManager.filterPictureFormatByIntent(mIntentMode);
+    }
+
+    public void updateStatsRegions() {
+        int[] size = mSettingsManager.getStatsSize(getMainCameraId());
+        if (size != null) {
+            int width = size[0];
+            int height = size[1];
+            BGSTATS_DATA = height*width;
+            BGSTATS_WIDTH = width*10;
+            BGSTATS_HEIGHT = height*10;
+            STATS_DATA_BIT_SHIFT = 0;
+
+            bg_statsdata = new int[BGSTATS_DATA*10*10];
+            bg_r_statsdata = new int[BGSTATS_DATA];
+            bg_g_statsdata = new int[BGSTATS_DATA];
+            bg_b_statsdata = new int[BGSTATS_DATA];
+
+            BESTATS_DATA = height*width;
+            BESTATS_WIDTH = width*10;
+            BESTATS_HEIGHT = height*10;
+            be_statsdata   = new int[BESTATS_DATA*10*10];
+            be_r_statsdata = new int[BESTATS_DATA];
+            be_g_statsdata = new int[BESTATS_DATA];
+            be_b_statsdata = new int[BESTATS_DATA];
+        }
     }
 
     private void updatePhysicalSize(){
@@ -11392,7 +11427,8 @@ class Camera2BGBitMap extends View {
             final Canvas cavas = mCanvas;
             cavas.drawColor(0xFFAAAAAA);
             synchronized(CaptureModule.bg_statsdata){
-                mBitmap.setPixels(CaptureModule.bg_statsdata, 0, 48*10, 0, 0, 48*10, 64*10);
+                mBitmap.setPixels(CaptureModule.bg_statsdata, 0, CaptureModule.BGSTATS_WIDTH,
+                        0, 0,CaptureModule.BGSTATS_WIDTH, CaptureModule.BGSTATS_HEIGHT);
             }
             canvas.drawBitmap(mBitmap, 0, 0, null);
         }
@@ -11458,7 +11494,8 @@ class Camera2BEBitMap extends View {
             final Canvas cavas = mCanvas;
             cavas.drawColor(0xFFAAAAAA);
             synchronized(CaptureModule.be_statsdata){
-            mBitmap.setPixels(CaptureModule.be_statsdata, 0, 48*10, 0, 0, 48*10, 64*10);
+            mBitmap.setPixels(CaptureModule.be_statsdata, 0, CaptureModule.BESTATS_WIDTH,
+                    0, 0, CaptureModule.BESTATS_WIDTH, CaptureModule.BESTATS_HEIGHT);
             }
             canvas.drawBitmap(mBitmap, 0, 0, null);
         }
