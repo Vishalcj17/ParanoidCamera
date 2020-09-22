@@ -3439,7 +3439,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     });
                 }
-                mLongshoting = false;
             }
 
             @Override
@@ -3467,7 +3466,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     }
                 }
-                mLongshoting = false;
             }
 
             @Override
@@ -3501,12 +3499,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     });
                 }
-                mLongshoting = false;
             }
 
             @Override
             public void onCaptureSequenceCompleted(CameraCaptureSession session, int
                             sequenceId, long frameNumber) {
+                Log.i(TAG,"onCaptureSequenceCompleted, " + mNumFramesArrived.get());
                 if (mSettingsManager.isHeifWriterEncoding()) {
                     mLongshotActive = false;
                     if (mHeifImage != null) {
@@ -3537,7 +3535,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                     captureStillPicture(CURRENT_ID);
                 }else {
                     mLongshoting = false;
-                    mNumFramesArrived.getAndSet(0);
                     unlockFocus(getMainCameraId());
                 }
             }
@@ -3940,8 +3937,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                                 }
                                 Log.d(TAG, "image available for cam: " + mCamId);
                                 Image image = reader.acquireNextImage();
-                                if (mLongshoting && (!mLongshotActive) &&
-                                        image.getTimestamp() > mLastLongshotTimestamp) {
+                                if ((!mLongshotActive) && image.getTimestamp() > mLastLongshotTimestamp && mNumFramesArrived.get() > mShotNum) {
                                     image.close();
                                     Log.d(TAG, "image duplicate mLastLongshotTimestamp ");
                                     return;
@@ -8788,7 +8784,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                     + mActivity.getStorageSpaceBytes());
             return;
         }
-
+        mLongshoting = false;
+        mNumFramesArrived.getAndSet(0);
         Log.d(TAG,"onShutterButtonClick");
         int id = getMainCameraId();
         if (mCurrentSceneMode.mode == CameraMode.HFR ||
@@ -8880,6 +8877,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
             Log.d(TAG, "Start Longshot");
             mLongshotActive = true;
+            mNumFramesArrived.getAndSet(0);
             mUI.enableVideo(!mLongshotActive);
             checkSelfieFlashAndTakePicture();
         } else {
