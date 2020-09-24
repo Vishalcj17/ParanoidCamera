@@ -1534,5 +1534,12 @@
     <string name="pref_camera2_rawinfo_type_entry_value_bps_ideal">2</string>
 
     <string name="lock_af_ae_label">AE/AF Lock</string>
+    <!-- ai denoiser value-->
+    <string name="pref_camera2_ai_denoiser_title" translatable="true">AI Denoiser</string>
+    <string name="pref_camera2_ai_denoiser_default" translatable="false">0</string>
+    <string name="pref_camera2_ai_denoiser_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_ai_denoiser_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_ai_denoiser_entry_value_disable" translatable="false">0</string>
+    <string name="pref_camera2_ai_denoiser_entry_value_enable" translatable="false">1</string>
 </resources>
 

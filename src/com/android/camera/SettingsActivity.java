@@ -1402,6 +1402,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoVariableFpsPreference();
         updateAudioEncoderPreference();
         updateVideoFlipPreference();
+        updateAIDEPreference();
     }
 
     private void updateAudioEncoderPreference() {
@@ -1488,6 +1489,16 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
         pref.setEnabled(mSettingsManager.isZZHDRSupported());
+    }
+
+    private void updateAIDEPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_AI_DENOISER);
+        if (pref == null) {
+            return;
+        }
+        if(!mSettingsManager.isAIDESupport()){
+            pref.setEnabled(false);
+        }
     }
 
     private void updateVideoMFHDRPreference() {

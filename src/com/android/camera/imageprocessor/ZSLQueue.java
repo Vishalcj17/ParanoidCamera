@@ -35,7 +35,8 @@ import android.util.Log;
 
 import com.android.camera.CaptureModule;
 import com.android.camera.util.PersistUtil;
-
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -190,6 +191,28 @@ public class ZSLQueue {
         return null;
     }
 
+    public List<ImageItem> getAllItems() {
+        List<ImageItem> items = new ArrayList<ImageItem>(mBuffer.length);
+        synchronized (mLock) {
+            int index = mImageHead;
+            ImageItem item;
+            while(true) {
+                item = mBuffer[index];
+                if (item == null) {
+                    break;
+                }
+                mBuffer[index] = null;
+                items.add(item);
+                index--;
+                if (index < 0) {
+                    index = mBuffer.length - 1;
+                }
+            }
+            mImageHead = 0;
+        }
+        return items;
+    }
+
     public void onClose() {
         synchronized (mLock) {
             for (int i = 0; i < mBuffer.length; i++) {
@@ -234,7 +257,7 @@ public class ZSLQueue {
         return true;
     }
 
-    static class ImageItem {
+    public static class ImageItem {
         private Image mImage = null;
         private Image mRawImage = null;
         private TotalCaptureResult mMetadata = null;

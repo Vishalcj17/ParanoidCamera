@@ -302,6 +302,25 @@ public class CameraActivity extends Activity
         }
     };
 
+    private AIDenoiserService mAIDenoiserService;
+    private ServiceConnection mAideConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder b) {
+            Log.i(TAG,"aide service connected");
+            mAIDenoiserService = ((AIDenoiserService.LocalBinder) b).getService();
+            if(isSwMfnrEnabled()){
+                mCurrentModule.onResumeAfterSuper();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName className) {
+            if (mAIDenoiserService != null) {
+                mAIDenoiserService = null;
+            }
+        }
+    };
+
     private CameraOpenErrorCallback mCameraOpenErrorCallback =
             new CameraOpenErrorCallback() {
                 @Override
@@ -1284,6 +1303,10 @@ public class CameraActivity extends Activity
         return mMediaSaveService;
     }
 
+    public AIDenoiserService getAIDenoiserService() {
+        return mAIDenoiserService;
+    }
+
     public void notifyNewMedia(Uri uri) {
         ContentResolver cr = getContentResolver();
         String mimeType = cr.getType(uri);
@@ -1327,6 +1350,18 @@ public class CameraActivity extends Activity
     private void unbindMediaSaveService() {
         if (mConnection != null && mMediaSaveService != null) {
             unbindService(mConnection);
+        }
+    }
+
+    private void bindAIDenoiserService() {
+        Log.i(TAG,"bindAIDenoiserService");
+        Intent intent = new Intent(this, AIDenoiserService.class);
+        this.bindService(intent, mAideConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void unbindAIDenoiserService() {
+        if (mAideConnection != null && mAIDenoiserService != null) {
+            unbindService(mAideConnection);
         }
     }
 
@@ -1841,8 +1876,10 @@ public class CameraActivity extends Activity
         mCurrentModule.onResumeBeforeSuper();
         super.onResume();
         mPaused = false;
-        mCurrentModule.onResumeAfterSuper();
-
+        if(!isSwMfnrEnabled()){
+            //change onResumeAfterSuper to aide service connected
+            mCurrentModule.onResumeAfterSuper();
+        }
         setSwipingEnabled(true);
 
         if (mResetToPreviewOnResume) {
@@ -1861,7 +1898,17 @@ public class CameraActivity extends Activity
             mThumbnailDrawable = null;
         }
     }
-
+    public boolean isSwMfnrEnabled(){
+        SettingsManager settingsManager = SettingsManager.getInstance();
+        if (settingsManager == null) {
+            SettingsManager.createInstance(this);
+        }
+        String value = settingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        if(value != null && !value.equals("disable") && Integer.parseInt(value) == 1){
+            return true;
+        }
+        return false;
+    }
     private boolean cameraConnected() {
         android.hardware.camera2.CameraManager manager =
         (android.hardware.camera2.CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -1880,6 +1927,7 @@ public class CameraActivity extends Activity
             return;
         }
         bindMediaSaveService();
+        bindAIDenoiserService();
         mPanoramaViewHelper.onStart();
     }
 
@@ -1891,6 +1939,7 @@ public class CameraActivity extends Activity
         }
         mPanoramaViewHelper.onStop();
         unbindMediaSaveService();
+        unbindAIDenoiserService();
     }
 
     @Override

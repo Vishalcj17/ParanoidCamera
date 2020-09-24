@@ -214,6 +214,7 @@
         </receiver>
 
         <service android:name="com.android.camera.MediaSaveService" />
+        <service android:name="com.android.camera.AIDenoiserService" />
     </application>
 
 </manifest>

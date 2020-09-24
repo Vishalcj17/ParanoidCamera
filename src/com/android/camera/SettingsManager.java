@@ -254,6 +254,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
     public static final String KEY_QLL = "pref_camera2_qll_key";
+    public static final String KEY_AI_DENOISER = "pref_camera2_ai_denoiser_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -2065,6 +2066,30 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public boolean isZoomSupported(int id) {
         return mCharacteristics.get(id).get(CameraCharacteristics
                 .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) > 1f;
+    }
+
+    public boolean isAIDESupport() {
+        boolean isSupported = false;
+        try {
+            isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.AIDESupport)) == 1;
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.AIDESupport.toString());
+        }
+        return isSupported;
+    }
+
+    public boolean isSWMFNRSupport() {
+        boolean isSupported = false;
+        try {
+            //set "CustomNoiseReduction" only if MFNRType is 1 i.e; for Lahaina, set "isSWMFEnabled" only if MFNRType is 2 i.e; for Mannar..
+            Log.i(TAG,"MFNRType:" + mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType));
+            isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType)) == 2;
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.MFNRType.toString());
+        }
+        return isSupported;
     }
 
     public boolean isAutoFocusRegionSupported(List<Integer> ids) {
