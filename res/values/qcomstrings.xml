@@ -1369,6 +1369,13 @@
     <string name="pref_camera2_variable_fps_entry_value_enable" translatable="false">1</string>
     <string name="pref_camera2_variable_fps_entry_value_disable" translatable="false">0</string>
 
+    <string name="pref_camera2_video_flip_title" translatable="true">VIDEO FLIP</string>
+    <string name="pref_camera2_video_flip_default" translatable="false">0</string>
+    <string name="pref_camera2_video_flip_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_video_flip_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_video_flip_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_video_flip_entry_value_disable" translatable="false">0</string>
+
     <string name="pref_camera2_capture_mfnr_title" translatable="true">MFNR</string>
     <string name="pref_camera2_capture_mfnr_default" translatable="false">0</string>
     <string name="pref_camera2_capture_mfnr_entry_enable" translatable="true">enable</string>

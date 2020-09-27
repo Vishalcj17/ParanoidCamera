@@ -129,6 +129,7 @@ public class SettingsActivity extends PreferenceActivity {
                 updatePreference(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE);
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER);
                 updateVideoMFHDRPreference();
+                updateVideoFlipPreference();
             } else if (key.equals(SettingsManager.KEY_VIDEO_ENCODER) ) {
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER_PROFILE);
             } else if (key.equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)) {
@@ -1045,6 +1046,9 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FOVC_VALUE);
                 add(SettingsManager.KEY_VARIABLE_FPS);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
+                if (!PersistUtil.enableMediaRecorder()) {
+                    add(SettingsManager.KEY_VIDEO_FLIP);
+                }
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
                     add(key);
@@ -1137,6 +1141,10 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                         videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
+                    } else {
+                        if (!PersistUtil.enableMediaRecorder()) {
+                            videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
+                        }
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1396,6 +1404,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateSwitchIDInModePreference(true);
         updateEISPreference();
         updateVideoVariableFpsPreference();
+        updateVideoFlipPreference();
     }
 
     private void updateStoragePreference() {
@@ -1466,6 +1475,27 @@ public class SettingsActivity extends PreferenceActivity {
                     !selectModePref.getValue().equals("single_rear_cameraid")) {
                 pref.setEnabled(false);
             }
+        }
+    }
+
+    public void updateVideoFlipPreference() {
+        if (PersistUtil.enableMediaRecorder()) {
+            return;
+        }
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
+        ListPreference flipPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_FLIP);
+        if (pref != null && flipPref != null) {
+            String videoSize = pref.getValue();
+            boolean enabled = false;
+            if (videoSize != null) {
+                int indexX = videoSize.indexOf('x');
+                int width = Integer.parseInt(videoSize.substring(0, indexX));
+                int height = Integer.parseInt(videoSize.substring(indexX + 1));
+                if (width <= 1920 && height <= 1080) {
+                    enabled = true;
+                }
+            }
+            flipPref.setEnabled(enabled);
         }
     }
 

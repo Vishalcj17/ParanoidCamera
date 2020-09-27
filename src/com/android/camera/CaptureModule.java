@@ -8206,9 +8206,24 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             mVideoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
         }
+        applyVideoFlip();
         applyVideoSettings();
         mVideoEncoder = MediaCodec.createEncoderByType(encoder);
         mVideoEncoder.configure(mVideoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+    }
+
+    private void applyVideoFlip() {
+        if (PersistUtil.enableMediaRecorder() || mCurrentSceneMode.mode != CameraMode.VIDEO
+                || (mVideoSize.getWidth() > 1920) || (mVideoSize.getHeight() > 1080)){
+            return;
+        }
+        if (mSettingsManager != null) {
+            String videoFlipValue = mSettingsManager.getValue(SettingsManager.KEY_VIDEO_FLIP);
+            Log.d(TAG, "video flip is " + videoFlipValue);
+            if (videoFlipValue != null && videoFlipValue.equals("1")) {
+                 mVideoFormat.setInteger("vendor.qti-ext-enc-preprocess-mirror.flip", 1);
+            }
+        }
     }
 
     private void doVideoEncoding() {
