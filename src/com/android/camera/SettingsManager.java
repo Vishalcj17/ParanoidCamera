@@ -931,6 +931,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
             return null;
         if (KEY_PHYSICAL_JPEG_CALLBACK.equals(key)){
             ids = ids.replace("logical;","");
+            if ("".equals(ids))
+                return null;
         }
         String[] physical_ids = ids.trim().split(";");
         if (physical_ids == null || physical_ids.length == 0)
