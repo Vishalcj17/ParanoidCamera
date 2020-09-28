@@ -296,6 +296,7 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         String sceneMode = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if((ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())) ||
+                mSettingsManager.isHeicSupported() ||
                 (sceneMode != null && Integer.valueOf(sceneMode) == SettingsManager.SCENE_MODE_HDR_INT) ||
                 (selfiePref != null && selfiePref.isChecked())) {
             formatPref.setValue("0");

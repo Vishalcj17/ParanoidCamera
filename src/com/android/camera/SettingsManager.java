@@ -2192,6 +2192,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return true;
     }
 
+    public boolean isHeicSupported() {
+        if(!CaptureModule.MCXMODE) {
+            if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
+                    CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private List<String> getSupportedPictureSize(int cameraId) {
         if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
