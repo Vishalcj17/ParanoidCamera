@@ -443,11 +443,12 @@ public class PostProcessor{
         mImageReader = imageReader;
         if(mUseZSL) {
             mZSLReprocessImageReader = ImageReader.newInstance(pictureSize.getWidth(), pictureSize.getHeight(), ImageFormat.JPEG, mMaxRequiredImageNum);
+            mZSLReprocessImageReader.setOnImageAvailableListener(processedImageAvailableListener, mHandler);
         }
         if(mController.isRawReprocess()){
             mZSLReprocessImageReader = mImageReader;
+            mZSLReprocessImageReader.setOnImageAvailableListener(processedImageAvailableListener, mHandler);
         }
-        mZSLReprocessImageReader.setOnImageAvailableListener(processedImageAvailableListener, mHandler);
         if (mIsDeepPortrait) {
             ImageFilter imageFilter = mController.getFrameFilters().get(0);
             DeepPortraitFilter deepPortraitFilter =

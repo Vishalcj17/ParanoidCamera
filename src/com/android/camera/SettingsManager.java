@@ -189,6 +189,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_HDR = "pref_camera2_hdr_key";
     public static final String KEY_VIDEO_HDR_VALUE = "pref_camera2_video_hdr_key";
     public static final String KEY_VARIABLE_FPS = "pref_camera2_variable_fps_key";
+    public static final String KEY_VIDEO_FLIP = "pref_camera2_video_flip_key";
     public static final String KEY_CAPTURE_MFNR_VALUE = "pref_camera2_capture_mfnr_key";
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
@@ -459,9 +460,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public void init() {
         Log.d(TAG, "SettingsManager init" + CaptureModule.CURRENT_ID);
         final int cameraId = getInitialCameraId();
+        reloadCharacteristics(cameraId);
         setLocalIdAndInitialize(cameraId);
         autoTestBroadcast(cameraId);
-        reloadCharacteristics(cameraId);
     }
 
     public void reinit(int cameraId) {
@@ -930,6 +931,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
             return null;
         if (KEY_PHYSICAL_JPEG_CALLBACK.equals(key)){
             ids = ids.replace("logical;","");
+            if ("".equals(ids))
+                return null;
         }
         String[] physical_ids = ids.trim().split(";");
         if (physical_ids == null || physical_ids.length == 0)
@@ -2191,6 +2194,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return true;
     }
 
+    public boolean isHeicSupported() {
+        if(!CaptureModule.MCXMODE) {
+            if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.RTB ||
+                    CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.SAT) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private List<String> getSupportedPictureSize(int cameraId) {
         if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
@@ -2333,6 +2346,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
         System.arraycopy(highRes,0,sizes,0,highRes.length);
         System.arraycopy(outRes,0,sizes,highRes.length,outRes.length);
         boolean isHeifEnabled = getSavePictureFormat() == HEIF_FORMAT;
+        String eisValue = getValue(SettingsManager.KEY_EIS_VALUE);
+        boolean isEISV3Enabled = "V3".equals(eisValue) ||"V3SetWhenPause".equals(eisValue);
         VideoCapabilities heifCap = null;
         if (isHeifEnabled) {
             MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
@@ -2355,7 +2370,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
             if (CameraSettings.VIDEO_QUALITY_TABLE.containsKey(sizes[i].toString())) {
                 Integer profile = CameraSettings.VIDEO_QUALITY_TABLE.get(sizes[i].toString());
                 if (profile != null && CamcorderProfile.hasProfile(cameraId, profile)) {
-                    if(getValue(SettingsManager.KEY_MFHDR) != null && getValue(SettingsManager.KEY_MFHDR).equals("2") && sizes[i].toString().equals("3840x2160")){
+                    if (getValue(SettingsManager.KEY_MFHDR) != null &&
+                            getValue(SettingsManager.KEY_MFHDR).equals("2") &&
+                            sizes[i].toString().equals("3840x2160") &&
+                            getValue(SettingsManager.KEY_SELECT_MODE) != null &&
+                            !getValue(SettingsManager.KEY_SELECT_MODE).equals(
+                                    "single_rear_cameraid")){
+                        continue;
+                    }
+                    if (isEISV3Enabled && Math.min(sizes[i].getWidth(),sizes[i].getHeight()) < 720) {
+                        //video size should't be larger than 720p when EIS V3 is enabled
                         continue;
                     }
                     res.add(sizes[i].toString());
@@ -2414,6 +2438,21 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public float getMinimumFocusDistance(int cameraId) {
         return mCharacteristics.get(cameraId)
                 .get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+    }
+
+    public int[] getStatsSize(int cameraId) {
+        int[] ret = null;
+        try {
+            ret = new int[2];
+            int width = mCharacteristics.get(cameraId).get(CaptureModule.stats_width);
+            int height = mCharacteristics.get(cameraId).get(CaptureModule.stats_height);
+            ret[0] = width;
+            ret[1] = height;
+        } catch (IllegalArgumentException e){
+            e.printStackTrace();
+            ret = null;
+        }
+        return ret;
     }
 
     private List<String> getSupportedSavePaths(int cameraId) {
@@ -3086,6 +3125,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
             videoSize = new Size(videoSize2.x, videoSize2.y);
         }
         return videoSize;
+    }
+
+    public int getVideoPreviewFPS(Size videoSize,int fps) {
+        int previewFPS = 60;
+        SettingsManager.VideoEisConfig config =
+                getVideoEisConfig(videoSize,fps);
+        if (config != null)
+            previewFPS = config.getMaxPreviewFPS();
+        Log.d(TAG,"videoSize="+videoSize.toString()+" fps="+fps+ " previewFPS="+previewFPS);
+        return previewFPS;
     }
 
     public Size parsePictureSize(String value) {

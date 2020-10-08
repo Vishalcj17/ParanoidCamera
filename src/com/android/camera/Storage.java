@@ -300,7 +300,7 @@ public class Storage {
     }
 
     private static long getSDCardAvailableSpace() {
-        if (SDCard.instance().isWriteable()) {
+        if (SDCard.instance().isWriteable() && SDCard.instance().getDirectory() != null) {
             File dir = new File(SDCard.instance().getDirectory());
             dir.mkdirs();
             try {

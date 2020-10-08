@@ -129,6 +129,7 @@ public class SettingsActivity extends PreferenceActivity {
                 updatePreference(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE);
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER);
                 updateVideoMFHDRPreference();
+                updateVideoFlipPreference();
             } else if (key.equals(SettingsManager.KEY_VIDEO_ENCODER) ) {
                 updatePreference(SettingsManager.KEY_VIDEO_ENCODER_PROFILE);
             } else if (key.equals(SettingsManager.KEY_VIDEO_HIGH_FRAME_RATE)) {
@@ -205,7 +206,8 @@ public class SettingsActivity extends PreferenceActivity {
                 }
 
                 if (pref.getKey().equals(SettingsManager.KEY_QCFA) ||
-                        pref.getKey().equals(SettingsManager.KEY_PICTURE_FORMAT)) {
+                        pref.getKey().equals(SettingsManager.KEY_PICTURE_FORMAT) ||
+                        pref.getKey().equals(SettingsManager.KEY_EIS_VALUE)) {
                     mSettingsManager.updatePictureAndVideoSize();
                     updatePreference(SettingsManager.KEY_PICTURE_SIZE);
                     updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
@@ -240,7 +242,8 @@ public class SettingsActivity extends PreferenceActivity {
                     updateVideoVariableFpsPreference();
                 }
 
-                if (pref.getKey().equals(SettingsManager.KEY_MFHDR)) {
+                if (pref.getKey().equals(SettingsManager.KEY_MFHDR) ||
+                        pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)) {
                     mSettingsManager.updatePictureAndVideoSize();
                     updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
                 }
@@ -258,12 +261,18 @@ public class SettingsActivity extends PreferenceActivity {
     }
 
     private void updateZslPreference() {
+        boolean isInSATOrRTBMode = false;
+        CaptureModule.CameraMode mode =
+                (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
+        if (mode != null && (mode == RTB || mode ==SAT)) {
+            isInSATOrRTBMode = true;
+        }
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
         List<String> key_zsl = new ArrayList<String>(Arrays.asList("Off", "HAL-ZSL" ));
         List<String> value_zsl = new ArrayList<String>(Arrays.asList( "disable", "hal-zsl"));
 
         if (ZSLPref != null) {
-            if (!isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
+            if (!isPrefEnabled(SettingsManager.KEY_CAPTURE_MFNR_VALUE) && !isInSATOrRTBMode) {
                 key_zsl.add("APP-ZSL");
                 value_zsl.add("app-zsl");
             }
@@ -287,6 +296,7 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         String sceneMode = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if((ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())) ||
+                mSettingsManager.isHeicSupported() ||
                 (sceneMode != null && Integer.valueOf(sceneMode) == SettingsManager.SCENE_MODE_HDR_INT) ||
                 (selfiePref != null && selfiePref.isChecked())) {
             formatPref.setValue("0");
@@ -1037,6 +1047,9 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FOVC_VALUE);
                 add(SettingsManager.KEY_VARIABLE_FPS);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
+                if (!PersistUtil.enableMediaRecorder()) {
+                    add(SettingsManager.KEY_VIDEO_FLIP);
+                }
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
                     add(key);
@@ -1129,6 +1142,10 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                         videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
+                    } else {
+                        if (!PersistUtil.enableMediaRecorder()) {
+                            videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
+                        }
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1388,6 +1405,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateSwitchIDInModePreference(true);
         updateEISPreference();
         updateVideoVariableFpsPreference();
+        updateVideoFlipPreference();
     }
 
     private void updateStoragePreference() {
@@ -1451,8 +1469,34 @@ public class SettingsActivity extends PreferenceActivity {
             pref.setEnabled(false);
         }
         ListPreference videoPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
-        if (videoPref != null && videoPref.getValue() != null && videoPref.getValue().equals("3840x2160")) {
-            pref.setEnabled(false);
+        ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        if (videoPref != null && videoPref.getValue() != null &&
+                videoPref.getValue().equals("3840x2160")) {
+            if (selectModePref != null && selectModePref.getValue() != null &&
+                    !selectModePref.getValue().equals("single_rear_cameraid")) {
+                pref.setEnabled(false);
+            }
+        }
+    }
+
+    public void updateVideoFlipPreference() {
+        if (PersistUtil.enableMediaRecorder()) {
+            return;
+        }
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
+        ListPreference flipPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_FLIP);
+        if (pref != null && flipPref != null) {
+            String videoSize = pref.getValue();
+            boolean enabled = false;
+            if (videoSize != null) {
+                int indexX = videoSize.indexOf('x');
+                int width = Integer.parseInt(videoSize.substring(0, indexX));
+                int height = Integer.parseInt(videoSize.substring(indexX + 1));
+                if (width <= 1920 && height <= 1080) {
+                    enabled = true;
+                }
+            }
+            flipPref.setEnabled(enabled);
         }
     }
 

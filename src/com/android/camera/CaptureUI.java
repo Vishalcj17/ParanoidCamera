@@ -1286,6 +1286,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mFlashButton.init(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.VIDEO ||
                 mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE ||
                 mModule.getCurrenCameraMode() == CaptureModule.CameraMode.HFR);
+        enableView(mFlashButton, SettingsManager.KEY_FLASH_MODE);
     }
 
     public void initSceneModeButton() {
