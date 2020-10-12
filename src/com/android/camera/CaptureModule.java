@@ -9508,8 +9508,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                     session.setRepeatingBurst(createSSMBatchRequest(captureRequest),
                             mCaptureCallback, mCameraHandler);
                 } else {
-                    mCaptureSession[id].setRepeatingRequest(captureRequest
-                            .build(), mCaptureCallback, mCameraHandler);
+                    int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
+                        mSettingsManager.getVideoFPS());
+                    if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
+                        limitPreviewFPS();
+                    } else {
+                        session.setRepeatingRequest(mPreviewRequestBuilder[id]
+                                .build(), mCaptureCallback, mCameraHandler);
+                    }
                 }
 
             }
