@@ -7891,10 +7891,10 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
                     recorder.setOnErrorListener(this);
                     recorder.setOnInfoListener(this);
-                } else {
-                    warningToast(R.string.error_app_unsupported_profile);
-                    throw new IllegalArgumentException("error_app_unsupported_profile");
                 }
+            } else {
+                warningToast(R.string.error_app_unsupported_profile);
+                throw new IllegalArgumentException("error_app_unsupported_profile");
             }
         }
     }
