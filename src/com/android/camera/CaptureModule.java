@@ -755,6 +755,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalRawSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
+    private Size[] mPhysicalVideoSnapshotSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size mLogicalPreviewSize;
     private Size mLogicalVideoPreviewSize;
@@ -4294,9 +4295,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             int count = ids.size();
             Iterator<String> iterator = ids.iterator();
             for (int i =0;i<count;i++){
+
                 mPhysicalSnapshotImageReaders[i] = ImageReader.newInstance(
-                        mPhysicalVideoSizes[i].getWidth(),
-                        mPhysicalVideoSizes[i].getHeight(),
+                        mPhysicalVideoSnapshotSizes[i].getWidth(),
+                        mPhysicalVideoSnapshotSizes[i].getHeight(),
                         ImageFormat.JPEG, 2);
                 final String id = iterator.next();
                 mPhysicalSnapshotImageReaders[i].setOnImageAvailableListener(
@@ -5182,6 +5184,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         updateVideoSize();
         updatePhysicalVideoSize();
         updateVideoSnapshotSize();
+        updatePhysicalVideoSnapshotSize();
         updateTimeLapseSetting();
         estimateJpegFileSize();
         updateMaxVideoDuration();
@@ -6305,10 +6308,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updateVideoSnapshotSize() {
-        mVideoSnapshotSize = getMaxPictureSizeLiveshot();
-
-        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
-                mSettingsManager.isMultiCameraEnabled()){
+        mVideoSnapshotSize = getMaxPictureSizeLiveshot(getMainCameraId(),mVideoSize.getWidth(),
+                mVideoSize.getHeight());
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
@@ -6324,14 +6326,37 @@ public class CaptureModule implements CameraModule, PhotoController,
         mVideoSnapshotThumbSize = getOptimalPreviewSize(mVideoSnapshotSize, thumbSizes); // get largest thumb size
     }
 
+    private void updatePhysicalVideoSnapshotSize() {
+        if (!mSettingsManager.isMultiCameraEnabled())
+            return;
+        Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        if (ids != null) {
+            int i = 0;
+            for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
+                if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+                    mPhysicalVideoSnapshotSizes[i] = mPhysicalVideoSizes[i];
+                } else {
+                    mPhysicalVideoSnapshotSizes[i] = getMaxPictureSizeLiveshot(Integer.valueOf(id),
+                            mPhysicalVideoSizes[i].getWidth(),mPhysicalVideoSizes[i].getHeight());
+                }
+                Log.d(TAG,"set Physical "+ id + " video snapshot size="+
+                        mPhysicalVideoSnapshotSizes[i].toString());
+                i++;
+            }
+        }
+
+    }
+
     private boolean is4kSize(Size size) {
         return (size.getHeight() >= 2160 || size.getWidth() >= 3840);
     }
 
-    private Size getMaxPictureSizeLiveshot() {
-        Size[] sizes = mSettingsManager.getSupportedOutputSize(getMainCameraId(), ImageFormat.JPEG);
+    private Size getMaxPictureSizeLiveshot(int cameraId, int videoWidth, int videoHeight) {
+        Size[] sizes = mSettingsManager.getSupportedOutputSize(cameraId, ImageFormat.JPEG);
 
-        float ratio = (float) mVideoSize.getWidth() / mVideoSize.getHeight();
+        float ratio = (float) videoWidth / videoHeight;
         Size optimalSize = null;
         for (Size size : sizes) {
             float pictureRatio = (float) size.getWidth() / size.getHeight();
