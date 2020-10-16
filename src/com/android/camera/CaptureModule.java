@@ -3168,7 +3168,13 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             CaptureRequest.Builder builder = getRequestBuilder(id);
             builder.setTag(id);
-            addPreviewSurface(builder, null, id);
+            if((mCurrentSceneMode.mode == CameraMode.VIDEO ||
+                    mCurrentSceneMode.mode == CameraMode.HFR) && !mIsRecordingVideo){
+                Surface surface = getPreviewSurfaceForSession(id);
+                builder.addTarget(surface);
+            } else {
+                addPreviewSurface(builder, null, id);
+            }
 
             mControlAFMode = CaptureRequest.CONTROL_AF_MODE_AUTO;
             mIsAutoFocusStarted = true;
@@ -4755,7 +4761,12 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         applyAFRegions(builder, id);
         applyAERegions(builder, id);
-        applyCommonSettings(builder, id);
+        if (mCurrentSceneMode.mode == CameraMode.VIDEO ||
+                mCurrentSceneMode.mode == CameraMode.HFR) {
+            applyVideoCommentSettings(builder, id);
+        } else {
+            applyCommonSettings(builder, id);
+        }
     }
 
     private void applySettingsForJpegInformation(CaptureRequest.Builder builder, int id) {
