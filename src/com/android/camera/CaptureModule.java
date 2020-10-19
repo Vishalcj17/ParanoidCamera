@@ -4140,8 +4140,17 @@ public class CaptureModule implements CameraModule, PhotoController,
                         String title = (name == null) ? null : name.title;
                         title = title+"_phy_"+id;
                         long date = (name == null) ? -1 : name.date;
-                        int orientation = CameraUtil.getJpegRotation(getMainCameraId(), mOrientation);
+
                         byte[] bytes = getJpegData(image);
+                        int orientation = 0;
+                        ExifInterface exif = null;
+                        if (image.getFormat() != ImageFormat.HEIC) {
+                            exif = Exif.getExif(bytes);
+                            orientation = Exif.getOrientation(exif);
+                        } else {
+                            orientation = CameraUtil.getJpegRotation(getMainCameraId(),mOrientation);
+                        }
+                        Log.d(TAG, "new jpeg image from physical camera orientation :"+ orientation);
                         mActivity.getMediaSaveService().addImage(bytes, title, date,
                                 null, image.getWidth(), image.getHeight(), orientation, null,
                                 mOnMediaSavedListener, mContentResolver, "jpeg");
