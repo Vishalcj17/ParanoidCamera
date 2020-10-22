@@ -1266,6 +1266,7 @@ public class SettingsActivity extends PreferenceActivity {
         } else if (mode == VIDEO){
             if (mSettingsManager.isMultiCameraEnabled()){
                 multiCameraVideoList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
+                multiCameraVideoList.add(SettingsManager.KEY_EIS_VALUE);
                 addDeveloperOptions(developer,multiCameraVideoList);
             } else {
                 for (String removeKey : multiCameraVideoList){
@@ -1557,8 +1558,10 @@ public class SettingsActivity extends PreferenceActivity {
             }
             CaptureModule.CameraMode mode = (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
             ListPreference selectModePref = (ListPreference) findPreference(SettingsManager.KEY_SELECT_MODE);
-            if (selectModePref.getValue().equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
-                eisPref.setEnabled(false);
+            if (selectModePref != null) {
+                if (selectModePref.getValue().equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
+                    eisPref.setEnabled(false);
+                }
             }
         }
     }
