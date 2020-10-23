@@ -6270,10 +6270,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updateVideoSnapshotSize() {
-        mVideoSnapshotSize = mVideoSize;
-        if (!is4kSize(mVideoSize) && (mHighSpeedCaptureRate == 0)) {
-            mVideoSnapshotSize = getMaxPictureSizeLiveshot();
-        }
+        mVideoSnapshotSize = getMaxPictureSizeLiveshot();
 
         if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
                 mSettingsManager.isMultiCameraEnabled()){
@@ -9469,7 +9466,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         boolean isUseVideoPreview = true;
         if (mCurrentSceneMode.mode == CameraMode.HFR ) {
-            if(selectMode != null && selectMode.equals("default")){
+            if(selectMode != null && selectMode.equals("default") && isHighSpeedRateCapture()){
                 isUseVideoPreview = false;
             }
         }
@@ -9508,8 +9505,19 @@ public class CaptureModule implements CameraModule, PhotoController,
                     session.setRepeatingBurst(createSSMBatchRequest(captureRequest),
                             mCaptureCallback, mCameraHandler);
                 } else {
-                    mCaptureSession[id].setRepeatingRequest(captureRequest
-                            .build(), mCaptureCallback, mCameraHandler);
+                    int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
+                        mSettingsManager.getVideoFPS());
+                    if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
+                        if (mUI.getZoomFixedSupport()) {
+                           applyZoomRatio(mVideoRecordRequestBuilder, mZoomValue, id);
+                        } else {
+                           applyZoom(mVideoRecordRequestBuilder, id);
+                        }
+                        limitPreviewFPS();
+                    } else {
+                        session.setRepeatingRequest(captureRequest
+                                .build(), mCaptureCallback, mCameraHandler);
+                    }
                 }
 
             }

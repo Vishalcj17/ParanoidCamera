@@ -1047,9 +1047,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FOVC_VALUE);
                 add(SettingsManager.KEY_VARIABLE_FPS);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
-                if (!PersistUtil.enableMediaRecorder()) {
-                    add(SettingsManager.KEY_VIDEO_FLIP);
-                }
+                add(SettingsManager.KEY_VIDEO_FLIP);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
                     add(key);
@@ -1141,11 +1139,12 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
-                        videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
-                    } else {
-                        if (!PersistUtil.enableMediaRecorder()) {
+                        if (PersistUtil.enableMediaRecorder()) {
                             videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
                         }
+                        videoAddList.remove(SettingsManager.KEY_VARIABLE_FPS);
+                    } else {
+                        videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
