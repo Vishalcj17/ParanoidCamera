@@ -4310,7 +4310,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                                 long date = (name == null) ? -1 : name.date;
                                 byte[] bytes = getJpegData(image);
                                 int orientation = 0;
-                                orientation = CameraUtil.getJpegRotation(getMainCameraId(),mOrientation);
+                                ExifInterface exif = null;
+                                if (image.getFormat() != ImageFormat.HEIC){
+                                    exif = Exif.getExif(bytes);
+                                    orientation = Exif.getOrientation(exif);
+                                } else {
+                                    orientation = CameraUtil.getJpegRotation(
+                                            getMainCameraId(),mOrientation);
+                                }
                                 mActivity.getMediaSaveService().addImage(bytes, title, date,
                                         null, image.getWidth(), image.getHeight(), orientation, null,
                                         mOnMediaSavedListener, mContentResolver, "jpeg");
@@ -4377,8 +4384,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                         } else {
                             orientation = CameraUtil.getJpegRotation(getMainCameraId(),mOrientation);
                         }
-
-
 
                         String saveFormat = image.getFormat() == ImageFormat.HEIC? "heic" : "jpeg";
 
