@@ -6330,12 +6330,22 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (!mSettingsManager.isMultiCameraEnabled())
             return;
         Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        String videoSnapshot = PersistUtil.getVideoSnapshotSize();
+        String[] sourceStrArray = videoSnapshot.split("x");
+        Size persistSize = null;
+        if (sourceStrArray != null && sourceStrArray.length >= 2) {
+            int width = Integer.parseInt(sourceStrArray[0]);
+            int height = Integer.parseInt(sourceStrArray[1]);
+            persistSize = new Size(width, height);
+        }
         if (ids != null) {
             int i = 0;
             for (String id : ids){
                 if (i >= PHYSICAL_CAMERA_COUNT)
                     break;
-                if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+                if (persistSize != null){
+                    mPhysicalVideoSnapshotSizes[i] = persistSize;
+                } else if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
                     mPhysicalVideoSnapshotSizes[i] = mPhysicalVideoSizes[i];
                 } else {
                     mPhysicalVideoSnapshotSizes[i] = getMaxPictureSizeLiveshot(Integer.valueOf(id),
