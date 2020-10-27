@@ -683,6 +683,13 @@
         camera:entryValues="@array/pref_camera2_mfhdr_entryvalues" />
 
     <ListPreference
+        camera:key="pref_camera2_shading_correction_key"
+        camera:defaultValue="@string/pref_camera2_shading_correction_default"
+        camera:title="@string/pref_camera2_shading_correction_title"
+        camera:entries="@array/pref_camera2_shading_correction_entries"
+        camera:entryValues="@array/pref_camera2_shading_correction_entryvalues" />
+
+    <ListPreference
         camera:key="pref_camera2_extended_max_zoom_key"
         camera:defaultValue="@string/pref_camera2_extended_max_zoom_default"
         camera:title="@string/pref_camera2_extended_max_zoom_title"
