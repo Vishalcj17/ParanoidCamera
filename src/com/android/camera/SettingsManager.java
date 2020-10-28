@@ -38,6 +38,8 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodecInfo;
@@ -2462,17 +2464,19 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 .get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
     }
 
-    public int[] getStatsSize(int cameraId) {
-        int[] ret = null;
+    public int[] getStatsInfo(CaptureResult result) {
+        int[] ret = {-1,-1,-1};
         try {
-            ret = new int[2];
-            int width = mCharacteristics.get(cameraId).get(CaptureModule.stats_width);
-            int height = mCharacteristics.get(cameraId).get(CaptureModule.stats_height);
+            int width = result.get(CaptureModule.stats_width);
+            int height = result.get(CaptureModule.stats_height);
             ret[0] = width;
             ret[1] = height;
-        } catch (IllegalArgumentException e){
-            e.printStackTrace();
-            ret = null;
+        } catch (Exception e){
+        }
+        try {
+            int depth = result.get(CaptureModule.stats_bitdepth);
+            ret[2] = depth;
+        }catch (Exception e){
         }
         return ret;
     }

@@ -351,10 +351,12 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.histogram.max_count", Integer.class);
     public static CaptureResult.Key<int[]> histogramStats =
             new CaptureResult.Key<>("org.codeaurora.qcamera3.histogram.stats", int[].class);
-    public static CameraCharacteristics.Key<Integer> stats_width =
-            new CameraCharacteristics.Key<>("org.quic.camera2.statsVisualizer.StatsWidth",int.class);
-    public static CameraCharacteristics.Key<Integer> stats_height =
-            new CameraCharacteristics.Key<>("org.quic.camera2.statsVisualizer.StatsHeight",int.class);
+    public static CaptureResult.Key<Integer> stats_width =
+            new CaptureResult.Key<>("org.quic.camera2.statsVisualizer.StatsWidth",int.class);
+    public static CaptureResult.Key<Integer> stats_height =
+            new CaptureResult.Key<>("org.quic.camera2.statsVisualizer.StatsHeight",int.class);
+    public static CaptureResult.Key<Integer> stats_bitdepth =
+            new CaptureResult.Key<>("org.codeaurora.qcamera3.bayer_exposure.bitDepth",int.class);
 
     public static CaptureResult.Key<int[]> bgRStats =
 	new CaptureResult.Key<>("org.codeaurora.qcamera3.bayer_grid.r_stats", int[].class);
@@ -861,6 +863,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static int be_r_statsdata[] = new int[BESTATS_DATA];
     public static int be_g_statsdata[] = new int[BESTATS_DATA];
     public static int be_b_statsdata[] = new int[BESTATS_DATA];
+    private static int statsParametersUpdated = 0;
+    public static final int STATS_PARAMETER_UPDATE = 5;
 
     // AWB Info
     private static String[] awbinfo_data = new String[4];
@@ -1131,6 +1135,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             detectHDRMode(result, id);
             processCaptureResult(result);
             mPostProcessor.onMetaAvailable(result);
+            if (statsParametersUpdated <= STATS_PARAMETER_UPDATE) {
+                updateStatsParameters(result);
+            }
             String stats_visualizer = mSettingsManager.getValue(
                     SettingsManager.KEY_STATS_VISUALIZER_VALUE);
             if (stats_visualizer != null) {
@@ -5289,33 +5296,42 @@ public class CaptureModule implements CameraModule, PhotoController,
         updateTimeLapseSetting();
         estimateJpegFileSize();
         updateMaxVideoDuration();
-        updateStatsRegions();
         mSettingsManager.filterPictureFormatByIntent(mIntentMode);
     }
 
-    public void updateStatsRegions() {
-        int[] size = mSettingsManager.getStatsSize(getMainCameraId());
-        if (size != null) {
-            int width = size[0];
-            int height = size[1];
-            BGSTATS_DATA = height*width;
-            BGSTATS_WIDTH = width*10;
-            BGSTATS_HEIGHT = height*10;
-            STATS_DATA_BIT_SHIFT = 0;
+    public void updateStatsParameters(CaptureResult result) {
+        int[] info = mSettingsManager.getStatsInfo(result);
+        if (info != null) {
+            int width = info[0];
+            int height = info[1];
+            int depth = info[2];
+            if (width != -1 && height != -1){
+                BGSTATS_DATA = height*width;
+                BGSTATS_WIDTH = width*10;
+                BGSTATS_HEIGHT = height*10;
 
-            bg_statsdata = new int[BGSTATS_DATA*10*10];
-            bg_r_statsdata = new int[BGSTATS_DATA];
-            bg_g_statsdata = new int[BGSTATS_DATA];
-            bg_b_statsdata = new int[BGSTATS_DATA];
+                bg_statsdata = new int[BGSTATS_DATA*10*10];
+                bg_r_statsdata = new int[BGSTATS_DATA];
+                bg_g_statsdata = new int[BGSTATS_DATA];
+                bg_b_statsdata = new int[BGSTATS_DATA];
 
-            BESTATS_DATA = height*width;
-            BESTATS_WIDTH = width*10;
-            BESTATS_HEIGHT = height*10;
-            be_statsdata   = new int[BESTATS_DATA*10*10];
-            be_r_statsdata = new int[BESTATS_DATA];
-            be_g_statsdata = new int[BESTATS_DATA];
-            be_b_statsdata = new int[BESTATS_DATA];
+                BESTATS_DATA = height*width;
+                BESTATS_WIDTH = width*10;
+                BESTATS_HEIGHT = height*10;
+                be_statsdata   = new int[BESTATS_DATA*10*10];
+                be_r_statsdata = new int[BESTATS_DATA];
+                be_g_statsdata = new int[BESTATS_DATA];
+                be_b_statsdata = new int[BESTATS_DATA];
+            }
+            if (depth != -1) {
+                STATS_DATA_BIT_SHIFT = depth - 8;
+                statsParametersUpdated = STATS_PARAMETER_UPDATE;
+            }
         }
+        statsParametersUpdated ++;
+        Log.d(TAG,"updateStatsParameters width="+BGSTATS_WIDTH+" height="+BESTATS_HEIGHT+
+                " STATS_DATA_BIT_SHIFT="+STATS_DATA_BIT_SHIFT);
+
     }
 
     private void updatePhysicalSize(){
