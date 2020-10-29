@@ -1441,8 +1441,10 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
+        boolean devLevelAll =
+                PersistUtil.getDevOptionLevel() == PersistUtil.CAMERA2_DEV_OPTION_ALL;
         if (qll != null) {
-            if (!isQLLSupported()) {
+            if (!isQLLSupported() || !devLevelAll) {
                 removePreference(mPreferenceGroup, KEY_QLL);
             }
         }
