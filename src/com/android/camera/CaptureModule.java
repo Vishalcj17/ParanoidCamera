@@ -438,7 +438,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureResult.Key<>("org.codeaurora.qcamera3.stats.contour_results",
                     int[].class);
     public static CaptureRequest.Key<Byte> facialContourVersion =
-            new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_version",
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.contour_version",
                     Byte.class);
     public static CaptureRequest.Key<Byte> facialContourEnable =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_enable",
@@ -9981,9 +9981,14 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void applyFaceContourVersion(CaptureRequest.Builder request) {
         String facialContour = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
+        byte facialContour_version = 0;
         if ("1".equals(facialContour)) {
-            byte facialContour_version = 1;
+            facialContour_version = 1;
+        }
+        try {
             request.set(CaptureModule.facialContourVersion, facialContour_version);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "hal no vendorTag : " + facialContour_version);
         }
     }
 
