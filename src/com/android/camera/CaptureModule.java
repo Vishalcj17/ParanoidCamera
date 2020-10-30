@@ -3967,7 +3967,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     NamedEntity name = mNamedImages.getNextNameEntity();
                                     String title = (name == null) ? null : name.title;
                                     long date = (name == null) ? -1 : name.date;
-
                                     byte[] bytes = getJpegData(image);
 
                                     Log.i(TAG, "image format:" + image.getFormat() + ",mRawReprocessType:" + mRawReprocessType);
@@ -4598,6 +4597,23 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void closeImageReader() {
+        for (int i = MAX_NUM_CAM - 1; i >= 0; i--) {
+            if (null != mImageReader[i]) {
+                mImageReader[i].close();
+                mImageReader[i] = null;
+            }
+            if (null != mRawImageReader[i]){
+                mRawImageReader[i].close();
+                mRawImageReader[i] = null;
+            }
+        }
+        if (null != mVideoSnapshotImageReader) {
+            mVideoSnapshotImageReader.close();
+            mVideoSnapshotImageReader = null;
+        }
+    }
+
     /**
      * Closes the current {@link CameraDevice}.
      */
@@ -4643,16 +4659,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mCameraOpened[i] = false;
                     mCaptureSession[i] = null;
                 }
-
-                if (null != mImageReader[i]) {
-                    mImageReader[i].close();
-                    mImageReader[i] = null;
-                }
-
-                if (null != mRawImageReader[i]){
-                    mRawImageReader[i].close();
-                    mRawImageReader[i] = null;
-                }
             }
 
             closePhysicalImageReaders();
@@ -4663,11 +4669,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             } else {
                 stopCodecThreads();
                 releaseMediaCodec();
-            }
-
-            if (null != mVideoSnapshotImageReader) {
-                mVideoSnapshotImageReader.close();
-                mVideoSnapshotImageReader = null;
             }
         } catch (InterruptedException e) {
             mCameraOpenCloseLock.release();
@@ -5029,6 +5030,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mFirstPreviewLoaded = false;
         if (isExitCamera && mIsCloseCamera) {
             stopBackgroundThread();
+            closeImageReader();
         }
         setProModeVisible();
         closeVideoFileDescriptor();
@@ -5037,6 +5039,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mActivity.setResultEx(Activity.RESULT_CANCELED, new Intent());
             mActivity.finish();
         }
+        closeImageReader();
         mJpegImageData = null;
     }
 
@@ -7888,10 +7891,10 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
                     recorder.setOnErrorListener(this);
                     recorder.setOnInfoListener(this);
-                } else {
-                    warningToast(R.string.error_app_unsupported_profile);
-                    throw new IllegalArgumentException("error_app_unsupported_profile");
                 }
+            } else {
+                warningToast(R.string.error_app_unsupported_profile);
+                throw new IllegalArgumentException("error_app_unsupported_profile");
             }
         }
     }
@@ -10894,8 +10897,17 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private byte[] getJpegData(Image image) {
+        if (DEBUG) {
+            Log.v(TAG, "getJpegData image :" + image);
+        }
         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        if (DEBUG) {
+            Log.v(TAG, "getJpegData buffer :" + buffer);
+        }
         byte[] bytes = new byte[buffer.remaining()];
+        if (DEBUG) {
+            Log.v(TAG, "getJpegData bytes :" + bytes);
+        }
         buffer.get(bytes);
         return bytes;
     }
