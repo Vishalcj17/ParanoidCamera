@@ -1138,6 +1138,7 @@ public class SettingsActivity extends PreferenceActivity {
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
+                    videoAddList.add(SettingsManager.KEY_STATSNN_CONTROL);
                     addDeveloperOptions(developer, videoAddList);
                 }
                 removePreference(mode == VIDEO ?
