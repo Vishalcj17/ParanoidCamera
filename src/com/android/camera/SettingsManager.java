@@ -1772,7 +1772,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
     }
 
-    private void filterHFROptions() {
+    public void filterHFROptions() {
         ListPreference hfrPref = mPreferenceGroup.findPreference(KEY_VIDEO_HIGH_FRAME_RATE);
         if (hfrPref != null) {
             hfrPref.reloadInitialEntriesAndEntryValues();
@@ -1916,6 +1916,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     private List<String> getSupportedHighFrameRate() {
+        int cameraId = mCameraId;
+        String selectMode = getValue(KEY_SELECT_MODE);
+        if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR &&
+                (selectMode != null && selectMode.equals("sat"))){
+            if (CaptureModule.LOGICAL_ID != -1){
+                cameraId = CaptureModule.LOGICAL_ID;
+            }
+        }
         ArrayList<String> supported = new ArrayList<String>();
         supported.add("off");
         ListPreference videoQuality = mPreferenceGroup.findPreference(KEY_VIDEO_QUALITY);
@@ -1925,6 +1933,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         int videoEncoderNum = SettingTranslation.getVideoEncoder(videoEncoder.getValue());
         VideoCapabilities videoCapabilities = null;
         boolean findVideoEncoder = false;
+        if (mCharacteristics.size() > 0) {
+            mExtendedHFRSize = mCharacteristics.get(cameraId).get(CaptureModule.hfrFpsTable);
+        }
         if (videoSizeStr != null) {
             Size videoSize = parseSize(videoSizeStr);
             boolean above1080p = videoSize.getHeight() * videoSize.getWidth() > 1920*1080;
@@ -1946,7 +1957,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
 
             try {
-                Range[] range = getSupportedHighSpeedVideoFPSRange(mCameraId, videoSize);
+                Range[] range = getSupportedHighSpeedVideoFPSRange(cameraId, videoSize);
                 String rate;
                 for (Range r : range) {
                     // To support HFR for both preview and recording,
@@ -1955,7 +1966,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         if (videoCapabilities != null) {
                             if (videoCapabilities.areSizeAndRateSupported(
                                     videoSize.getWidth(), videoSize.getHeight(), (int) r.getUpper())) {
-                                String selectMode = getValue(KEY_SELECT_MODE);
                                 if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR && (selectMode != null && selectMode.equals("sat"))){
                                     break;
                                 }

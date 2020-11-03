@@ -192,6 +192,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static int MONO_ID = -1;
     public static int FRONT_ID = -1;
     public static int SWITCH_ID = -1;
+    public static int LOGICAL_ID = -1;
     public static final int INTENT_MODE_NORMAL = 0;
     public static final int INTENT_MODE_CAPTURE = 1;
     public static final int INTENT_MODE_VIDEO = 2;
@@ -2864,6 +2865,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
                 } else if (physical_ids != null && physical_ids.size() != 0 && MCXMODE){
                     mLogicalId = camereIdIndex;
+                    LOGICAL_ID = mLogicalId;
                     Log.i(TAG,"mLogicalId:" + camereIdIndex);
                     removeList[CameraMode.RTB.ordinal()] = false;
                     if (mSceneCameraIds.get(CameraMode.RTB.ordinal()).rearCameraId >= 0) {
