@@ -192,13 +192,14 @@ public class TouchTrackFocusRenderer extends View implements FocusIndicator {
             rh = temp;
         }
 
-        /*if (rw * mCameraBound.width() != mCameraBound.height() * rh) {
+        if (rw * mCameraBound.width() != mCameraBound.height() * rh) {
             if (rw == rh || (rh * 288 == rw * 352) || (rh * 480 == rw * 800)) {
                 rh = rw * mCameraBound.width() / mCameraBound.height();
             } else {
                 rw = rh * mCameraBound.height() / mCameraBound.width();
             }
-        }*/
+        }
+
         CameraUtil.prepareMatrix(mMatrix, mMirror, mDisplayOrientation, rw, rh);
 
         // mMatrix assumes that the face coordinates are from -1000 to 1000.
@@ -207,9 +208,9 @@ public class TouchTrackFocusRenderer extends View implements FocusIndicator {
         translateMatrix.preTranslate(-mCameraBound.width() / 2f, -mCameraBound.height() / 2f);
         translateMatrix.postScale(2000f / mCameraBound.width(), 2000f / mCameraBound.height());
 
-        int dx = (getWidth() - rw) / 2;
-        int dy = (getHeight() - rh) / 2;
+        int dx = (getWidth() - mUncroppedWidth) / 2;
         dx -= (rw - mUncroppedWidth) / 2;
+        int dy = (getHeight() - mUncroppedHeight) / 2;
         dy -= (rh - mUncroppedHeight) / 2;
 
         // Focus indicator is directional. Rotate the matrix and the canvas
