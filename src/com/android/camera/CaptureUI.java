@@ -1863,6 +1863,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mSceneModeSwitcher != null) mSceneModeSwitcher.setEnabled(status);
         if (mFilterModeSwitcher != null) mFilterModeSwitcher.setEnabled(status);
         if (mMakeupButton != null) mMakeupButton.setVisibility(View.GONE);
+        if (mShutterButton != null) mShutterButton.setEnabled(status);
     }
 
     public void initializeControlByIntent() {
