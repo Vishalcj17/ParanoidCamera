@@ -2577,7 +2577,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             if (!PersistUtil.enableMediaRecorder() && (mVideoRecordingSurface != null)) {
                 mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
             }
-            if (mVideoRecordingSurface != null)
+            if (mVideoPreviewSurface != null)
                 mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
             mPreviewRequestBuilder[cameraId] = mVideoRecordRequestBuilder;
             mIsPreviewingVideo = true;
@@ -7822,6 +7822,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         closePreviewSession();
         mIsRecordingVideo = false;
         mIsPreviewingVideo = false;
+        mHighSpeedCaptureRate = 0;
         // release media recorder
         if (PersistUtil.enableMediaRecorder()) {
             releaseMediaRecorder();
