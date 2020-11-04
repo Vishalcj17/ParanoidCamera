@@ -3714,7 +3714,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     Log.d(TAG, "captureStillPictureForCommon onCaptureCompleted: " + id  + ",metadataOwnerInfo:" + result.get(CaptureModule.metadataOwnerInfo));
                     mRawInputMeta = result;
                     if(mRawReprocessType == 1 || mRawReprocessType == 4){
-                        int metadataOwnerInfo = result.get(CaptureModule.metadataOwnerInfo);
+                        int metadataOwnerInfo = result.get(CaptureModule.metadataOwnerInfo) != null ? result.get(CaptureModule.metadataOwnerInfo) : 0;
                         int i = 0;
                         if(metadataOwnerInfo == 0){
                             i = 1;
@@ -6433,11 +6433,18 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         }
         if( mRawCount == 1){
+            int format = ImageFormat.RAW10;
+            String rawFormat = mSettingsManager.getValue(SettingsManager.KEY_RAW_FORMAT_TYPE);
+            int rawFormatType = (rawFormat != null && !rawFormat.equals("disable")&& !rawFormat.equals("off")) ? Integer.parseInt(rawFormat) : 0;
+            if(rawFormatType == 16){
+                format = ImageFormat.RAW_SENSOR;
+            }
+            Size[] rawSize = mSettingsManager.getSupportedOutputSize(getMainCameraId(), format);
             if(PersistUtil.isRawReprocessQcfa()){
                 //Size qcfaSize = mSettingsManager.getQcfaSupportSize();
                 mRawSize[0] = new Size(8000,6000);
             }else{
-                mRawSize[0] = new Size(4656,3496);
+                mRawSize[0] = rawSize[0];
             }
         }
         Size[] rawSize = mSettingsManager.getSupportedOutputSize(getMainCameraId(),
