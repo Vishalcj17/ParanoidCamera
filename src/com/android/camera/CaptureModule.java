@@ -395,6 +395,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.available_video_hdr_modes.video_hdr_modes", int[].class);
     public static CameraCharacteristics.Key<int[]> support_video_mfhdr_modes =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.supportedHDRmodes.HDRModes", int[].class);
+    public static CameraCharacteristics.Key<Integer> support_swcapability_qll =
+            new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.isQLLSupported", Integer.class);
+
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
@@ -435,7 +438,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureResult.Key<>("org.codeaurora.qcamera3.stats.contour_results",
                     int[].class);
     public static CaptureRequest.Key<Byte> facialContourVersion =
-            new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_version",
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.contour_version",
                     Byte.class);
     public static CaptureRequest.Key<Byte> facialContourEnable =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.facial_attr.contour_enable",
@@ -752,6 +755,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private Size[] mPhysicalSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalRawSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalVideoSizes = new Size[PHYSICAL_CAMERA_COUNT];
+    private Size[] mPhysicalVideoSnapshotSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size[] mPhysicalPreviewSizes = new Size[PHYSICAL_CAMERA_COUNT];
     private Size mLogicalPreviewSize;
     private Size mLogicalVideoPreviewSize;
@@ -4291,9 +4295,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             int count = ids.size();
             Iterator<String> iterator = ids.iterator();
             for (int i =0;i<count;i++){
+
                 mPhysicalSnapshotImageReaders[i] = ImageReader.newInstance(
-                        mPhysicalVideoSizes[i].getWidth(),
-                        mPhysicalVideoSizes[i].getHeight(),
+                        mPhysicalVideoSnapshotSizes[i].getWidth(),
+                        mPhysicalVideoSnapshotSizes[i].getHeight(),
                         ImageFormat.JPEG, 2);
                 final String id = iterator.next();
                 mPhysicalSnapshotImageReaders[i].setOnImageAvailableListener(
@@ -4836,6 +4841,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
         applyMctf(builder);
+        applyQLL(builder);
     }
 
     private void applyMctf(CaptureRequest.Builder builder){
@@ -5178,6 +5184,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         updateVideoSize();
         updatePhysicalVideoSize();
         updateVideoSnapshotSize();
+        updatePhysicalVideoSnapshotSize();
         updateTimeLapseSetting();
         estimateJpegFileSize();
         updateMaxVideoDuration();
@@ -6301,10 +6308,9 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void updateVideoSnapshotSize() {
-        mVideoSnapshotSize = getMaxPictureSizeLiveshot();
-
-        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
-                mSettingsManager.isMultiCameraEnabled()){
+        mVideoSnapshotSize = getMaxPictureSizeLiveshot(getMainCameraId(),mVideoSize.getWidth(),
+                mVideoSize.getHeight());
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
@@ -6320,14 +6326,47 @@ public class CaptureModule implements CameraModule, PhotoController,
         mVideoSnapshotThumbSize = getOptimalPreviewSize(mVideoSnapshotSize, thumbSizes); // get largest thumb size
     }
 
+    private void updatePhysicalVideoSnapshotSize() {
+        if (!mSettingsManager.isMultiCameraEnabled())
+            return;
+        Set<String> ids = mSettingsManager.getAllPhysicalCameraId();
+        String videoSnapshot = PersistUtil.getVideoSnapshotSize();
+        String[] sourceStrArray = videoSnapshot.split("x");
+        Size persistSize = null;
+        if (sourceStrArray != null && sourceStrArray.length >= 2) {
+            int width = Integer.parseInt(sourceStrArray[0]);
+            int height = Integer.parseInt(sourceStrArray[1]);
+            persistSize = new Size(width, height);
+        }
+        if (ids != null) {
+            int i = 0;
+            for (String id : ids){
+                if (i >= PHYSICAL_CAMERA_COUNT)
+                    break;
+                if (persistSize != null){
+                    mPhysicalVideoSnapshotSizes[i] = persistSize;
+                } else if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+                    mPhysicalVideoSnapshotSizes[i] = mPhysicalVideoSizes[i];
+                } else {
+                    mPhysicalVideoSnapshotSizes[i] = getMaxPictureSizeLiveshot(Integer.valueOf(id),
+                            mPhysicalVideoSizes[i].getWidth(),mPhysicalVideoSizes[i].getHeight());
+                }
+                Log.d(TAG,"set Physical "+ id + " video snapshot size="+
+                        mPhysicalVideoSnapshotSizes[i].toString());
+                i++;
+            }
+        }
+
+    }
+
     private boolean is4kSize(Size size) {
         return (size.getHeight() >= 2160 || size.getWidth() >= 3840);
     }
 
-    private Size getMaxPictureSizeLiveshot() {
-        Size[] sizes = mSettingsManager.getSupportedOutputSize(getMainCameraId(), ImageFormat.JPEG);
+    private Size getMaxPictureSizeLiveshot(int cameraId, int videoWidth, int videoHeight) {
+        Size[] sizes = mSettingsManager.getSupportedOutputSize(cameraId, ImageFormat.JPEG);
 
-        float ratio = (float) mVideoSize.getWidth() / mVideoSize.getHeight();
+        float ratio = (float) videoWidth / videoHeight;
         Size optimalSize = null;
         for (Size size : sizes) {
             float pictureRatio = (float) size.getWidth() / size.getHeight();
@@ -9355,6 +9394,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void applyQLL(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_QLL);
+        if (value != null ) {
+            Log.v(TAG, " applyQLL value :" + value);
+            if (value.equals("1")) {
+                VendorTagUtil.setQLLMode(request, 1);
+            }
+        }
+    }
+
     private void updateGraghViewVisibility(final int visibility) {
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
@@ -9967,9 +10016,14 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void applyFaceContourVersion(CaptureRequest.Builder request) {
         String facialContour = mSettingsManager.getValue(SettingsManager.KEY_FACIAL_CONTOUR);
+        byte facialContour_version = 0;
         if ("1".equals(facialContour)) {
-            byte facialContour_version = 1;
+            facialContour_version = 1;
+        }
+        try {
             request.set(CaptureModule.facialContourVersion, facialContour_version);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "hal no vendorTag : " + facialContour_version);
         }
     }
 

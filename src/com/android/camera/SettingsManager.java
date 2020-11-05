@@ -250,6 +250,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
+    public static final String KEY_QLL = "pref_camera2_qll_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -1209,6 +1210,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
+        ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1436,6 +1438,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (extendedMaxZoom != null) {
             if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR) {
                 removePreference(mPreferenceGroup, KEY_EXTENDED_MAX_ZOOM);
+            }
+        }
+
+        boolean devLevelAll =
+                PersistUtil.getDevOptionLevel() == PersistUtil.CAMERA2_DEV_OPTION_ALL;
+        if (qll != null) {
+            if (!isQLLSupported() || !devLevelAll) {
+                removePreference(mPreferenceGroup, KEY_QLL);
             }
         }
 
@@ -2072,6 +2082,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.support_video_hdr_modes.toString());
         }
         return modes;
+    }
+
+    private boolean isQLLSupported() {
+        int result = 0;
+        try {
+            result = mCharacteristics.get(getCurrentCameraId())
+                    .get(CaptureModule.support_swcapability_qll);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_swcapability_qll.toString());
+        }
+        return (result == 1);
     }
 
     public boolean isAutoExposureRegionSupported(int id) {

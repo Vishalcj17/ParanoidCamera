@@ -1393,7 +1393,21 @@ public class SettingsActivity extends PreferenceActivity {
         updateSwitchIDInModePreference(true);
         updateEISPreference();
         updateVideoVariableFpsPreference();
+        updateAudioEncoderPreference();
         updateVideoFlipPreference();
+    }
+
+    private void updateAudioEncoderPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_AUDIO_ENCODER);
+        if (pref == null) {
+            return;
+        }
+        if (PersistUtil.enableMediaRecorder()) {
+            pref.setEnabled(true);
+        } else {
+            pref.setEnabled(false);
+            pref.setValue("aac");
+        }
     }
 
     private void updateStoragePreference() {
