@@ -73,7 +73,8 @@ public class SDCard {
                 for (int i=0; i<dirs.length; i++) {
                     if (dirs[i] == null) continue;
                     dir = dirs[i].getAbsolutePath();
-                    if (dir.startsWith(mVolume.getDirectory().toString())) {
+                    if (mVolume.getDirectory() != null &&
+                            dir.startsWith(mVolume.getDirectory().toString())) {
                         mPath = dir;
                         break;
                     }
