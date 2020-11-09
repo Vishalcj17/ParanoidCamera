@@ -8553,9 +8553,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         }  else if (mHighSpeedCapture) {
             mHighSpeedFPSRange = new Range(mHighSpeedCaptureRate, mHighSpeedCaptureRate);
             int fps = (int) mHighSpeedFPSRange.getUpper();
-            int targetRate = mSuperSlomoCapture ? 30 : (mHighSpeedRecordingMode ? fps : 30);
-            mVideoFormat.setInteger(MediaFormat.KEY_CAPTURE_RATE, mSuperSlomoCapture ? 30 : fps);
+            int targetRate = mHighSpeedRecordingMode ? fps : 30;
+            mVideoFormat.setInteger(MediaFormat.KEY_CAPTURE_RATE, fps);
             mVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, targetRate);
+            mVideoFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, fps);
             Log.i(TAG, "Capture rate: "+fps+", Target rate: "+targetRate);
             int scaledBitrate = mSettingsManager.getHighSpeedVideoEncoderBitRate(mProfile, targetRate, fps);
             Log.i(TAG, "Scaled video bitrate : " + scaledBitrate);
