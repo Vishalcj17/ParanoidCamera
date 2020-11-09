@@ -10102,8 +10102,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean applyAWBCCTAndAgain(CaptureRequest.Builder request) {
         boolean result = false;
         final SharedPreferences pref = mActivity.getSharedPreferences(
-                ComboPreferences.getLocalSharedPreferencesName(mActivity,
-                        mSettingsManager.getCurrentPrepNameKey()), Context.MODE_PRIVATE);
+                ComboPreferences.getGlobalSharedPreferencesName(mActivity), Context.MODE_PRIVATE);
         float awbDefault = -1f;
         float rGain = pref.getFloat(SettingsManager.KEY_AWB_RAGIN_VALUE, awbDefault);
         float gGain = pref.getFloat(SettingsManager.KEY_AWB_GAGIN_VALUE, awbDefault);
@@ -10188,8 +10187,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public void writeXMLForWarmAwb() {
         final SharedPreferences pref = mActivity.getSharedPreferences(
-                ComboPreferences.getLocalSharedPreferencesName(mActivity,
-                        mSettingsManager.getCurrentPrepNameKey()), Context.MODE_PRIVATE);
+                ComboPreferences.getGlobalSharedPreferencesName(mActivity), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
         editor.putFloat(SettingsManager.KEY_AWB_RAGIN_VALUE, mRGain);
         editor.putFloat(SettingsManager.KEY_AWB_GAGIN_VALUE, mGGain);
