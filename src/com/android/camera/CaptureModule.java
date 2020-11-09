@@ -1057,8 +1057,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             = new CameraCaptureSession.CaptureCallback() {
 
         private void processCaptureResult(CaptureResult result) {
+            if("preview".equals(String.valueOf(result.getRequest().getTag()))){
+                return;
+            }
             int id = (int) result.getRequest().getTag();
-
             if (!mFirstPreviewLoaded) {
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
@@ -1095,6 +1097,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         public void onCaptureProgressed(CameraCaptureSession session,
                                         CaptureRequest request,
                                         CaptureResult partialResult) {
+            if("preview".equals(String.valueOf(partialResult.getRequest().getTag()))){
+                return;
+            }
             int id = (int) partialResult.getRequest().getTag();
             if (id == getMainCameraId()) {
                 Face[] faces = partialResult.get(CaptureResult.STATISTICS_FACES);
@@ -1114,6 +1119,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         public void onCaptureCompleted(CameraCaptureSession session,
                                        CaptureRequest request,
                                        TotalCaptureResult result) {
+            if("preview".equals(String.valueOf(result.getRequest().getTag()))){
+                return;
+            }
             int id = (int) result.getRequest().getTag();
 
             if (id == getMainCameraId()) {
