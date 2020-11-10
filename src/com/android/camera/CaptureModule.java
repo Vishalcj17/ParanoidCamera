@@ -5955,7 +5955,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void onSingleTapUp(View view, int x, int y) {
         if (mPaused || !mCamerasOpened || !mFirstTimeInitialized || !mAutoFocusRegionSupported
                 || !mAutoExposureRegionSupported || !isTouchToFocusAllowed()
-                || mCaptureSession[getMainCameraId()] == null) {
+                || mCaptureSession[getMainCameraId()] == null || mCurrentSessionClosed) {
             return;
         }
         Log.d(TAG, "onSingleTapUp " + x + " " + y);
