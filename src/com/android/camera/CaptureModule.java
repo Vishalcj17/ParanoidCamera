@@ -2606,7 +2606,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (CameraAccessException | IOException | IllegalArgumentException |
                 NullPointerException | IllegalStateException e) {
             e.printStackTrace();
-            quitVideoToPhotoWithError(e.getMessage());
+            if (mIsCloseCamera && mCameraDevice[cameraId] == null) {
+                Log.w(TAG, "activity may be onPause, no need to pop up error msg.");
+            } else {
+                quitVideoToPhotoWithError(e.getMessage());
+            }
         }
         mCurrentSessionClosed = false;
     }
