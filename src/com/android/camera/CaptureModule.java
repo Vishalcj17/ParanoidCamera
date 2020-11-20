@@ -10600,10 +10600,16 @@ public class CaptureModule implements CameraModule, PhotoController,
         // inverse of matrix2 will translate from (-1000 to 1000) to camera 2 coordinates
         Matrix matrix2 = new Matrix();
         boolean postZoomFov = mUI.getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV();
-        matrix2.preTranslate(-mOriginalCropRegion[id].width() / 2f,
-                -mOriginalCropRegion[id].height() / 2f);
-        matrix2.postScale(2000f / mOriginalCropRegion[id].width(),
-                2000f / mOriginalCropRegion[id].height());
+        Rect rect = new Rect();
+        if (postZoomFov) {
+            rect = cropRegion;
+        } else {
+            rect = mOriginalCropRegion[id];
+        }
+        matrix2.preTranslate(-rect.width() / 2f,
+                -rect.height() / 2f);
+        matrix2.postScale(2000f / rect.width(),
+                2000f / rect.height());
         matrix2.invert(matrix2);
 
         matrix1.mapRect(meteringRegionF);
