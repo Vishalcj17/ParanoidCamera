@@ -2745,6 +2745,11 @@ public class PhotoModule
     }
 
     @Override
+    public void onLongPress(View view, int x, int y) {
+
+    }
+
+    @Override
     public boolean onBackPressed() {
         return mUI.onBackPressed();
     }

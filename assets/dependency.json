@@ -232,7 +232,6 @@
          "pref_camera2_touch_track_focus_key":"off",
          "pref_camera2_video_time_lapse_frame_interval_key":"0",
          "pref_camera2_video_duration_key":"0",
-         "pref_camera2_dis_key":"off",
          "pref_camera2_videoencoder_key":"h264",
          "pref_camera2_audioencoder_key":"aac",
          "pref_camera2_noise_reduction_key":"high-quality",

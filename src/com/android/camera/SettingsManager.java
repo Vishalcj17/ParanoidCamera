@@ -38,6 +38,8 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodecInfo;
@@ -250,6 +252,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
+    public static final String KEY_QLL = "pref_camera2_qll_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -1209,6 +1212,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
+        ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1436,6 +1440,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (extendedMaxZoom != null) {
             if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR) {
                 removePreference(mPreferenceGroup, KEY_EXTENDED_MAX_ZOOM);
+            }
+        }
+
+        boolean devLevelAll =
+                PersistUtil.getDevOptionLevel() == PersistUtil.CAMERA2_DEV_OPTION_ALL;
+        if (qll != null) {
+            if (!isQLLSupported() || !devLevelAll) {
+                removePreference(mPreferenceGroup, KEY_QLL);
             }
         }
 
@@ -1760,7 +1772,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         }
     }
 
-    private void filterHFROptions() {
+    public void filterHFROptions() {
         ListPreference hfrPref = mPreferenceGroup.findPreference(KEY_VIDEO_HIGH_FRAME_RATE);
         if (hfrPref != null) {
             hfrPref.reloadInitialEntriesAndEntryValues();
@@ -1904,6 +1916,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     private List<String> getSupportedHighFrameRate() {
+        int cameraId = mCameraId;
+        String selectMode = getValue(KEY_SELECT_MODE);
+        if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR &&
+                (selectMode != null && selectMode.equals("sat"))){
+            if (CaptureModule.LOGICAL_ID != -1){
+                cameraId = CaptureModule.LOGICAL_ID;
+            }
+        }
         ArrayList<String> supported = new ArrayList<String>();
         supported.add("off");
         ListPreference videoQuality = mPreferenceGroup.findPreference(KEY_VIDEO_QUALITY);
@@ -1913,6 +1933,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         int videoEncoderNum = SettingTranslation.getVideoEncoder(videoEncoder.getValue());
         VideoCapabilities videoCapabilities = null;
         boolean findVideoEncoder = false;
+        if (mCharacteristics.size() > 0) {
+            mExtendedHFRSize = mCharacteristics.get(cameraId).get(CaptureModule.hfrFpsTable);
+        }
         if (videoSizeStr != null) {
             Size videoSize = parseSize(videoSizeStr);
             boolean above1080p = videoSize.getHeight() * videoSize.getWidth() > 1920*1080;
@@ -1934,7 +1957,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
 
             try {
-                Range[] range = getSupportedHighSpeedVideoFPSRange(mCameraId, videoSize);
+                Range[] range = getSupportedHighSpeedVideoFPSRange(cameraId, videoSize);
                 String rate;
                 for (Range r : range) {
                     // To support HFR for both preview and recording,
@@ -1943,7 +1966,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         if (videoCapabilities != null) {
                             if (videoCapabilities.areSizeAndRateSupported(
                                     videoSize.getWidth(), videoSize.getHeight(), (int) r.getUpper())) {
-                                String selectMode = getValue(KEY_SELECT_MODE);
                                 if(CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR && (selectMode != null && selectMode.equals("sat"))){
                                     break;
                                 }
@@ -2072,6 +2094,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.support_video_hdr_modes.toString());
         }
         return modes;
+    }
+
+    private boolean isQLLSupported() {
+        int result = 0;
+        try {
+            result = mCharacteristics.get(getCurrentCameraId())
+                    .get(CaptureModule.support_swcapability_qll);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_swcapability_qll.toString());
+        }
+        return (result == 1);
     }
 
     public boolean isAutoExposureRegionSupported(int id) {
@@ -2440,17 +2474,19 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 .get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
     }
 
-    public int[] getStatsSize(int cameraId) {
-        int[] ret = null;
+    public int[] getStatsInfo(CaptureResult result) {
+        int[] ret = {-1,-1,-1};
         try {
-            ret = new int[2];
-            int width = mCharacteristics.get(cameraId).get(CaptureModule.stats_width);
-            int height = mCharacteristics.get(cameraId).get(CaptureModule.stats_height);
+            int width = result.get(CaptureModule.stats_width);
+            int height = result.get(CaptureModule.stats_height);
             ret[0] = width;
             ret[1] = height;
-        } catch (IllegalArgumentException e){
-            e.printStackTrace();
-            ret = null;
+        } catch (Exception e){
+        }
+        try {
+            int depth = result.get(CaptureModule.stats_bitdepth);
+            ret[2] = depth;
+        }catch (Exception e){
         }
         return ret;
     }

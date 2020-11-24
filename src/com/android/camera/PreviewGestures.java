@@ -68,6 +68,7 @@ public class PreviewGestures
             // Open pie
             if (!mZoomOnly && mPie != null && !mPie.showsItems()) {
                 openPie();
+                mTapListener.onLongPress(null, (int) e.getX(), (int) e.getY());
             }
         }
 
@@ -181,6 +182,7 @@ public class PreviewGestures
 
     public interface SingleTapListener {
         public void onSingleTapUp(View v, int x, int y);
+        public void onLongPress(View v, int x, int y);
     }
 
     public PreviewGestures(CameraActivity ctx, SingleTapListener tapListener,

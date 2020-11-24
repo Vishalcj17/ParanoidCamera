@@ -373,11 +373,19 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void updateT2TCameraBound(Rect cameraBound) {
-        mT2TFocusRenderer.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if(getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV()) {
+            zoomValue = 1.0f;
+        }
+        mT2TFocusRenderer.setZoom(zoomValue);
     }
 
     public void updateStatsNNCameraBound(Rect cameraBound) {
-        mStatsNNFocusRenderer.setZoom(mModule.getZoomValue());
+        float zoomValue = mModule.getZoomValue();
+        if(getZoomFixedSupport() && PersistUtil.isCameraPostZoomFOV()) {
+            zoomValue = 1.0f;
+        }
+        mStatsNNFocusRenderer.setZoom(zoomValue);
     }
 
     public Point getDisplaySize() {
@@ -1287,6 +1295,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE ||
                 mModule.getCurrenCameraMode() == CaptureModule.CameraMode.HFR);
         enableView(mFlashButton, SettingsManager.KEY_FLASH_MODE);
+    }
+
+    public void hideFlashButton() {
+        mFlashButton.setVisibility(View.GONE);
+        String key;
+        boolean isVideoFlash = mModule.getCurrenCameraMode() == CaptureModule.CameraMode.VIDEO ||
+                mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE ||
+                mModule.getCurrenCameraMode() == CaptureModule.CameraMode.HFR;
+        if (isVideoFlash) {
+            key = SettingsManager.KEY_VIDEO_FLASH_MODE;
+        } else {
+            key = SettingsManager.KEY_FLASH_MODE;
+        }
+        mSettingsManager.setValue(key, "off");
     }
 
     public void initSceneModeButton() {
@@ -2448,6 +2470,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mModule.onSingleTapUp(view, x, y);
     }
 
+    @Override
+    public void onLongPress(View view, int x, int y) {
+        mModule.onLongPress(view, x, y);
+    }
+
     public boolean isOverControlRegion(int[] xy) {
         int x = xy[0];
         int y = xy[1];
@@ -2640,6 +2667,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (mPieRenderer != null) {
                 mPieRenderer.setBlockFocus(false);
             }
+            mModule.onZoomEnd();
         }
 
         @Override
