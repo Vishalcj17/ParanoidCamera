@@ -5101,7 +5101,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         mPaused = true;
         mToast = null;
         mUI.onPause();
-        if (mIsRecordingVideo) {
+        if (mLongshoting){
+            if (mCurrentSession != null) {
+                try {
+                    mCurrentSession.abortCaptures();
+                    mCurrentSession.stopRepeating();
+                } catch (CameraAccessException|IllegalStateException e) {
+                    e.printStackTrace();
+                }
+            }
+            mActivity.finish();
+        } else if (mIsRecordingVideo) {
             stopRecordingVideo(getMainCameraId());
         } else if (!mIsCloseCamera){
             if (mIsPreviewingVideo && !mIsRecordingVideo) {
