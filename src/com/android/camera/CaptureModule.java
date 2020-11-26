@@ -9386,6 +9386,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         cropRegion.set(xCenter - xDelta, yCenter - yDelta, xCenter + xDelta, yCenter + yDelta);
         if (mZoomValue == 1f) {
             mOriginalCropRegion[id] = cropRegion;
+        } else {
+            if (mOriginalCropRegion[id] == null) {
+                Rect originalRegion = new Rect();
+                int xOrigDelata = (int) (activeRegion.width() / 2);
+                int yOrigDelata = (int) (activeRegion.height() / 2);
+                originalRegion.set(xCenter - xOrigDelata, yCenter - yOrigDelata,
+                        xCenter + xOrigDelata, yCenter + yOrigDelata);
+                mOriginalCropRegion[id] = originalRegion;
+            }
         }
         if (mZoomValue < 1.0f) {
             mCropRegion[id] = mOriginalCropRegion[id];
