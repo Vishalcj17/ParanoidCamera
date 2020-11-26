@@ -1861,7 +1861,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     public void hideCameraControls(boolean hide) {
         final boolean status = !hide;
         if (mFlashButton != null){
-            mFlashButton.setEnabled(status);
+            mFlashButton.setEnabled(status && !mModule.isLongShotSettingEnabled());
             if (!hide) {
                 mFlashButton.init(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.VIDEO ||
                         mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE);
