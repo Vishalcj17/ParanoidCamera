@@ -8894,9 +8894,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                     ",audioChannels=" + mProfile.audioChannels + ",audioSampleRate="
                     + mProfile.audioSampleRate);
         }
+        int iAudioFormat = AudioFormat.CHANNEL_IN_STEREO;
+        if (mProfile.audioChannels == 1) {
+            iAudioFormat = AudioFormat.CHANNEL_IN_MONO;
+        }
 
         mAudioRecord =  new AudioRecord.Builder()
-                .setAudioFormat((new AudioFormat.Builder().setChannelMask(AudioFormat.CHANNEL_IN_STEREO))
+                .setAudioFormat((new AudioFormat.Builder().setChannelMask(iAudioFormat))
                         .setSampleRate(mProfile.audioSampleRate)
                         .setEncoding(mAudioFormatNumber)
                         .build())
