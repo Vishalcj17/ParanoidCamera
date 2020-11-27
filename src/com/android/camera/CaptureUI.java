@@ -1639,6 +1639,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         }
         if(mModule.mMFNREnable && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
             mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+            mSettingsManager.setValue(SettingsManager.KEY_COLOR_EFFECT,"0");
         }
         String mfHDR = mSettingsManager.getValue(SettingsManager.KEY_MFHDR);
         if (mfHDR != null && (mfHDR.equals("1") || mfHDR.equals("2"))) {
