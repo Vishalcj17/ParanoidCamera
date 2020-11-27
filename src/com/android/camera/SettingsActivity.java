@@ -1043,6 +1043,22 @@ public class SettingsActivity extends PreferenceActivity {
                     add(key);
             }
         };
+
+        final ArrayList<String> multiCameraPhotoList = new ArrayList<String>() {
+            {
+                add(SettingsManager.KEY_PHYSICAL_CAMERA);
+                add(SettingsManager.KEY_PHYSICAL_JPEG_CALLBACK);
+                add(SettingsManager.KEY_PHYSICAL_YUV_CALLBACK);
+                add(SettingsManager.KEY_PHYSICAL_RAW_CALLBACK);
+                add(SettingsManager.KEY_PHYSICAL_HDR);
+                add(SettingsManager.KEY_PHYSICAL_MFNR);
+                add(SettingsManager.KEY_ZSL);
+                for(String id : SettingsManager.KEY_PHYSICAL_SIZE){
+                    add(id);
+                }
+            }
+        };
+
         final ArrayList<String> multiCameraSettingList = new ArrayList<String>() {
             {
                 add(SettingsManager.KEY_SATURATION_LEVEL);
@@ -1154,9 +1170,17 @@ public class SettingsActivity extends PreferenceActivity {
                 removePreferenceGroup("video", parentPre);
                 removePreference(SettingsManager.KEY_TOUCH_TRACK_FOCUS, photoPre);
                 if (mDeveloperMenuEnabled) {
-                    ArrayList<String> RTBList = new ArrayList<>(multiCameraSettingList);
-                    RTBList.add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
-                    RTBList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
+                    ArrayList<String> RTBList;
+                    if (mSettingsManager.isMultiCameraEnabled()){
+                        RTBList = new ArrayList<>(multiCameraPhotoList);
+                        RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
+                    } else {
+                        RTBList = new ArrayList<>(multiCameraSettingList);
+                        RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
+                        RTBList.add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+                        RTBList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
+
+                    }
                     addDeveloperOptions(developer, RTBList);
                 }
                 break;
@@ -1259,7 +1283,7 @@ public class SettingsActivity extends PreferenceActivity {
             }
         };
 
-        if(mode == DEFAULT){
+        if(mode == DEFAULT || mode == RTB){
             if (mSettingsManager.isMultiCameraEnabled()){
                 multiCameraPhotoList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                 addDeveloperOptions(developer,multiCameraPhotoList);
