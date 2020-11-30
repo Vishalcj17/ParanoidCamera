@@ -1371,7 +1371,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (highspeed) {
                 mFlashButton.setVisibility(View.GONE);
             } else {
-                mFlashButton.init(true);
+                if (mModule.isAFLocked()){
+                    hideFlashButton();
+                } else {
+                    mFlashButton.init(true);
+                }
             }
             mVideoButton.setImageResource(R.drawable.video_stop);
             mRecordingTimeView.setText("00:00");
@@ -1381,7 +1385,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         } else {
             mFlashButton.setVisibility(View.VISIBLE);
 //            mSettingsManager.setValue(SettingsManager.KEY_VIDEO_FLASH_MODE, "off");
-            mFlashButton.init(true);
+            if (mModule.isAFLocked()){
+                hideFlashButton();
+            } else {
+                mFlashButton.init(true);
+            }
             mVideoButton.setImageResource(R.drawable.video_capture);
             mRecordingTimeRect.setVisibility(View.GONE);
             mMuteButton.setVisibility(View.INVISIBLE);

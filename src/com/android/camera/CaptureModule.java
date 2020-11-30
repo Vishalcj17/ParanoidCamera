@@ -6923,6 +6923,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    public boolean isAFLocked(){
+        return mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE;
+    }
+
     private boolean triggerVideoRecording(final int cameraId) {
         if (null == mCameraDevice[cameraId]) {
             return false;
