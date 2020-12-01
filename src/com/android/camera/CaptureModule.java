@@ -6577,7 +6577,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private Size getMaxPictureSizeLiveshot(int cameraId, int videoWidth, int videoHeight) {
-        Size[] sizes = mSettingsManager.getSupportedOutputSize(cameraId, ImageFormat.JPEG);
+        Size[] sizes = mSettingsManager.getAllSupportedOutputSize(cameraId);
 
         float ratio = (float) videoWidth / videoHeight;
         Size optimalSize = null;
