@@ -651,7 +651,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mModeSelectLayout.setVisibility(View.GONE);
             mCameraControls.setIntentMode(intentMode);
             mCameraControls.setVideoMode(false);
-            mCancelButton.setVisibility(View.VISIBLE);
+            if(intentMode != CaptureModule.INTENT_MODE_STILL_IMAGE_CAMERA){
+                mCancelButton.setVisibility(View.VISIBLE);
+            }
             mReviewCancelButton = mRootView.findViewById(R.id.preview_btn_cancel);
             mReviewDoneButton = mRootView.findViewById(R.id.done_button);
             mReviewRetakeButton = mRootView.findViewById(R.id.preview_btn_retake);
@@ -1861,6 +1863,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mSceneModeSwitcher != null) mSceneModeSwitcher.setEnabled(status);
         if (mFilterModeSwitcher != null) mFilterModeSwitcher.setEnabled(status);
         if (mMakeupButton != null) mMakeupButton.setVisibility(View.GONE);
+        if (mShutterButton != null) mShutterButton.setEnabled(status);
     }
 
     public void initializeControlByIntent() {

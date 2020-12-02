@@ -1397,6 +1397,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoEncoderProfile();
         updateSwitchIDInModePreference(true);
         updateEISPreference();
+        updateTimeLapsePreference();
         updateVideoVariableFpsPreference();
         updateAudioEncoderPreference();
         updateVideoFlipPreference();
@@ -1437,6 +1438,20 @@ public class SettingsActivity extends PreferenceActivity {
             pref.setValue("off");
         } else {
             updatePreference(SettingsManager.KEY_VIDEO_ENCODER_PROFILE);
+        }
+    }
+
+    private void updateTimeLapsePreference() {
+        ListPreference pref = (ListPreference)findPreference(
+                SettingsManager.KEY_VIDEO_TIME_LAPSE_FRAME_INTERVAL);
+        if (pref == null) {
+            return;
+        }
+        if (PersistUtil.enableMediaRecorder()) {
+            pref.setEnabled(true);
+        } else {
+            pref.setEnabled(false);
+            pref.setValue("0");
         }
     }
 

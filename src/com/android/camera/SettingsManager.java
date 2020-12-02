@@ -196,6 +196,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
     public static final String KEY_MFHDR = "pref_camera2_mfhdr_key";
+    public static final String KEY_SHADING_CORRECTION = "pref_camera2_shading_correction_key";
     public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
     public static final String KEY_ZOOM = "pref_camera2_zoom_key";
@@ -1213,6 +1214,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
+        ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1396,6 +1398,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (faceDetection != null) {
             if (!isFaceDetectionSupported(cameraId) || !isCameraFDSupported()) {
                 removePreference(mPreferenceGroup, KEY_FACE_DETECTION);
+            }
+        }
+
+        if (shadingCorrection != null) {
+            if (!isShadingCorrectionSupported()){
+                mFilteredKeys.add(shadingCorrection.getKey());
             }
         }
 
@@ -2082,6 +2090,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.support_video_hdr_modes.toString());
         }
         return modes != null && modes.length > 1;
+    }
+
+    public boolean isShadingCorrectionSupported() {
+        boolean ret = false;
+        try {
+            ret = 1 == mCharacteristics.get(getCurrentCameraId())
+                    .get(CaptureModule.enable_shading_correction);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.enable_shading_correction.toString());
+        }
+        return ret;
     }
 
     public int[] isMFHDRSupported() {

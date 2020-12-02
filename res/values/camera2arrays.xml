@@ -1404,6 +1404,16 @@ for time lapse recording -->
         <item>@string/pref_camera2_mfhdr_entry_value_mfhdr</item>
     </string-array>
 
+    <string-array name="pref_camera2_shading_correction_entries" translatable="false">
+        <item>@string/pref_camera2_shading_correction_entry_enable</item>
+        <item>@string/pref_camera2_shading_correction_entry_disable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_shading_correction_entryvalues" translatable="false">
+        <item>@string/pref_camera2_shading_correction_entry_value_enable</item>
+        <item>@string/pref_camera2_shading_correction_entry_value_disable</item>
+    </string-array>
+
     <string-array name="pref_camera2_extended_max_zoom_entries" translatable="false">
         <item>@string/pref_camera2_extended_max_zoom_entry_disable</item>
         <item>@string/pref_camera2_extended_max_zoom_entry_enable</item>

@@ -45,11 +45,25 @@ public class PersistUtil {
     public static final int CAMERA2_DEBUG_DUMP_ALL = 100;
     public static final int CAMERA2_DEV_OPTION_ALL = 100;
 
-    private static final int CAMERA_SENSOR_HORIZONTAL_ALIGNED = 0;
     private static final int CAMERA_SENSOR_VERTICAL_ALIGNED = 1;
 
-    private static final int PERSIST_MEMORY_LIMIT =
-            getInt("persist.sys.camera.perf.memlimit", 60);
+    // camera1 prop start
+    private static final boolean PERSIST_CAMERA_SAVE_IN_SD_ENABLED =
+            getBoolean("persist.sys.env.camera.saveinsd", false);
+    private static final boolean PERSIST_LONG_SAVE_ENABLED =
+            getBoolean("persist.sys.camera.longshot.save", false);
+    private static final boolean PERSIST_CAMERA_PREVIEW_RESTART_ENABLED =
+            getBoolean("persist.sys.camera.feature.restart", false);
+    private static final boolean PERSIST_CAPTURE_ANIMATION_ENABLED =
+            getBoolean("persist.sys.camera.capture.animate", true);
+    private static final boolean PERSIST_SKIP_MEM_CHECK_ENABLED =
+            getBoolean("persist.sys.camera.perf.skip_memck", false);
+    private static final boolean PERSIST_ZZHDR_ENABLED =
+            getBoolean("persist.sys.camera.zzhdr.enable", false);
+    private static final int PERSIST_PREVIEW_SIZE =
+            getInt("persist.sys.camera.preview.size", 0);
+    // camera1 prop end
+
     private static final String PERSIST_HFR_LIMIT =
             get("persist.sys.camera.hfr.rate", "");
     private static final boolean PERSIST_SKIP_MEMORY_CHECK =
@@ -64,8 +78,6 @@ public class PersistUtil {
             get("persist.sys.camera.video.size", "");
     private static final boolean PERSIST_CAMERA_CAMERA2 =
             getBoolean("persist.sys.camera.camera2", true);
-    private static final boolean PERSIST_YUV_CALLBACK_ENABLE =
-            getBoolean("persist.sys.camera.yuvcallback",false);
     private static final boolean PERSIST_CAMERA_ZSL =
             getBoolean("persist.sys.camera.zsl.disabled", false);
     private static final int PERSIST_CAMERA_CANCEL_TOUCHFOCUS_DELAY =
@@ -76,6 +88,7 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.fd.debug", false);
     private static final int PERSIST_CAMERA_DEV_DEBUG_OPTION =
             getInt("persist.sys.camera.devoption.debug", 0);
+    // StillMore filter start
     private static final String PERSIST_CAMERA_STILLMORE_BRCOLR =
             get("persist.sys.camera.stm_brcolor", "0.5");
     private static final String PERSIST_CAMERA_STILLMORE_BRINTENSITY =
@@ -84,35 +97,16 @@ public class PersistUtil {
             get("persist.sys.camera.stm_smooth", "0");
     private static final int PERSIST_CAMERA_STILLMORE_NUM_REQUIRED_IMAGE =
             getInt("persist.sys.camera.stm_img_nums", 5);
-    private static final String PERSIST_CAMERA_CS_BRINTENSITY_KEY =
-            get("persist.sys.camera.sensor.brinten", "0.0");
-    private static final String PERSIST_CAMERA_CS_SMOOTH_KEY =
-            get("persist.sys.camera.sensor.smooth", "0.5");
-    private static final int PERSIST_CAMERA_SENSOR_ALIGN_KEY =
-            getInt("persist.sys.camera.sensor.align",
-                    CAMERA_SENSOR_HORIZONTAL_ALIGNED);
+    // StillMore filter end
     private static final int CIRCULAR_BUFFER_SIZE_PERSIST =
             getInt("persist.sys.camera.zsl.buffer.size", 5);
     private static final int SAVE_TASK_MEMORY_LIMIT_IN_MB =
             getInt("persist.sys.camera.perf.memlimit", 120);
     private static final boolean PERSIST_CAMERA_UI_AUTO_TEST_ENABLED =
             getBoolean("persist.sys.camera.ui.auto_test", false);
-    private static final boolean PERSIST_CAMERA_SAVE_IN_SD_ENABLED =
-            getBoolean("persist.sys.env.camera.saveinsd", false);
-    private static final boolean PERSIST_LONG_SAVE_ENABLED =
-            getBoolean("persist.sys.camera.longshot.save", false);
-    private static final boolean PERSIST_CAMERA_PREVIEW_RESTART_ENABLED =
-            getBoolean("persist.sys.camera.feature.restart", false);
-    private static final boolean PERSIST_CAPTURE_ANIMATION_ENABLED =
-            getBoolean("persist.sys.camera.capture.animate", true);
-    private static final boolean PERSIST_SKIP_MEM_CHECK_ENABLED =
-            getBoolean("persist.sys.camera.perf.skip_memck", false);
-    private static final boolean PERSIST_ZZHDR_ENABLED =
-            getBoolean("persist.sys.camera.zzhdr.enable", false);
     private static final boolean PERSIST_SEND_REQUEST_AFTER_FLUSH =
             getBoolean("persist.sys.camera.send_request_after_flush", false);
-    private static final int PERSIST_PREVIEW_SIZE =
-            getInt("persist.sys.camera.preview.size", 0);
+    // ClearSight Start
     private static final long PERSIST_TIMESTAMP_LIMIT =
             getInt("persist.sys.camera.cs.threshold", 10);
     private static final int PERSIST_BURST_COUNT =
@@ -125,16 +119,7 @@ public class PersistUtil {
             getInt("persist.sys.camera.cs.timeout", 300);
     private static final boolean PERSIST_DUMP_DEPTH_ENABLED =
             getBoolean("persist.sys.camera.cs.dumpdepth", false);
-    private static final boolean PERSIST_DISABLE_QCOM_MISC_SETTING =
-            getBoolean("persist.sys.camera.qcom.misc.disable", false);
-    private static final int PREVIEW_FLIP_VALUE =
-            getInt("persist.sys.debug.camera.preview.flip", 0);
-    private static final int PERSIST_VIDEO_FLIP_VALUE =
-            getInt("persist.sys.debug.camera.video.flip", 0);
-    private static final int PERSIST_PICTURE_FLIP_VALUE =
-            getInt("persist.sys.debug.camera.picture.flip", 0);
-    private static final boolean PERSIST_YV_12_FORMAT_ENABLED =
-            getBoolean("persist.sys.camera.debug.camera.yv12", false);
+    // ClearSight eend
     private static final String PERSIST_DISPLAY_UMAX =
             get("persist.sys.camera.display.umax", "");
     private static final String PERSIST_DISPLAY_LMAX =
@@ -163,10 +148,6 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.raw_reprocess_qcfa", false);
     private static final boolean PERSIST_RAW_CB_INFO_SUPPORTED =
             getBoolean("persist.sys.camera.rawcbinfo", false);
-
-    public static int getMemoryLimit() {
-        return PERSIST_MEMORY_LIMIT;
-    }
 
     public static String getHFRRate() {
         return PERSIST_HFR_LIMIT;
@@ -304,18 +285,6 @@ public class PersistUtil {
         return PERSIST_CAMERA_CANCEL_TOUCHFOCUS_DELAY;
     }
 
-    public static float getDualCameraBrIntensity() {
-        return Float.parseFloat(PERSIST_CAMERA_CS_BRINTENSITY_KEY);
-    }
-
-    public static float getDualCameraSmoothingIntensity() {
-        return Float.parseFloat(PERSIST_CAMERA_CS_SMOOTH_KEY);
-    }
-
-    public static boolean getDualCameraSensorAlign() {
-        return PERSIST_CAMERA_SENSOR_ALIGN_KEY == CAMERA_SENSOR_VERTICAL_ALIGNED;
-    }
-
     public static int getCircularBufferSize(){
         return CIRCULAR_BUFFER_SIZE_PERSIST;
     }
@@ -390,28 +359,8 @@ public class PersistUtil {
         return PERSIST_DUMP_DEPTH_ENABLED;
     }
 
-    public static boolean isDisableQcomMiscSetting(){
-        return PERSIST_DISABLE_QCOM_MISC_SETTING;
-    }
-
-    public static int getPreviewFlip() {
-        return PREVIEW_FLIP_VALUE;
-    }
-
     public static boolean enableMediaRecorder() {
         return getBoolean("persist.sys.cameraapp.mediarecorder", true);
-    }
-
-    public static int getVideoFlip() {
-        return PERSIST_VIDEO_FLIP_VALUE;
-    }
-
-    public static int getPictureFlip() {
-        return PERSIST_PICTURE_FLIP_VALUE;
-    }
-
-    public static boolean isYv12FormatEnable() {
-        return PERSIST_YV_12_FORMAT_ENABLED;
     }
 
     public static boolean isPersistVideoLiveshot(){

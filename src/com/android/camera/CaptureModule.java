@@ -543,11 +543,14 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableMCXMasterCb", Integer.class);
     public static final CaptureRequest.Key<Integer> extendedMaxZoom =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.ExtendedMaxZoom", Integer.class);
-
     public static final CaptureRequest.Key<Integer> mcxRawCbInfo =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.McxRawCallbackInfo", Integer.class);
     public static final CaptureRequest.Key<Byte> mctf =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableMCTFwithReferenceFrame", byte.class);
+    public static final CaptureRequest.Key<Byte> shading_correction =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableShadingCorrection", byte.class);
+    public static final CameraCharacteristics.Key<Byte> enable_shading_correction =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.shadingCorrection.enableShadingCorrection", byte.class);
     private static final CaptureResult.Key<Byte> is_depth_focus =
             new CaptureResult.Key<>("org.quic.camera.isDepthFocus.isDepthFocus", byte.class);
     private static final CaptureRequest.Key<Byte> capture_burst_fps =
@@ -1057,8 +1060,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             = new CameraCaptureSession.CaptureCallback() {
 
         private void processCaptureResult(CaptureResult result) {
+            if("preview".equals(String.valueOf(result.getRequest().getTag()))){
+                return;
+            }
             int id = (int) result.getRequest().getTag();
-
             if (!mFirstPreviewLoaded) {
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
@@ -1095,6 +1100,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         public void onCaptureProgressed(CameraCaptureSession session,
                                         CaptureRequest request,
                                         CaptureResult partialResult) {
+            if("preview".equals(String.valueOf(partialResult.getRequest().getTag()))){
+                return;
+            }
             int id = (int) partialResult.getRequest().getTag();
             if (id == getMainCameraId()) {
                 Face[] faces = partialResult.get(CaptureResult.STATISTICS_FACES);
@@ -1114,6 +1122,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         public void onCaptureCompleted(CameraCaptureSession session,
                                        CaptureRequest request,
                                        TotalCaptureResult result) {
+            if("preview".equals(String.valueOf(result.getRequest().getTag()))){
+                return;
+            }
             int id = (int) result.getRequest().getTag();
 
             if (id == getMainCameraId()) {
@@ -2595,7 +2606,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (CameraAccessException | IOException | IllegalArgumentException |
                 NullPointerException | IllegalStateException e) {
             e.printStackTrace();
-            quitVideoToPhotoWithError(e.getMessage());
+            if (mIsCloseCamera && mCameraDevice[cameraId] == null) {
+                Log.w(TAG, "activity may be onPause, no need to pop up error msg.");
+            } else {
+                quitVideoToPhotoWithError(e.getMessage());
+            }
         }
         mCurrentSessionClosed = false;
     }
@@ -3703,7 +3718,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     Log.d(TAG, "captureStillPictureForCommon onCaptureCompleted: " + id  + ",metadataOwnerInfo:" + result.get(CaptureModule.metadataOwnerInfo));
                     mRawInputMeta = result;
                     if(mRawReprocessType == 1 || mRawReprocessType == 4){
-                        int metadataOwnerInfo = result.get(CaptureModule.metadataOwnerInfo);
+                        int metadataOwnerInfo = result.get(CaptureModule.metadataOwnerInfo) != null ? result.get(CaptureModule.metadataOwnerInfo) : 0;
                         int i = 0;
                         if(metadataOwnerInfo == 0){
                             i = 1;
@@ -3728,6 +3743,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     if (mUI.getCurrentProMode() != ProMode.MANUAL_MODE) {
                         unlockFocus(id);
                     } else {
+                        mTakingPicture[id] = false;
                         enableShutterAndVideoOnUiThread(id);
                     }
                     Log.d(TAG,"onShutterButtonRelease");
@@ -4949,6 +4965,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyExtendMaxZoom(builder);
         applyMctf(builder);
         applyQLL(builder);
+        applyShadingCorrection(builder);
     }
 
     private void applyMctf(CaptureRequest.Builder builder){
@@ -5943,7 +5960,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void onSingleTapUp(View view, int x, int y) {
         if (mPaused || !mCamerasOpened || !mFirstTimeInitialized || !mAutoFocusRegionSupported
                 || !mAutoExposureRegionSupported || !isTouchToFocusAllowed()
-                || mCaptureSession[getMainCameraId()] == null) {
+                || mCaptureSession[getMainCameraId()] == null || mCurrentSessionClosed) {
             return;
         }
         Log.d(TAG, "onSingleTapUp " + x + " " + y);
@@ -6421,11 +6438,18 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
         }
         if( mRawCount == 1){
+            int format = ImageFormat.RAW10;
+            String rawFormat = mSettingsManager.getValue(SettingsManager.KEY_RAW_FORMAT_TYPE);
+            int rawFormatType = (rawFormat != null && !rawFormat.equals("disable")&& !rawFormat.equals("off")) ? Integer.parseInt(rawFormat) : 0;
+            if(rawFormatType == 16){
+                format = ImageFormat.RAW_SENSOR;
+            }
+            Size[] rawSize = mSettingsManager.getSupportedOutputSize(getMainCameraId(), format);
             if(PersistUtil.isRawReprocessQcfa()){
                 //Size qcfaSize = mSettingsManager.getQcfaSupportSize();
                 mRawSize[0] = new Size(8000,6000);
             }else{
-                mRawSize[0] = new Size(4656,3496);
+                mRawSize[0] = rawSize[0];
             }
         }
         Size[] rawSize = mSettingsManager.getSupportedOutputSize(getMainCameraId(),
@@ -7484,14 +7508,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                                 mVideoRecordRequestBuilder : mVideoPreviewRequestBuilder),
                                 mCaptureCallback, mCameraHandler);
             } else {
-                if (mRecordingPausing) {
-                    if (mUI.getZoomFixedSupport()) {
-                        applyZoomRatio(mVideoPreviewRequestBuilder, mZoomValue, id);
-                    } else {
-                        applyZoom(mVideoPreviewRequestBuilder, id);
-                    }
-                    captureRequest = mVideoPreviewRequestBuilder.build();
-                }
                 mCurrentSession.setRepeatingRequest(captureRequest, mCaptureCallback,
                         mCameraHandler);
             }
@@ -8553,9 +8569,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         }  else if (mHighSpeedCapture) {
             mHighSpeedFPSRange = new Range(mHighSpeedCaptureRate, mHighSpeedCaptureRate);
             int fps = (int) mHighSpeedFPSRange.getUpper();
-            int targetRate = mSuperSlomoCapture ? 30 : (mHighSpeedRecordingMode ? fps : 30);
-            mVideoFormat.setInteger(MediaFormat.KEY_CAPTURE_RATE, mSuperSlomoCapture ? 30 : fps);
+            int targetRate = mHighSpeedRecordingMode ? fps : 30;
+            mVideoFormat.setInteger(MediaFormat.KEY_CAPTURE_RATE, fps);
             mVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, targetRate);
+            mVideoFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, fps);
             Log.i(TAG, "Capture rate: "+fps+", Target rate: "+targetRate);
             int scaledBitrate = mSettingsManager.getHighSpeedVideoEncoderBitRate(mProfile, targetRate, fps);
             Log.i(TAG, "Scaled video bitrate : " + scaledBitrate);
@@ -9464,6 +9481,21 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void applyShadingCorrection(CaptureRequest.Builder request) {
+        if (!mSettingsManager.isShadingCorrectionSupported())
+            return;
+        try {
+            byte value = 1;
+            String shadingCorrection = mSettingsManager.getValue(
+                    SettingsManager.KEY_SHADING_CORRECTION);
+            if ("0".equals(shadingCorrection)){
+                value = 0;
+            }
+            request.set(CaptureModule.shading_correction, value);
+        } catch (IllegalArgumentException e) {
+        }
+    }
+
     private void applyMcxMasterCb(CaptureRequest.Builder request) {
         try {
             request.set(CaptureModule.mcxMasterCb, 1);
@@ -10067,8 +10099,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private boolean applyAWBCCTAndAgain(CaptureRequest.Builder request) {
         boolean result = false;
         final SharedPreferences pref = mActivity.getSharedPreferences(
-                ComboPreferences.getLocalSharedPreferencesName(mActivity,
-                        mSettingsManager.getCurrentPrepNameKey()), Context.MODE_PRIVATE);
+                ComboPreferences.getGlobalSharedPreferencesName(mActivity), Context.MODE_PRIVATE);
         float awbDefault = -1f;
         float rGain = pref.getFloat(SettingsManager.KEY_AWB_RAGIN_VALUE, awbDefault);
         float gGain = pref.getFloat(SettingsManager.KEY_AWB_GAGIN_VALUE, awbDefault);
@@ -10153,8 +10184,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public void writeXMLForWarmAwb() {
         final SharedPreferences pref = mActivity.getSharedPreferences(
-                ComboPreferences.getLocalSharedPreferencesName(mActivity,
-                        mSettingsManager.getCurrentPrepNameKey()), Context.MODE_PRIVATE);
+                ComboPreferences.getGlobalSharedPreferencesName(mActivity), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
         editor.putFloat(SettingsManager.KEY_AWB_RAGIN_VALUE, mRGain);
         editor.putFloat(SettingsManager.KEY_AWB_GAGIN_VALUE, mGGain);
@@ -11561,6 +11591,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mUI.hideZoomSeekBar();
         } else {
             mUI.showZoomSeekBar();
+            mUI.enableZoomSeekBar(true);
         }
     }
 
