@@ -1126,6 +1126,10 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FD_BLINK);
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
+                        if (PersistUtil.is3ADebugEnabled()) {
+                            videoAddList.add(SettingsManager.KEY_MANUAL_EXPOSURE);
+                            videoAddList.add(SettingsManager.KEY_MANUAL_WB);
+                        }
                         videoAddList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
