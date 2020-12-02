@@ -122,7 +122,6 @@ public class ZSLQueue {
             }
         }
 
-        if(DEBUG_QUEUE) Log.d(TAG, "imageIndex: " + lastIndex + " " + image.getTimestamp());
     }
 
     public void add(TotalCaptureResult metadata) {
