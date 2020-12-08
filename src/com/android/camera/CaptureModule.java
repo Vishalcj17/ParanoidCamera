@@ -9850,6 +9850,14 @@ public class CaptureModule implements CameraModule, PhotoController,
             case SettingsManager.KEY_FOCUS_DISTANCE:
                 updatePreview = true;
                 if (mUI.getCurrentProMode() == ProMode.MANUAL_MODE) {
+                    if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
+                        mLockAFAE = LOCK_AF_AE_STATE_NONE;
+                        applyIsAfLock(false);
+                        cancelTouchFocus(mCurrentSceneMode.getCurrentId());
+                        applySettingsForUnlockExposure(mPreviewRequestBuilder[mCurrentSceneMode.getCurrentId()], mCurrentSceneMode.getCurrentId());
+                        updateLockAFAEVisibility();
+                        mUI.initFlashButton();
+                    }
                     applyFocusDistance(mPreviewRequestBuilder[cameraId],
                             String.valueOf(mSettingsManager.getCalculatedFocusDistance()));
                 } else {
