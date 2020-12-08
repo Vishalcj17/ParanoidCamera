@@ -274,6 +274,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private float mCctAWB = -1.0f;
     private float[] mAWBDecisionAfterTC = new float[2];
     private float[] mAECSensitivity = new float[3];
+    private float mAECLuxIndex = -1.0f;
 
     private long[] mAecFramecontrolExosureTime = new long[3];
     private float[] mAecFramecontrolLinearGain = new float[3];
@@ -499,9 +500,13 @@ public class CaptureModule implements CameraModule, PhotoController,
     //AEC warm start
     private static final CaptureResult.Key<float[]> aec_sensitivity =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECSensitivity", float[].class);
+    private static final CaptureResult.Key<Float> aec_start_up_luxindex_result =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
     private static final CaptureRequest.Key<Float[]> aec_start_up_sensitivity =
             new CaptureRequest.Key<>("org.quic.camera2.statsconfigs.AECStartUpSensitivity", Float[].class);
+    private static final CaptureRequest.Key<Float> aec_start_up_luxindex_request =
+            new CaptureRequest.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
     private static final CaptureResult.Key<long[]> aec_frame_control_exposure_time =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECExposureTime", long[].class);
     private static final CaptureResult.Key<float[]> aec_frame_control_linear_gain =
@@ -10318,6 +10323,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         float aec0 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_0, awbDefault);
         float aec1 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_1, awbDefault);
         float aec2 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_2, awbDefault);
+        float luxIndex = pref.getFloat(SettingsManager.KEY_AEC_LUX_INDEX, awbDefault);
         if (rGain != awbDefault && gGain != awbDefault && gGain != bGain) {
             Float[] awbGains = {rGain, gGain, bGain};
             Float[] tcs = {tc0, tc1};
@@ -10343,6 +10349,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             Log.v(TAG, " applyAWBCCTAndAgain aec0 :" + aec0 + " " + aec1 + " " + aec2);
         }
+        if (luxIndex != awbDefault) {
+            try {
+                request.set(CaptureModule.aec_start_up_luxindex_request, luxIndex);
+                result = true;
+            } catch (IllegalArgumentException e) {
+                Log.v(TAG, " applyAWBCCTAndAgain there is no vendorTag :" +
+                        aec_start_up_luxindex_request);
+            }
+        }
         return result;
     }
 
@@ -10359,6 +10374,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
                 if (mExistAECWarmTag) {
                     mAECSensitivity = captureResult.get(CaptureModule.aec_sensitivity);
+                    mAECLuxIndex = captureResult.get(aec_start_up_luxindex_result);
                 }
                 result = true;
             } catch (IllegalArgumentException e) {
@@ -10404,6 +10420,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_0, mAECSensitivity[0]);
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_1, mAECSensitivity[1]);
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_2, mAECSensitivity[2]);
+        }
+        if (mAECLuxIndex != -1.0f) {
+            editor.putFloat(SettingsManager.KEY_AEC_LUX_INDEX, mAECLuxIndex);
         }
         editor.apply();
     }
