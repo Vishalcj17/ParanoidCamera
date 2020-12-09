@@ -1237,8 +1237,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 sharpnessStrengthParam = byteArray2float(param, 32);
                 sharpnessScoreThresholdParam = byteArray2float(param, 36);
                 denoiseStrengthParam = byteArray2float(param, 40);
-                //Log.i(TAG, "enableGyroRefinementParam:"+ enableGyroRefinementParam + ",imageRegDescParam:" + imageRegDescParam + ",imageRegModeParam:" + imageRegModeParam + ",deghostingStrengthParam:" +deghostingStrengthParam + ",localMotionSmoothingStrengthParam: " + localMotionSmoothingStrengthParam +
-                //",dtfSpatialYStrengthParam:" +dtfSpatialYStrengthParam+",dtfSpatialChromaStrengthParam:" +dtfSpatialChromaStrengthParam+",denoiseStrengthParam:"+denoiseStrengthParam);
             }
         } catch (IllegalArgumentException e) {
             if (DEBUG) Log.d(TAG, "no SWMFandAIDETuningParams");
@@ -2244,6 +2242,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                             updateFaceDetection();
                             //apply swmfnr and aide param
                             try {
+                                Log.i(TAG, "setsemfnr enabled");
                                 mPreviewRequestBuilder[id].set(CaptureModule.isSWMFEnabled, (byte)(isSwMfnrEnabled() ? 0x01 : 0x00));
                                 mPreviewRequestBuilder[id].set(CaptureModule.isAIDEEnabled, (byte)(isAIDEEnabled() ? 0x01 : 0x00));
                             } catch (IllegalArgumentException e) {
@@ -11153,8 +11152,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void restartAll() {
         mResumed = false;
         int nextCameraId = getNextScreneModeId(mNextModeIndex);
-        Exception e = new Exception();
-        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId +",mLockAFAE" +  mLockAFAE,e);
+        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId +",mLockAFAE" +  mLockAFAE);
         if(mLockAFAE != LOCK_AF_AE_STATE_NONE) {
             mLockAFAE = LOCK_AF_AE_STATE_NONE;
             applyIsAfLock(false);
