@@ -196,6 +196,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
     public static final String KEY_MFHDR = "pref_camera2_mfhdr_key";
+    public static final String KEY_GC_SHDR = "pref_camera2_gc_shdr_key";
     public static final String KEY_SHADING_CORRECTION = "pref_camera2_shading_correction_key";
     public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
@@ -1228,6 +1229,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
         ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
+        ListPreference gcShdr = mPreferenceGroup.findPreference(KEY_GC_SHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
         ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
@@ -1458,6 +1460,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
             int[] modes = isMFHDRSupported();
             if (!(modes != null && modes.length > 0) || isFacingFront(mCameraId)) {
                 removePreference(mPreferenceGroup, KEY_MFHDR);
+            }
+        }
+
+        if (gcShdr != null) {
+            if(!isGCShdrSupported()) {
+                removePreference(mPreferenceGroup, KEY_GC_SHDR);
             }
         }
 
@@ -2161,6 +2169,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.support_video_hdr_modes.toString());
         }
         return modes;
+    }
+
+    public boolean isGCShdrSupported() {
+        boolean result = false;
+        try {
+            result = (1 == mCharacteristics.get(getCurrentCameraId()).get(
+                    CaptureModule.support_video_gc_shdr_mode));
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_video_gc_shdr_mode.toString());
+        }
+        return result;
     }
 
     private boolean isQLLSupported() {

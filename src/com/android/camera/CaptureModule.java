@@ -408,6 +408,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.supportedHDRmodes.HDRModes", int[].class);
     public static CameraCharacteristics.Key<Integer> support_swcapability_qll =
             new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.isQLLSupported", Integer.class);
+    public static CameraCharacteristics.Key<Byte> support_video_gc_shdr_mode =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.inSensorSHDRMode.inSensorSHDRMode", Byte.class);
 
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
@@ -568,6 +570,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableMCTFwithReferenceFrame", byte.class);
     public static final CaptureRequest.Key<Byte> shading_correction =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableShadingCorrection", byte.class);
+    public static final CaptureRequest.Key<Byte> enable_gc_shdr_mode =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.inSensorSHDRMode", byte.class);
     public static final CameraCharacteristics.Key<Byte> enable_shading_correction =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.shadingCorrection.enableShadingCorrection", byte.class);
     private static final CaptureResult.Key<Byte> is_depth_focus =
@@ -5134,6 +5138,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyMctf(builder);
         applyQLL(builder);
         applyShadingCorrection(builder);
+        applyGcSHDRMode(builder);
     }
 
     private void applyMctf(CaptureRequest.Builder builder){
@@ -9717,6 +9722,25 @@ public class CaptureModule implements CameraModule, PhotoController,
         } catch (IllegalArgumentException e) {
         }
     }
+
+    private void applyGcSHDRMode(CaptureRequest.Builder request) {
+        Log.v(TAG, " applyGcSHDRMode supported: " + (!mSettingsManager.isGCShdrSupported()));
+        if (!mSettingsManager.isGCShdrSupported())
+            return;
+        try {
+            byte value = 1;
+            String gcShdrEnable = mSettingsManager.getValue(
+                    SettingsManager.KEY_GC_SHDR);
+            if ("0".equals(gcShdrEnable)){
+                value = 0;
+            }
+            Log.v(TAG, " applyGcSHDRMode value: " + value);
+            request.set(CaptureModule.enable_gc_shdr_mode, value);
+        } catch (IllegalArgumentException e) {
+            Log.v(TAG, " applyGcSHDRMode no vendorTag: " + enable_gc_shdr_mode);
+        }
+    }
+
 
     private void applyMcxMasterCb(CaptureRequest.Builder request) {
         try {
