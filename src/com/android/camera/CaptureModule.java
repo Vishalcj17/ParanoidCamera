@@ -30,6 +30,7 @@ import android.content.SharedPreferences;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.content.SharedPreferences.Editor;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -6432,7 +6433,13 @@ public class CaptureModule implements CameraModule, PhotoController,
             onZoomChanged(Float.parseFloat(value));
             return;
         }
+
         mSettingsManager.setValue(key, value);
+        ComboPreferences pref = new ComboPreferences(mActivity);
+        pref.setLocalId(mActivity, getMainCameraId());
+        Editor editor = pref.edit();
+        editor.putString(key, value);
+        editor.apply();
         if(mCurrentSceneMode.mode == CameraMode.PRO_MODE) {
             if (key.equals(SettingsManager.KEY_FOCUS_DISTANCE)) {
                 mSettingsManager.setProModeSliderValueForAutTest(key, value);
