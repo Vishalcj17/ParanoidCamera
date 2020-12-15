@@ -5264,17 +5264,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mPaused = true;
         mToast = null;
         mUI.onPause();
-        if (mLongshoting){
-            if (mCurrentSession != null) {
-                try {
-                    mCurrentSession.abortCaptures();
-                    mCurrentSession.stopRepeating();
-                } catch (CameraAccessException|IllegalStateException e) {
-                    e.printStackTrace();
-                }
-            }
-            mActivity.finish();
-        } else if (mIsRecordingVideo) {
+        if (mIsRecordingVideo) {
             stopRecordingVideo(getMainCameraId());
         } else if (!mIsCloseCamera){
             if (mIsPreviewingVideo && !mIsRecordingVideo) {
@@ -5317,6 +5307,17 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mUI.initFlashButton();
             }
             writeXMLForWarmAwb();
+        }
+        if (mLongshoting && isExitCamera) {
+            if (mCurrentSession != null) {
+                try {
+                    mCurrentSession.abortCaptures();
+                    mCurrentSession.stopRepeating();
+                } catch (CameraAccessException | IllegalStateException e) {
+                    e.printStackTrace();
+                }
+            }
+            mActivity.finish();
         }
         if (mLocationManager != null) mLocationManager.recordLocation(false);
         if(isClearSightOn()) {
