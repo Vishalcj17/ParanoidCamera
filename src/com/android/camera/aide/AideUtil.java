@@ -36,6 +36,7 @@ import com.android.camera.CaptureModule;
 
 public class AideUtil {
     private static final String TAG = "SnapCam_AideUtil";
+    private static boolean mIsSupported = false;
 
     public AideUtil() {}
 
@@ -52,9 +53,15 @@ public class AideUtil {
         try {
             System.loadLibrary("jni_aidenoiserutil");
             Log.i(TAG, "load jni_aidenoiserutil successfully");
+            mIsSupported = true;
         } catch (UnsatisfiedLinkError e) {
+            mIsSupported = false;
             Log.d(TAG, e.toString());
         }
+    }
+
+    public static boolean isAideSupported(){
+        return mIsSupported;
     }
 
     public static class AIDEFrameDim {

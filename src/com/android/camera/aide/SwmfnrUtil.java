@@ -40,6 +40,7 @@ public class SwmfnrUtil {
 
     private CaptureModule mController;
     private CameraActivity mActivity;
+    private static boolean mIsSupported = false;
 
     public SwmfnrUtil() { }
 
@@ -61,9 +62,15 @@ public class SwmfnrUtil {
         try {
             System.loadLibrary("jni_mfnrutil");
             Log.i(TAG, "load jni_mfnrutil successfully");
+            mIsSupported = true;
         } catch (UnsatisfiedLinkError e) {
+            mIsSupported = false;
             Log.d(TAG, e.toString());
         }
+    }
+
+    public static boolean isSwmfnrSupported(){
+        return mIsSupported;
     }
 
     public static class MfnrTunableParams {

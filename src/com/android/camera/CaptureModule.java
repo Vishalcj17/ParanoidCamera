@@ -136,6 +136,8 @@ import com.android.camera.util.AccessibilityUtils;
 import com.android.camera.util.VendorTagUtil;
 //import com.android.internal.util.MemInfoReader;
 import com.android.camera.aide.SwmfnrUtil.*;
+import com.android.camera.aide.AideUtil;
+import com.android.camera.aide.SwmfnrUtil;
 
 import org.codeaurora.snapcam.R;
 import org.codeaurora.snapcam.filter.ClearSightImageProcessor;
@@ -2187,7 +2189,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public boolean isSwMfnrEnabled(){
         String value = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
-        if(value != null && !value.equals("disable")&& Integer.parseInt(value) == 1 && mSettingsManager.isSWMFNRSupport()){
+        if(value != null && !value.equals("disable")&& Integer.parseInt(value) == 1 && mSettingsManager.isSWMFNRSupport() && SwmfnrUtil.isSwmfnrSupported()){
             return true;
         }
         return false;
@@ -2195,7 +2197,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public boolean isAIDEEnabled(){
         String value = mSettingsManager.getValue(SettingsManager.KEY_AI_DENOISER);
-        if(value != null && !value.equals("disable") && Integer.parseInt(value) == 1){
+        if(value != null && !value.equals("disable") && Integer.parseInt(value) == 1&& AideUtil.isAideSupported()){
             return true;
         }
         return false;
