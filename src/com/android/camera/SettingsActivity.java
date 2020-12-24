@@ -156,6 +156,8 @@ public class SettingsActivity extends PreferenceActivity {
                 }
                 updateEISPreference();
                 updateMfnrPreference();
+            } else if (key.equals(SettingsManager.KEY_SAVERAW)) {
+                updateMfnrPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
             if (list != null) {
@@ -178,11 +180,17 @@ public class SettingsActivity extends PreferenceActivity {
         }
     };
 
-    private void updateMfnrPreference(){
+    public void updateMfnrPreference(){
         ListPreference mfnrPref = (ListPreference) findPreference(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
         ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        String scene = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
+        String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
+        String saveRaw = mSettingsManager.getValue(SettingsManager.KEY_SAVERAW);
+
         if (mfnrPref != null) {
-            if(selectModePref != null && selectModePref.getValue().equals("sat") && mSettingsManager.isSWMFNRSupport()){
+            if((scene != null && Integer.parseInt(scene) == SettingsManager.SCENE_MODE_HDR_INT) ||
+                (mSettingsManager.isSWMFNRSupport() && ((selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
+                (saveRaw != null  && saveRaw.equals("enable"))))){
                 mfnrPref.setValue("0");
                 mfnrPref.setEnabled(false);
             } else {
@@ -1534,12 +1542,20 @@ public class SettingsActivity extends PreferenceActivity {
         pref.setEnabled(mSettingsManager.isZZHDRSupported());
     }
 
+    public boolean isSwMfnrDisabled(){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        if(value != null &&  !value.equals("disable")&& Integer.parseInt(value) == 0 && mSettingsManager.isSWMFNRSupport()){
+            return true;
+        }
+        return false;
+    }
+
     private void updateAIDEPreference() {
         ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_AI_DENOISER);
         if (pref == null) {
             return;
         }
-        if(!mSettingsManager.isAIDESupport()){
+        if(!mSettingsManager.isAIDESupport() || isSwMfnrDisabled()){
             pref.setEnabled(false);
         }
     }

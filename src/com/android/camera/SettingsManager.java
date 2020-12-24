@@ -605,6 +605,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         filterHeifSizeOptions();
         mVideoEisConfigs = getVideoEisConfigs(cameraId);
         filterHFROptions();
+        updateMfnrPreference();
     }
 
 
@@ -2091,6 +2092,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.MFNRType.toString());
         }
         return isSupported;
+    }
+
+    public void updateMfnrPreference(){
+        String scene = getValue(KEY_SCENE_MODE);
+        ListPreference mfnrPref = (ListPreference) mPreferenceGroup.findPreference(KEY_CAPTURE_MFNR_VALUE);
+        if (scene != null && Integer.parseInt(scene) == SCENE_MODE_HDR_INT && mfnrPref != null) {
+            mfnrPref.setValue("0");
+        }
     }
 
     public boolean isAutoFocusRegionSupported(List<Integer> ids) {

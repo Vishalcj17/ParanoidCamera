@@ -205,13 +205,13 @@ public class AIDenoiserService extends Service {
             return;
         }
 
-        byte[][] pSrcY = new byte[5][];
-        byte[][] pSrcC = new byte[5][];
         try {
             List<ZSLQueue.ImageItem> itemsList = mMfnrQueue.getAllItems();
             ZSLQueue.ImageItem[] items = itemsList.toArray(new ZSLQueue.ImageItem[itemsList.size()]);
-            Log.i(TAG,"startMfnrProcess， items.size: " + itemsList.size());
+            Log.i(TAG,"startMfnrProcess, items.size: " + itemsList.size());
             int processSize = 5;
+            byte[][] pSrcY = new byte[processSize][];
+            byte[][] pSrcC = new byte[processSize][];
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -225,9 +225,7 @@ public class AIDenoiserService extends Service {
             mStrideC = items[0].getImage().getPlanes()[2].getRowStride();
 
             for (int i =0;i <processSize; i++){
-                ByteBuffer[] mSrcY = new ByteBuffer[5];
-                ByteBuffer[] mSrcC = new ByteBuffer[5];
-                Log.i(TAG, "startMfnrProcess， get item, i = " + i);
+                Log.i(TAG, "startMfnrProcess, get item, i = " + i);
                 Image image = items[i].getImage();
                 ByteBuffer dataY= image.getPlanes()[0].getBuffer();
                 ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
@@ -242,7 +240,7 @@ public class AIDenoiserService extends Service {
             }
             mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
             Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
-            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY,pSrcC,5,mStrideY, mStrideC, mWidth, mHeight,
+            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY, pSrcC, pSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
                 mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
 
             mSwmfnrUtil.nativeMfnrDeAllocate();
@@ -276,7 +274,7 @@ public class AIDenoiserService extends Service {
         mAideUtil.nativeAIDenoiserEngineDestroy();
     }
 
-    public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect){
+    public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect, TotalCaptureResult captureResult){
 
         Log.d(TAG,"src mstrideY="+mStrideY+" mStrideC="+mStrideC);
         int dataLength = mStrideY * mHeight * 3 /2;
@@ -324,7 +322,7 @@ public class AIDenoiserService extends Service {
         Log.d(TAG,"nv21ToRgbAndResize, desWidth:" + pictureSize.getWidth() + ",height:" + pictureSize.getHeight());
         Bitmap bitmap = nv21ToRgbAndResize(activity, srcImage,rect.width(), rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
         Log.d(TAG,"bitmapToJpeg");
-        srcImage = bitmapToJpeg(bitmap, orientation,null);
+        srcImage = bitmapToJpeg(bitmap, orientation, captureResult);
         Log.d(TAG,"test done");
         System.gc();
         return srcImage;
