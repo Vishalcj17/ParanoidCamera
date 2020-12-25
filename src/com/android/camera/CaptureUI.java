@@ -117,6 +117,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private static final int CLICK_THRESHOLD = 200;
     private static final int AUTOMATIC_MODE = 0;
     private static final int ZOOM_SMOOTH_FRAME = 6;
+    private static final int ZOOM_SMOOTH_FRAME_MAX = 18;
     private static final String[] AWB_INFO_TITLE = {" R gain "," G gain "," B gain "," CCT "};
     private static final String[] AEC_INFO_TITLE = {" Lux "," Gain "," Sensitivity "," Exp Time "};
     private static final String[] STATS_NN_RESULT_TITLE = {" Width "," Height "," MapData "," NumROI "," ROIData "," ROIWeight "};
@@ -651,6 +652,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 int frame = Math.abs((int)range * ZOOM_SMOOTH_FRAME);
                 if(frame == 0)
                     frame = ZOOM_SMOOTH_FRAME;
+                else if(frame > ZOOM_SMOOTH_FRAME_MAX)
+                    frame = ZOOM_SMOOTH_FRAME_MAX;
                 module.updateZoomSmooth(from,to,frame);
                 if(mModule.onZoomChanged(to)) {
                     mZoomSwitch.setText(entries[mZoomIndex]);
