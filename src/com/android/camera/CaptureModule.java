@@ -5327,7 +5327,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mInitHeifWriter != null) {
             mInitHeifWriter.close();
         }
-        if(mIsCloseCamera) {
+        if(mIsCloseCamera && mCameraDevice[getMainCameraId()] != null) {
             closeCamera();
             mUI.showPreviewCover();
             mUI.hideSurfaceView();
@@ -5350,7 +5350,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mZoomValue = 1f;
         mUI.updateZoomSeekBar(1.0f);
         mFirstPreviewLoaded = false;
-        if (isExitCamera && mIsCloseCamera) {
+        if (isExitCamera && mIsCloseCamera && mCameraDevice[getMainCameraId()] != null) {
             stopBackgroundThread();
             closeImageReader();
         }
