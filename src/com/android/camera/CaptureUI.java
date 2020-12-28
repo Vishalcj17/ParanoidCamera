@@ -607,6 +607,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             }
         });
 
+        showSceneModeLabel();
+        showRelatedIcons(mModule.getCurrenCameraMode());
         mCameraControls = (OneUICameraControls) mRootView.findViewById(R.id.camera_controls);
         mFaceView = (Camera2FaceView) mRootView.findViewById(R.id.face_view);
         mFaceView.initMode();
@@ -848,8 +850,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void enableZoomSeekBar(boolean enable) {
-       if (mZoomSeekBar != null)
-           mZoomSeekBar.setEnabled(enable); 
+        if (mZoomSeekBar != null)
+           mZoomSeekBar.setEnabled(enable);
+        if(mZoomSwitch != null ){
+            mZoomSwitch.setEnabled(enable);
+        }
     }
 
     public boolean getZoomFixedSupport() {
@@ -1651,7 +1656,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (value == null) {
             mFrontBackSwitcher.setVisibility(View.INVISIBLE);
         }
-        if(mModule.mMFNREnable && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
+        String mfnrValue = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        if(mfnrValue != null && mfnrValue.equals("1") && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
             mFilterModeSwitcher.setVisibility(View.INVISIBLE);
             mSettingsManager.setValue(SettingsManager.KEY_COLOR_EFFECT,"0");
         }
