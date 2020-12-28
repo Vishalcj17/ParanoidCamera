@@ -749,7 +749,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             String newValue = null;
             try {
                 newValue = dependencyList.getString(keyToProcess);
-            } catch (JSONException e) {
+            } catch (JSONException|NullPointerException e) {
                 Log.w(TAG, "initializeValueMap JSONException No value for:" + keyToProcess);
                 continue;
             }
