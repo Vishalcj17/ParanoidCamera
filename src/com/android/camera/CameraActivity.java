@@ -2217,6 +2217,7 @@ public class CameraActivity extends Activity
                     mCaptureModule = new CaptureModule();
                     mCaptureModule.init(this, mCameraCaptureModuleRootView);
                 } else {
+                    mCaptureModule.CURRENT_ID = mCaptureModule.getMainCameraId();
                     mCaptureModule.reinit();
                 }
                 mCurrentModule = mCaptureModule;
