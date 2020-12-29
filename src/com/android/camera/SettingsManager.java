@@ -257,6 +257,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
+    public static final String KEY_HVX_SHDR = "pref_camera2_hvx_shdr_key";
     public static final String KEY_QLL = "pref_camera2_qll_key";
     public static final String KEY_AI_DENOISER = "pref_camera2_ai_denoiser_key";
 
@@ -1231,6 +1232,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
         ListPreference gcShdr = mPreferenceGroup.findPreference(KEY_GC_SHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
+        ListPreference hvx_shdr = mPreferenceGroup.findPreference(KEY_HVX_SHDR);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
         ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
 
@@ -1422,6 +1424,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (shadingCorrection != null) {
             if (!isShadingCorrectionSupported()){
                 mFilteredKeys.add(shadingCorrection.getKey());
+            }
+        }
+
+        if (hvx_shdr != null) {
+            if (!isHvxShdrSupported(cameraId)){
+                mFilteredKeys.add(hvx_shdr.getKey());
             }
         }
 
@@ -2266,6 +2274,20 @@ public class SettingsManager implements ListMenu.SettingsListener {
 //        }
 //        return ret;
         return true;
+    }
+
+    public boolean isHvxShdrSupported(int id) {
+        boolean ret = false;
+        try{
+            if (mCharacteristics.size() >0){
+                byte hvx_shdr_available = mCharacteristics.get(id).get(
+                        CaptureModule.support_hvx_shdr);
+                ret = hvx_shdr_available == 1;
+            }
+        } catch(IllegalArgumentException e){
+            e.printStackTrace();
+        }
+        return ret;
     }
 
     private boolean isFastShutterModeSupported(int id) {

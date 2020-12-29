@@ -1059,6 +1059,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_VARIABLE_FPS);
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
                 add(SettingsManager.KEY_VIDEO_FLIP);
+                add(SettingsManager.KEY_HVX_SHDR);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 add(SettingsManager.KEY_GC_SHDR);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
@@ -1181,6 +1182,7 @@ public class SettingsActivity extends PreferenceActivity {
                     } else {
                         videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
                         videoAddList.remove(SettingsManager.KEY_GC_SHDR);
+                        videoAddList.remove(SettingsManager.KEY_HVX_SHDR);
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);

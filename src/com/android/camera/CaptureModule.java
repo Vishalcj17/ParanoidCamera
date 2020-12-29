@@ -410,6 +410,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.isQLLSupported", Integer.class);
     public static CameraCharacteristics.Key<Byte> support_video_gc_shdr_mode =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.inSensorSHDRMode.inSensorSHDRMode", Byte.class);
+    public static CameraCharacteristics.Key<Byte> support_hvx_shdr =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxSHDRMode.hvxSHDRSupported", Byte.class);
+
 
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
@@ -566,6 +569,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.ExtendedMaxZoom", Integer.class);
     public static final CaptureRequest.Key<Integer> mcxRawCbInfo =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.McxRawCallbackInfo", Integer.class);
+    public static final CaptureRequest.Key<Byte> enable_hvx_shdr =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableHVXSHDRMode", Byte.class);
     public static final CaptureRequest.Key<Byte> mctf =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableMCTFwithReferenceFrame", byte.class);
     public static final CaptureRequest.Key<Byte> shading_correction =
@@ -822,6 +827,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private ImageReader[] mPhysicalYuvReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalRawReader = new ImageReader[MAX_LOGICAL_PHYSICAL_CAMERA_COUNT];
     private ImageReader[] mPhysicalJpegReader = new ImageReader[PHYSICAL_CAMERA_COUNT];
+    private ImageReader[] mHvxShdrRawReader = new ImageReader[2];
     //yuv raw images are for raw reprocess
     public int mRawReprocessType = 0;
     private int mYUVCount = 3;
@@ -2712,6 +2718,24 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mVideoRecordRequestBuilder.addTarget(mVideoPreviewSurface);
             mPreviewRequestBuilder[cameraId] = mVideoRecordRequestBuilder;
             mIsPreviewingVideo = true;
+
+            String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
+            if ("1".equals(value)){
+                for (int i=0;i<2;i++){
+                    mHvxShdrRawReader[i] = ImageReader.newInstance(mSupportedRawPictureSize.getWidth(),
+                            mSupportedRawPictureSize.getHeight(),ImageFormat.RAW10,3);
+                    mHvxShdrRawReader[i].setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                        @Override
+                        public void onImageAvailable(ImageReader reader) {
+                            Image image = reader.acquireNextImage();
+                            image.close();
+                        }
+                    },mImageAvailableHandler);
+                    surfaces.add(mHvxShdrRawReader[i].getSurface());
+                    mVideoRecordRequestBuilder.addTarget(mHvxShdrRawReader[i].getSurface());
+                }
+            }
+
             if (isHighSpeedRateCapture()) {
                 if (PersistUtil.enableMediaRecorder() && (mVideoRecordingSurface != null)) {
                     mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
@@ -4902,6 +4926,12 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mRawImageReader[i] = null;
             }
         }
+        for (int i = 1; i>=0; i--){
+            if (null != mHvxShdrRawReader[i]) {
+                mHvxShdrRawReader[i].close();
+                mHvxShdrRawReader[i] = null;
+            }
+        }
         if (null != mVideoSnapshotImageReader) {
             mVideoSnapshotImageReader.close();
             mVideoSnapshotImageReader = null;
@@ -5136,6 +5166,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if(raw_ids != null && raw_ids.size() > 0){
             applyMcxRawCbInfo(builder);
         }
+        applyHvxShdr(builder);
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
         applyMctf(builder);
@@ -6726,7 +6757,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void updateVideoSnapshotSize() {
         mVideoSnapshotSize = getMaxPictureSizeLiveshot(getMainCameraId(),mVideoSize.getWidth(),
                 mVideoSize.getHeight());
-        if(mSettingsManager.isLiveshotSizeSameAsVideoSize()){
+        String hvx_shdr = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() || "1".equals(hvx_shdr)){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
@@ -9748,6 +9780,21 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
+    private void applyHvxShdr(CaptureRequest.Builder request) {
+        if (!mSettingsManager.isHvxShdrSupported(getMainCameraId())){
+            return;
+        }
+        try{
+            byte value = 0;
+            String hvx_shdr = mSettingsManager.getValue(
+                    SettingsManager.KEY_HVX_SHDR);
+            if("1".equals(hvx_shdr))
+                value = 1;
+            request.set(CaptureModule.enable_hvx_shdr,value);
+        } catch (IllegalArgumentException e){
+
+        }
+    }
 
     private void applyMcxMasterCb(CaptureRequest.Builder request) {
         try {

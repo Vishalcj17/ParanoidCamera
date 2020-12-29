@@ -1436,6 +1436,16 @@ for time lapse recording -->
         <item>@string/pref_camera2_extended_max_zoom_entry_value_enable</item>
     </string-array>
 
+    <string-array name="pref_camera2_hvx_shdr_entries" translatable="false">
+        <item>@string/pref_camera2_hvx_shdr_entry_disable</item>
+        <item>@string/pref_camera2_hvx_shdr_entry_enable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_hvx_shdr_entry_values" translatable="false">
+        <item>@string/pref_camera2_hvx_shdr_entry_value_disable</item>
+        <item>@string/pref_camera2_hvx_shdr_entry_value_enable</item>
+    </string-array>
+
     <string-array name="pref_camera2_master_cb_entries" translatable="false">
         <item>@string/pref_camera2_master_cb_entry_disable</item>
         <item>@string/pref_camera2_master_cb_entry_enable</item>
