@@ -3367,10 +3367,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             CaptureRequest.Builder builder = getRequestBuilder(id);
             builder.setTag(id);
             if((mCurrentSceneMode.mode == CameraMode.VIDEO ||
-                    mCurrentSceneMode.mode == CameraMode.HFR) && !mIsRecordingVideo){
+                    (mCurrentSceneMode.mode == CameraMode.HFR && !isHighSpeedRateCapture())) && !mIsRecordingVideo){
                 Surface surface = getPreviewSurfaceForSession(id);
                 builder.addTarget(surface);
             } else {
+                //when high speed, need preview + vieo buffer
                 addPreviewSurface(builder, null, id);
             }
 
