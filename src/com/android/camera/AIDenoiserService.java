@@ -199,6 +199,24 @@ public class AIDenoiserService extends Service {
         Log.i(TAG,"configureMfnr, configureResult" + configureResult);
     }
 
+    private int getFrameNumbers(float realGain){
+        int numFrames = 3;
+        if (realGain <= 2.0f){
+            numFrames = 3;
+        } else if (realGain <= 4.0f) {
+            numFrames = 4;
+        } else if (realGain <= 8.0f){
+            numFrames = 5;
+        } else if (realGain <= 16.0f){
+            numFrames = 6;
+        } else if (realGain <= 32.0f) {
+            numFrames = 7;
+        } else {
+            numFrames = 8;
+        }
+        return numFrames;
+    }
+
     public void startMfnrProcess(CameraActivity activity, float imageGain, boolean isAIDEenabled) {
         mActivity = activity;
         if (!mLock.tryAcquire()) {
@@ -209,7 +227,8 @@ public class AIDenoiserService extends Service {
             List<ZSLQueue.ImageItem> itemsList = mMfnrQueue.getAllItems();
             ZSLQueue.ImageItem[] items = itemsList.toArray(new ZSLQueue.ImageItem[itemsList.size()]);
             Log.i(TAG,"startMfnrProcess, items.size: " + itemsList.size());
-            int processSize = 5;
+            int processSize = getFrameNumbers(imageGain);
+            Log.i(TAG,"startMfnrProcess, frameNumbers: " + processSize);
             byte[][] pSrcY = new byte[processSize][];
             byte[][] pSrcC = new byte[processSize][];
             if (itemsList.size() < processSize) {

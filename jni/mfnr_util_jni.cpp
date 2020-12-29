@@ -214,6 +214,12 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     float blendConfidence = 0;
     UINT32 nBlendedFrames = 0;
     //frameMetaDataPerImagePtr is not used now
+    for (int i = 0; i < 8; i++)
+    {
+        char fileName[256];
+        snprintf(fileName, sizeof(fileName), "/data/data/org.codeaurora.snapcam/files/input%d.yuv", i);
+        remove(fileName);
+    }
 
     for (int i = 0; i < numImages; i++)
     {
