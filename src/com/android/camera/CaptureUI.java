@@ -839,7 +839,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public boolean getZoomFixedSupport() {
-        return mZoomRatioSupport && CaptureModule.MCXMODE && !mModule.isSingleCameraMode() &&
+        return mZoomRatioSupport && CaptureModule.MCXMODE &&
                 mModule.getCurrenCameraMode() != CaptureModule.CameraMode.HFR;
     }
 
@@ -1154,7 +1154,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mShutterButton.setOnClickListener(new View.OnClickListener()  {
             @Override
             public void onClick(View v) {
-                    doShutterAnimation();
+                doShutterAnimation();
             }
         });
         mVideoButton.setOnClickListener(new View.OnClickListener() {
@@ -1371,7 +1371,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (highspeed) {
                 mFlashButton.setVisibility(View.GONE);
             } else {
-                mFlashButton.init(true);
+                if (mModule.isAFLocked()){
+                    hideFlashButton();
+                } else {
+                    mFlashButton.init(true);
+                }
             }
             mVideoButton.setImageResource(R.drawable.video_stop);
             mRecordingTimeView.setText("00:00");
@@ -1381,7 +1385,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         } else {
             mFlashButton.setVisibility(View.VISIBLE);
 //            mSettingsManager.setValue(SettingsManager.KEY_VIDEO_FLASH_MODE, "off");
-            mFlashButton.init(true);
+            if (mModule.isAFLocked()){
+                hideFlashButton();
+            } else {
+                mFlashButton.init(true);
+            }
             mVideoButton.setImageResource(R.drawable.video_capture);
             mRecordingTimeRect.setVisibility(View.GONE);
             mMuteButton.setVisibility(View.INVISIBLE);
@@ -1631,6 +1639,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         }
         if(mModule.mMFNREnable && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
             mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+            mSettingsManager.setValue(SettingsManager.KEY_COLOR_EFFECT,"0");
         }
         String mfHDR = mSettingsManager.getValue(SettingsManager.KEY_MFHDR);
         if (mfHDR != null && (mfHDR.equals("1") || mfHDR.equals("2"))) {
@@ -1853,7 +1862,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     public void hideCameraControls(boolean hide) {
         final boolean status = !hide;
         if (mFlashButton != null){
-            mFlashButton.setEnabled(status);
+            mFlashButton.setEnabled(status && !mModule.isLongShotSettingEnabled());
             if (!hide) {
                 mFlashButton.init(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.VIDEO ||
                         mModule.getCurrenCameraMode() == CaptureModule.CameraMode.PRO_MODE);
@@ -1882,9 +1891,15 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void doShutterAnimation() {
+        Exception e = new Exception();
+        Log.i(TAG,"doShutterAnimation", e);
         AnimationDrawable frameAnimation = (AnimationDrawable) mShutterButton.getDrawable();
         frameAnimation.stop();
+                Log.i(TAG, "animation, stop");
+
         frameAnimation.start();
+                Log.i(TAG, "animation, start");
+
     }
 
     public void showUI() {

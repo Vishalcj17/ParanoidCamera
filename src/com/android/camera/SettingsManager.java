@@ -254,6 +254,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
     public static final String KEY_QLL = "pref_camera2_qll_key";
+    public static final String KEY_AI_DENOISER = "pref_camera2_ai_denoiser_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -261,6 +262,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private static final String TAG = "SnapCam_SettingsManager";
 
     private static SettingsManager sInstance;
+    private CaptureModule mCaptureModule;
     private ArrayList<CameraCharacteristics> mCharacteristics;
     private ArrayList<Listener> mListeners;
     private Map<String, Values> mValuesMap;
@@ -386,6 +388,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public static SettingsManager getInstance() {
         return sInstance;
+    }
+
+    public void createCaptureModule(CaptureModule captureModule){
+        mCaptureModule = captureModule;
+    }
+
+    public void destroyCaptureModule(){
+        if (mCaptureModule != null) {
+            mCaptureModule = null;
+        }
     }
 
     public void destroyInstance() {
@@ -2056,6 +2068,30 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) > 1f;
     }
 
+    public boolean isAIDESupport() {
+        boolean isSupported = false;
+        try {
+            isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.AIDESupport)) == 1;
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.AIDESupport.toString());
+        }
+        return isSupported;
+    }
+
+    public boolean isSWMFNRSupport() {
+        boolean isSupported = false;
+        try {
+            //set "CustomNoiseReduction" only if MFNRType is 1 i.e; for Lahaina, set "isSWMFEnabled" only if MFNRType is 2 i.e; for Mannar..
+            Log.i(TAG,"MFNRType:" + mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType));
+            isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType)) == 2;
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.MFNRType.toString());
+        }
+        return isSupported;
+    }
+
     public boolean isAutoFocusRegionSupported(List<Integer> ids) {
         for (int id : ids) {
             if (!isAutoFocusRegionSupported(id))
@@ -2337,6 +2373,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         return map.getOutputSizes(cl);
+    }
+
+    public Size[] getAllSupportedOutputSize(int cameraId) {
+        if (cameraId > mCharacteristics.size())return null;
+        StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Size[] picSize = map.getOutputSizes(ImageFormat.PRIVATE);
+        Size[] highResSizes = map.getHighResolutionOutputSizes(ImageFormat.JPEG);
+        Size[] allPicSizes = new Size[picSize.length + highResSizes.length];
+        System.arraycopy(picSize, 0, allPicSizes, 0, picSize.length);
+        System.arraycopy(highResSizes, 0, allPicSizes, picSize.length, highResSizes.length);
+        return allPicSizes;
     }
 
      public Size getMaxPictureSize(int cameraId, Class cl){
@@ -3113,6 +3161,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public void restoreSettings() {
         clearPerCameraPreferences();
+        mValuesMap.clear();
+        if(mValuesMap != null) mValuesMap = null;
+        mCaptureModule.restoreCameraIds();
         init();
     }
 

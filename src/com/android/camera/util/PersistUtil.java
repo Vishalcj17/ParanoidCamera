@@ -99,7 +99,7 @@ public class PersistUtil {
             getInt("persist.sys.camera.stm_img_nums", 5);
     // StillMore filter end
     private static final int CIRCULAR_BUFFER_SIZE_PERSIST =
-            getInt("persist.sys.camera.zsl.buffer.size", 5);
+            getInt("persist.sys.camera.zsl.buffer.size", 9);
     private static final int SAVE_TASK_MEMORY_LIMIT_IN_MB =
             getInt("persist.sys.camera.perf.memlimit", 120);
     private static final boolean PERSIST_CAMERA_UI_AUTO_TEST_ENABLED =

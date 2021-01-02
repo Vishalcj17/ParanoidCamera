@@ -1353,6 +1353,7 @@ public class SettingsActivity extends PreferenceActivity {
             String value = disabled ? values.overriddenValue : values.value;
             if (p instanceof SwitchPreference) {
                 ((SwitchPreference) p).setChecked(isOn(value));
+                ((SwitchPreference) p).setEnabled(true);
             } else if (p instanceof ListPreference) {
                 ListPreference pref = (ListPreference) p;
                 pref.setEnabled(true);
@@ -1401,6 +1402,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoVariableFpsPreference();
         updateAudioEncoderPreference();
         updateVideoFlipPreference();
+        updateAIDEPreference();
     }
 
     private void updateAudioEncoderPreference() {
@@ -1487,6 +1489,16 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
         pref.setEnabled(mSettingsManager.isZZHDRSupported());
+    }
+
+    private void updateAIDEPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_AI_DENOISER);
+        if (pref == null) {
+            return;
+        }
+        if(!mSettingsManager.isAIDESupport()){
+            pref.setEnabled(false);
+        }
     }
 
     private void updateVideoMFHDRPreference() {
