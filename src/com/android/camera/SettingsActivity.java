@@ -155,6 +155,7 @@ public class SettingsActivity extends PreferenceActivity {
                     updateSwitchIDInModePreference(true);
                 }
                 updateEISPreference();
+                updateMfnrPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
             if (list != null) {
@@ -177,6 +178,18 @@ public class SettingsActivity extends PreferenceActivity {
         }
     };
 
+    private void updateMfnrPreference(){
+        ListPreference mfnrPref = (ListPreference) findPreference(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        if (mfnrPref != null) {
+            if(selectModePref != null && selectModePref.getValue().equals("sat") && mSettingsManager.isSWMFNRSupport()){
+                mfnrPref.setValue("0");
+                mfnrPref.setEnabled(false);
+            } else {
+                mfnrPref.setEnabled(true);
+            }
+        }
+    }
     private SettingsManager.Listener mListener = new SettingsManager.Listener(){
         @Override
         public void onSettingsChanged(List<SettingsManager.SettingState> settings){
@@ -1073,7 +1086,9 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_INSTANT_AEC);
                 add(SettingsManager.KEY_MANUAL_WB);
                 add(SettingsManager.KEY_AF_MODE);
-                add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+                if(!mSettingsManager.isSWMFNRSupport()) {
+                    add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+                }
                 add(SettingsManager.KEY_QCFA);
                 add(SettingsManager.KEY_FACE_DETECTION_MODE);
                 add(SettingsManager.KEY_FD_SMILE);
@@ -1177,7 +1192,6 @@ public class SettingsActivity extends PreferenceActivity {
                     } else {
                         RTBList = new ArrayList<>(multiCameraSettingList);
                         RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
-                        RTBList.add(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
                         RTBList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
 
                     }
@@ -1425,6 +1439,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateZslPreference();
         updateVideoEncoderProfile();
         updateSwitchIDInModePreference(true);
+        updateMfnrPreference();
         updateEISPreference();
         updateTimeLapsePreference();
         updateVideoVariableFpsPreference();
