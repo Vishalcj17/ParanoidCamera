@@ -1905,15 +1905,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void doShutterAnimation() {
-        Exception e = new Exception();
-        Log.i(TAG,"doShutterAnimation", e);
         AnimationDrawable frameAnimation = (AnimationDrawable) mShutterButton.getDrawable();
         frameAnimation.stop();
-                Log.i(TAG, "animation, stop");
-
         frameAnimation.start();
-                Log.i(TAG, "animation, start");
-
     }
 
     public void showUI() {

@@ -203,7 +203,7 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     jbyte* imageDataNV21Array = env->GetByteArrayElements(pDst, NULL);
     uint8_t *out = (uint8_t*)imageDataNV21Array;
     uint8_t* outAddrY = (uint8_t*)&(out[0]);
-    uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight +1]);
+    uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight]);
 
     uint32_t* outRoi = new uint32_t[4];
     qrcpdefs::RoiWindow outputRoi;
@@ -257,7 +257,7 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     env->ReleaseByteArrayElements(jniarrayY, srcYArray, 0);
     env->ReleaseByteArrayElements(jniarrayC, srcCArray, 0);
     printf("write out put file to vendor" );
-        FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/yuvout.yuv", "wb+");
+        FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/mfnrout.yuv", "wb+");
 
     if ((pFile != NULL))
     {
