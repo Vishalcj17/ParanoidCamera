@@ -1378,7 +1378,6 @@ public class SettingsActivity extends PreferenceActivity {
         updateStoragePreference();
         initializePhysicalPreferences();
         updatePhysicalPreferences();
-        updateLongShotPreference();
         updateVideoHfrFpsPreference();
 
         Map<String, SettingsManager.Values> map = mSettingsManager.getValuesMap();
@@ -1446,6 +1445,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateAudioEncoderPreference();
         updateVideoFlipPreference();
         updateAIDEPreference();
+        updateLongShotPreference();
     }
 
     private void updateAudioEncoderPreference() {
