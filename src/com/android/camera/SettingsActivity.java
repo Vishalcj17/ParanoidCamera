@@ -187,10 +187,10 @@ public class SettingsActivity extends PreferenceActivity {
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         String saveRaw = mSettingsManager.getValue(SettingsManager.KEY_SAVERAW);
 
-        if (mfnrPref != null) {
+        if (mfnrPref != null && mSettingsManager.isSWMFNRSupport()) {
             if((scene != null && Integer.parseInt(scene) == SettingsManager.SCENE_MODE_HDR_INT) ||
-                (mSettingsManager.isSWMFNRSupport() && ((selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
-                (saveRaw != null  && saveRaw.equals("enable"))))){
+                (selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
+                (saveRaw != null  && saveRaw.equals("enable"))){
                 mfnrPref.setValue("0");
                 mfnrPref.setEnabled(false);
             } else {

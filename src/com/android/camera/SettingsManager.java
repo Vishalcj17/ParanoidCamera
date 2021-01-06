@@ -2085,7 +2085,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
         boolean isSupported = false;
         try {
             //set "CustomNoiseReduction" only if MFNRType is 1 i.e; for Lahaina, set "isSWMFEnabled" only if MFNRType is 2 i.e; for Mannar..
-            Log.i(TAG,"MFNRType:" + mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType));
             isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType)) == 2;
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "cannot find vendor tag: " +
@@ -2096,9 +2095,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public void updateMfnrPreference(){
         String scene = getValue(KEY_SCENE_MODE);
-        ListPreference mfnrPref = (ListPreference) mPreferenceGroup.findPreference(KEY_CAPTURE_MFNR_VALUE);
-        if (scene != null && Integer.parseInt(scene) == SCENE_MODE_HDR_INT && mfnrPref != null) {
-            mfnrPref.setValue("0");
+        if (scene != null && Integer.parseInt(scene) == SCENE_MODE_HDR_INT && mValuesMap != null && isSWMFNRSupport()) {
+            Values values = new Values("0", null);
+            mValuesMap.put(KEY_CAPTURE_MFNR_VALUE, values);
         }
     }
 

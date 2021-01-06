@@ -114,7 +114,6 @@ import com.android.camera.imageprocessor.PostProcessor;
 public class AIDenoiserService extends Service {
 
     private static final int MAX_REQUIRED_IMAGE_NUM = 11;
-    private CaptureModule mController;
     private AideUtil mAideUtil;
     private SwmfnrUtil mSwmfnrUtil;
     private static final String TAG = "snapcam_aideservice";
@@ -135,6 +134,8 @@ public class AIDenoiserService extends Service {
     int[] mOutRoi = new int[4];
     Semaphore mLock = new Semaphore(1);
     CameraActivity mActivity;
+    byte[][] mSrcY;
+    byte[][] mSrcC;
 
     class LocalBinder extends Binder {
         public AIDenoiserService getService() {
@@ -151,6 +152,9 @@ public class AIDenoiserService extends Service {
         mHandlerThread = new HandlerThread("AideThread");
         mHandlerThread.start();
         mHandler = new ProcessorHandler(mHandlerThread.getLooper());
+        if(SwmfnrUtil.isSwmfnrSupported()) {
+            createMfnr();
+        }
         return mBinder;
     }
 
@@ -161,6 +165,7 @@ public class AIDenoiserService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.i(TAG,"service onDestory");
         mImageHandlerTask = null;
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -171,19 +176,20 @@ public class AIDenoiserService extends Service {
             mHandlerThread = null;
             mHandler = null;
         }
+        if(mMfnrQueue != null) {
+            mMfnrQueue.onClose();
+            mMfnrQueue = null;
+        }
+        if(SwmfnrUtil.isSwmfnrSupported()) destoryMfnr();
+        clearImages();
     }
 
     @Override
     public void onCreate() {
     }
 
-    public void startAiDenoiserProcess() {
-
-    }
-
-    public void createMfnr(CaptureModule module) {
-        mController = module;
-        mMfnrQueue = new ZSLQueue(mController);
+    public void createMfnr() {
+        mMfnrQueue = new ZSLQueue(null);
         long sessionId = mSwmfnrUtil.nativeMfnrCreate();
         Log.i(TAG,"createMfnr, sessionId:" + sessionId);
     }
@@ -217,8 +223,7 @@ public class AIDenoiserService extends Service {
         return numFrames;
     }
 
-    public void startMfnrProcess(CameraActivity activity, float imageGain, boolean isAIDEenabled) {
-        mActivity = activity;
+    public void getImageData(float imageGain){
         if (!mLock.tryAcquire()) {
             return;
         }
@@ -226,11 +231,11 @@ public class AIDenoiserService extends Service {
         try {
             List<ZSLQueue.ImageItem> itemsList = mMfnrQueue.getAllItems();
             ZSLQueue.ImageItem[] items = itemsList.toArray(new ZSLQueue.ImageItem[itemsList.size()]);
-            Log.i(TAG,"startMfnrProcess, items.size: " + itemsList.size());
+            Log.i(TAG,"saveImage, items.size: " + itemsList.size());
             int processSize = getFrameNumbers(imageGain);
-            Log.i(TAG,"startMfnrProcess, frameNumbers: " + processSize);
-            byte[][] pSrcY = new byte[processSize][];
-            byte[][] pSrcC = new byte[processSize][];
+            Log.i(TAG,"saveImage, frameNumbers: " + processSize);
+            mSrcY = new byte[processSize][];
+            mSrcC = new byte[processSize][];
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -244,7 +249,7 @@ public class AIDenoiserService extends Service {
             mStrideC = items[0].getImage().getPlanes()[2].getRowStride();
 
             for (int i =0;i <processSize; i++){
-                Log.i(TAG, "startMfnrProcess, get item, i = " + i);
+                Log.i(TAG, "saveImage, get item, i = " + i);
                 Image image = items[i].getImage();
                 ByteBuffer dataY= image.getPlanes()[0].getBuffer();
                 ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
@@ -254,43 +259,49 @@ public class AIDenoiserService extends Service {
                 dataY.get(bytesY);
                 byte[] bytesUV = new byte[dataUV.remaining()];
                 dataUV.get(bytesUV);
-                pSrcY[i] = bytesY;
-                pSrcC[i] = bytesUV;
+                mSrcY[i] = bytesY;
+                mSrcC[i] = bytesUV;
             }
-            mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
-            Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
-            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY, pSrcC, pSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
-                mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
 
-            mSwmfnrUtil.nativeMfnrDeAllocate();
             for (int i = 0; i < items.length; i++){
                 Image image = items[i].getImage();
                 Log.i(TAG,"imgae close");
                 image.close();
             }
-            //param include the output
-            Log.i(TAG, " processResult:" + processResult);
-            for (int i =0;i < 4;i++){
-                Log.i(TAG, " output roi:" + mOutRoi[i]);
-            }
         } finally {
              mLock.release();
         }
+    }
 
+    public void startMfnrProcess(CameraActivity activity, float imageGain, boolean isAIDEenabled) {
+        mActivity = activity;
+        mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
+        Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
+        int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(mSrcY, mSrcC, mSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
+            mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
+
+        mSwmfnrUtil.nativeMfnrDeAllocate();
+        //param include the output
+        Log.i(TAG, " processResult:" + processResult);
+        for (int i =0;i < 4;i++){
+            Log.i(TAG, " output roi:" + mOutRoi[i]);
+        }
     }
 
     public void startAideProcess(long expTimeInNs, int iso, float denoiseStrength, int rGain, int bGain, int gGain){
         Log.i(TAG,"startAideProcess, expTimeInNs：" + expTimeInNs + ",iso:" + iso + ",denoiseStrength:" +denoiseStrength + ",rGain:" + rGain + "rGain:" + bGain + ",gGain:" + gGain );
+        byte[] aideSrc = mMfnrOut.array();
         int[] inputFrameDim = {mWidth, mHeight, mStrideY};
         int[] outputFrameDim = {mWidth, mHeight, mStrideY};
         int result = mAideUtil.nativeAIDenoiserEngineCreate(inputFrameDim, outputFrameDim);
         mAideOut = ByteBuffer.allocate(mStrideY*mHeight *3/2);
 
-        mAideUtil.nativeAIDenoiserEngineProcessFrame(mMfnrOut.array(), mAideOut.array(), expTimeInNs,
+        mAideUtil.nativeAIDenoiserEngineProcessFrame(aideSrc, mAideOut.array(), expTimeInNs,
             iso, denoiseStrength, rGain, bGain, gGain, mOutRoi);
 
         mAideUtil.nativeAIDenoiserEngineAbort();
         mAideUtil.nativeAIDenoiserEngineDestroy();
+        Log.i(TAG,"aide process finished");
     }
 
     public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect, TotalCaptureResult captureResult){
@@ -309,19 +320,6 @@ public class AIDenoiserService extends Service {
             rect = new Rect(mOutRoi[0],mOutRoi[1],mOutRoi[2],mOutRoi[3]);
         }
         Log.d(TAG,"cropYuvImage, rect:" + rect.toString());
-        double maxRation = (double) mWidth/mHeight;
-        double targetRatio = (double) pictureSize.getWidth()/pictureSize.getHeight();
-        if((targetRatio-maxRation) > 0){
-            int newHeight = rect.width()*pictureSize.getHeight()/pictureSize.getWidth();
-            Log.i(TAG,"recalculate the height, new height:" + newHeight);
-            rect.top = rect.top + ((rect.height() - newHeight)/2);
-            rect.bottom = rect.top + newHeight;
-        } else if ((targetRatio-maxRation) < 0){
-            int newWidth = rect.height() * pictureSize.getWidth() /pictureSize.getHeight();
-            rect.left = rect.left + ((rect.width() - newWidth)/2);
-            rect.right = rect.left + newWidth;
-        }
-        Log.d(TAG,"nv21ToRgbAndResize, rect11:" + rect.toString());
 
         if((rect.left&1)==1) {
             rect.left = rect.left - 1;
@@ -349,11 +347,6 @@ public class AIDenoiserService extends Service {
 
     public void destoryMfnr(){
         int destoryResult = mSwmfnrUtil.nativeMfnrDestroy();
-        if(mMfnrQueue != null) {
-            mMfnrQueue.onClose();
-            mMfnrQueue = null;
-        }
-        clearImages();
         Log.i(TAG, " destoryResult:" + destoryResult);
     }
 
