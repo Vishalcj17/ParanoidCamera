@@ -238,6 +238,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_AEC_SENSITIVITY_1 = "pref_camera2_aec_sensitivity_1";
     public static final String KEY_AEC_SENSITIVITY_2 = "pref_camera2_aec_sensitivity_2";
     public static final String KEY_AEC_LUX_INDEX = "pref_camera2_aec_lux_index";
+    public static final String KEY_AEC_ADRC_GAIN = "pref_camera2_aec_adrc_gain";
+    public static final String KEY_AEC_DARK_BOOST_GAIN = "pref_camera2_aec_dark_boost_gain";
     public static final String KEY_STATS_VISUALIZER_VALUE = "pref_camera2_stats_visualizer_key";
 
     public static final HashMap<String, Integer> KEY_ISO_INDEX = new HashMap<String, Integer>();
