@@ -30,6 +30,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.android.camera;
 
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.camera2.TotalCaptureResult;
@@ -337,7 +338,8 @@ public class AIDenoiserService extends Service {
         srcImage = cropYuvImage(srcImage,mStrideY, mWidth, mHeight, rect);
         mActivity.getMediaSaveService().addRawImage(srcImage,"aftercrop","yuv");
         Log.d(TAG,"nv21ToRgbAndResize, desWidth:" + pictureSize.getWidth() + ",height:" + pictureSize.getHeight());
-        Bitmap bitmap = nv21ToRgbAndResize(activity, srcImage,rect.width(), rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
+        Bitmap bitmap = nv21ToRgbAndResize(activity.getApplicationContext(), srcImage,rect.width(),
+                rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
         Log.d(TAG,"bitmapToJpeg");
         srcImage = bitmapToJpeg(bitmap, orientation, captureResult);
         Log.d(TAG,"test done");
@@ -491,13 +493,12 @@ public class AIDenoiserService extends Service {
         return ret;
     }
 
-    public Bitmap nv21ToRgbAndResize(CameraActivity activity, byte[] srcImage,int srcWidth, int srcHeight, int dstWidth,
+    public Bitmap nv21ToRgbAndResize(Context context, byte[] srcImage,int srcWidth, int srcHeight, int dstWidth,
                                      int dstHeight) {
-        RenderScript rs = RenderScript.create(activity.getApplicationContext());
+        RenderScript rs = RenderScript.create(context);
 
         ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic =
                 ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs));
-        ScriptIntrinsicResize resizeIntrinsic = ScriptIntrinsicResize.create(rs);
 
         Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs))
                 .setX(srcImage.length);
@@ -508,23 +509,23 @@ public class AIDenoiserService extends Service {
                 .setY(srcHeight);
         Allocation rgbaOut = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
 
-        Type.Builder rgbaResizeType = new Type.Builder(rs, Element.RGBA_8888(rs))
-                .setX(dstWidth)
-                .setY(dstHeight);
-
-        Allocation rgbaResizeOut = Allocation.createTyped(rs,rgbaResizeType.create(),
-                Allocation.USAGE_SCRIPT);
-
         yuvIn.copyFrom(srcImage);
 
         yuvToRgbIntrinsic.setInput(yuvIn);
         yuvToRgbIntrinsic.forEach(rgbaOut);
 
-        resizeIntrinsic.setInput(rgbaOut);
-        resizeIntrinsic.forEach_bicubic(rgbaResizeOut);
+        Bitmap rgba = Bitmap.createBitmap(srcWidth, srcHeight, Bitmap.Config.ARGB_8888);
+        rgbaOut.copyTo(rgba);
 
-        Bitmap ret = Bitmap.createBitmap(dstWidth, dstHeight, Bitmap.Config.ARGB_8888);
-        rgbaResizeOut.copyTo(ret);
+        float scaleWidth = ((float) dstWidth) / srcWidth;
+        float scaleHeight = ((float) dstHeight) / srcHeight;
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap ret = Bitmap.createBitmap(rgba, 0, 0, srcWidth, srcHeight, matrix,true);
+        if (rgba != null & !rgba.isRecycled()){
+            rgba.recycle();
+            rgba = null;
+        }
 
         return ret;
     }
