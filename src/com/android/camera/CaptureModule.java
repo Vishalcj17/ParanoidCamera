@@ -10101,10 +10101,10 @@ public class CaptureModule implements CameraModule, PhotoController,
                     List list = ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
                             .createHighSpeedRequestList(captureRequest.build());
                     if(!instant) {
-                        ((CameraConstrainedHighSpeedCaptureSession) session).captureBurst(list
+                        ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
                                 , mCaptureCallback, mCameraHandler);
                     } else {
-                        ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
+                        ((CameraConstrainedHighSpeedCaptureSession) session).captureBurst(list
                                 , mCaptureCallback, mCameraHandler);
                     }
                 } else if (isSSMEnabled()) {
