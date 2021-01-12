@@ -865,6 +865,15 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mModule.getCurrenCameraMode() != CaptureModule.CameraMode.HFR;
     }
 
+    public boolean getSingleRearCameraMode() {
+        boolean result = false;
+        if (mSettingsManager != null) {
+            result = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE).equals(
+                    "single_rear_cameraid");
+        }
+        return result;
+    }
+
     private boolean isRTBModeInSelectMode() {
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         if(selectMode != null && selectMode.equals("rtb")){
@@ -2362,6 +2371,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mFaceView.setCameraBound(cameraBound);
         mFaceView.setOriginalCameraBound(originalCameraBound);
         mFaceView.setZoomRationSupported(getZoomFixedSupport());
+        mFaceView.setSingleRearCameraMode(getSingleRearCameraMode());
         float zoomValue = mModule.getZoomValue();
         if (zoomValue < 1.0f) {
             zoomValue = 1.0f;
