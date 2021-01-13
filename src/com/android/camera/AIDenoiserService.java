@@ -29,6 +29,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.android.camera;
 
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Rect;
@@ -111,6 +112,8 @@ import com.android.camera.aide.AideUtil.*;
 import com.android.camera.aide.SwmfnrUtil.*;
 
 import com.android.camera.imageprocessor.PostProcessor;
+
+import static com.android.camera.imageprocessor.PostProcessor.addExifTags;
 
 public class AIDenoiserService extends Service {
 
@@ -338,14 +341,11 @@ public class AIDenoiserService extends Service {
         if((rect.bottom&1)==1) {
             rect.bottom = rect.bottom - 1;
         }
-        Log.d(TAG,"nv21ToRgbAndResize, rect:" + rect.toString());
+        Log.d(TAG,"cropYuvImage, rect:" + rect.toString());
         srcImage = cropYuvImage(srcImage,mStrideY, mWidth, mHeight, rect);
         mActivity.getMediaSaveService().addRawImage(srcImage,"aftercrop","yuv");
-        Log.d(TAG,"nv21ToRgbAndResize, desWidth:" + pictureSize.getWidth() + ",height:" + pictureSize.getHeight());
-        Bitmap bitmap = nv21ToRgbAndResize(activity.getApplicationContext(), srcImage,rect.width(),
-                rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
-        Log.d(TAG,"bitmapToJpeg");
-        srcImage = bitmapToJpeg(bitmap, orientation, captureResult);
+        srcImage = nv21ToUpscaleJpeg(srcImage,orientation,rect.width(),rect.height(),
+                pictureSize.getWidth(), pictureSize.getHeight(),captureResult);
         Log.d(TAG,"test done");
         System.gc();
         return srcImage;
@@ -538,8 +538,34 @@ public class AIDenoiserService extends Service {
         BitmapOutputStream bos = new BitmapOutputStream(1024);
         bitmap.compress(Bitmap.CompressFormat.JPEG,85,bos);
         byte[] bytes = bos.getArray();
-        bytes = PostProcessor.addExifTags(bytes, orientation, result);
+        bytes = addExifTags(bytes, orientation, result);
         return bytes;
+    }
+
+    public byte[] nv21ToUpscaleJpeg(byte[] srcImage,int orientation,int srcWidth, int srcHeight,
+                             int dstWidth,int dstHeight,
+                             TotalCaptureResult result){
+        BitmapOutputStream bos = new BitmapOutputStream(1024);
+        YuvImage image = new YuvImage(srcImage,ImageFormat.NV21,srcWidth,srcHeight,
+                new int[]{srcWidth,srcWidth});
+        Rect outRoi = new Rect(0,0,srcWidth,srcHeight);
+        image.compressToJpeg(outRoi, 100, bos);
+        byte[] bytes = bos.getArray();
+        Bitmap src = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+        float scaleWidth = ((float) dstWidth) / srcWidth;
+        float scaleHeight = ((float) dstHeight) / srcHeight;
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap finalImage = Bitmap.createBitmap(src, 0, 0, srcWidth, srcHeight, matrix,true);
+        if (src != null & !src.isRecycled()){
+            src.recycle();
+            src = null;
+        }
+        bos.reset();
+        finalImage.compress(Bitmap.CompressFormat.JPEG,100,bos);
+        byte[] ret = bos.getArray();
+        ret = addExifTags(ret, orientation, result);
+        return ret;
     }
 
     private class BitmapOutputStream extends ByteArrayOutputStream {
