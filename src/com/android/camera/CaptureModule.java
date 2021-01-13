@@ -422,6 +422,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxSHDRMode.isRawBuffersRequired", Byte.class);
     public static CameraCharacteristics.Key<Integer> support_swpdpc =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.SWPDPC.enableSWPDPC", Integer.class);
+    public static CameraCharacteristics.Key<Integer> support_insensor_zoom =
+            new CameraCharacteristics.Key<>("org.quic.camera.swcapabilities.inSensorZoomCapability", Integer.class);
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
@@ -600,6 +602,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableShadingCorrection", byte.class);
     public static final CaptureRequest.Key<Byte> enable_gc_shdr_mode =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.inSensorSHDRMode", byte.class);
+    public static final CaptureRequest.Key<Integer> insensor_zoom_feature =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableInsensorZoom", Integer.class);
+
     public static final CameraCharacteristics.Key<Byte> enable_shading_correction =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.shadingCorrection.enableShadingCorrection", byte.class);
     private static final CaptureResult.Key<Byte> is_depth_focus =
@@ -5342,6 +5347,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applySWPDPC(builder);
         applyShadingCorrection(builder);
         applyGcSHDRMode(builder);
+        applyInSensorZoom(builder);
     }
 
     private void applyMctf(CaptureRequest.Builder builder){
@@ -9927,7 +9933,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyGcSHDRMode(CaptureRequest.Builder request) {
-        Log.v(TAG, " applyGcSHDRMode supported: " + (!mSettingsManager.isGCShdrSupported()));
         if (!mSettingsManager.isGCShdrSupported())
             return;
         try {
@@ -9937,26 +9942,45 @@ public class CaptureModule implements CameraModule, PhotoController,
             if ("0".equals(gcShdrEnable)){
                 value = 0;
             }
-            Log.v(TAG, " applyGcSHDRMode value: " + value);
             request.set(CaptureModule.enable_gc_shdr_mode, value);
         } catch (IllegalArgumentException e) {
             Log.v(TAG, " applyGcSHDRMode no vendorTag: " + enable_gc_shdr_mode);
         }
     }
 
+    private void applyInSensorZoom(CaptureRequest.Builder request) {
+        Log.v(TAG, " applyInSensorZoom supported :" + !mSettingsManager.isInSensorZoomSupported());
+        if (!mSettingsManager.isInSensorZoomSupported())
+            return;
+        try {
+            int value = 0;
+            String inSensorZoom = mSettingsManager.getValue(
+                    SettingsManager.KEY_INSENSOR_ZOOM);
+            Log.v(TAG, " applyInSensorZoom inSensorZoom :" + inSensorZoom);
+            if ("0".equals(inSensorZoom)){
+                request.set(CaptureModule.insensor_zoom_feature, value);
+            } else {
+                value = 1;
+                request.set(CaptureModule.insensor_zoom_feature, value);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.v(TAG, " applyInSensorZoom didn`t exist vendorTag :" + insensor_zoom_feature);
+        }
+    }
+
     private void applyHvxShdr(CaptureRequest.Builder request) {
-        if (!mSettingsManager.isHvxShdrSupported(getMainCameraId())){
+        if (!mSettingsManager.isHvxShdrSupported(getMainCameraId())) {
             return;
         }
-        try{
+        try {
             byte value = 0;
             String hvx_shdr = mSettingsManager.getValue(
                     SettingsManager.KEY_HVX_SHDR);
             if(hvx_shdr != null && Integer.valueOf(hvx_shdr) > 0)
                 value = 1;
-            request.set(CaptureModule.enable_hvx_shdr,value);
-        } catch (IllegalArgumentException e){
-
+            request.set(CaptureModule.enable_hvx_shdr, value);
+        } catch (IllegalArgumentException e) {
+            Log.v(TAG, " applyHvxShdr didn`t exist vendorTag :" + enable_hvx_shdr);
         }
     }
 
