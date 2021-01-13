@@ -30,6 +30,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <jni.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #ifndef _MSC_VER
 #include <sys/types.h>
 #include <unistd.h>
@@ -186,8 +187,6 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
         jniarrayY = (jbyteArray)env->GetObjectArrayElement(pSrcY, i);
         srcYArray = env->GetByteArrayElements(jniarrayY, NULL);
         cpSrcY[i] = (UINT8*)srcYArray;
-        UINT8 tmp = ((UINT8*)srcYArray)[srcStrideY * srcHeight - 1];
-        printf("i=%d, srcStrideY= %d ,srcHeight= %d,,tmp= %d, ysize=%d" ,i, srcStrideY, srcHeight, tmp ,sizeof(cpSrcY[i]));
     }
     jbyteArray jniarrayC;
     jbyte *srcCArray;
@@ -196,14 +195,13 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
         jniarrayC = (jbyteArray)env->GetObjectArrayElement(pSrcC, i);
         srcCArray = env->GetByteArrayElements(jniarrayC, NULL);
         cpSrcC[i] = (UINT8*)srcCArray;
-        printf("i=%d, srcStrideC= %d ,srcHeight= %d, uvsize=%d" ,i, srcStrideY, srcHeight ,sizeof(cpSrcC[i]));
     }
 
     //outout buffer
     jbyte* imageDataNV21Array = env->GetByteArrayElements(pDst, NULL);
     uint8_t *out = (uint8_t*)imageDataNV21Array;
     uint8_t* outAddrY = (uint8_t*)&(out[0]);
-    uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight +1]);
+    uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight]);
 
     uint32_t* outRoi = new uint32_t[4];
     qrcpdefs::RoiWindow outputRoi;
@@ -217,25 +215,14 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     UINT32 nBlendedFrames = 0;
     //frameMetaDataPerImagePtr is not used now
 
-        FILE *inputFile0 = fopen("/data/data/org.codeaurora.snapcam/files/input0.yuv", "wb+");
-        WriteData(inputFile0, cpSrcY[0], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile0, cpSrcC[0], srcWidth, srcHeight/2, srcStrideY);
-
-        FILE *inputFile1 = fopen("/data/data/org.codeaurora.snapcam/files/input1.yuv", "wb+");
-        WriteData(inputFile1, cpSrcY[1], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile1, cpSrcC[1], srcWidth, srcHeight/2, srcStrideY);
-
-        FILE *inputFile2 = fopen("/data/data/org.codeaurora.snapcam/files/input2.yuv", "wb+");
-        WriteData(inputFile2, cpSrcY[2], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile2, cpSrcC[2], srcWidth, srcHeight/2, srcStrideY);
-
-        FILE *inputFile3 = fopen("/data/data/org.codeaurora.snapcam/files/input3.yuv", "wb+");
-        WriteData(inputFile3, cpSrcY[3], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile3, cpSrcC[3], srcWidth, srcHeight/2, srcStrideY);
-
-        FILE *inputFile4 = fopen("/data/data/org.codeaurora.snapcam/files/input4.yuv", "wb+");
-        WriteData(inputFile4, cpSrcY[4], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile4, cpSrcC[4], srcWidth, srcHeight/2, srcStrideY);
+    for (int i = 0; i < numImages; i++)
+    {
+        char fileName[256];
+        snprintf(fileName, sizeof(fileName), "/data/data/org.codeaurora.snapcam/files/input%d.yuv", i);
+        FILE *inputFile = fopen(fileName, "wb+");
+        WriteData(inputFile, cpSrcY[i], srcWidth, srcHeight, srcStrideY);
+        WriteData(inputFile, cpSrcC[i], srcWidth, srcHeight/2, srcStrideY);
+    }
 
     printf("MfnrRegisterAndProcess_sessionId= %d " , sessionId);
     CamxResult result = qrcp::MfnrRegisterAndProcess(sessionId, cpSrcY, cpSrcC, numImages, srcStrideY, srcStrideC, srcWidth, srcHeight, outAddrY, outAddrVU,
@@ -247,9 +234,6 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     outRoi[2] = outputRoi.dx;
     outRoi[3] = outputRoi.dy;
 
-    printf("call mfnr process,outY0 =%d,outY=%d",outAddrY[0], outAddrY[srcStrideY * srcHeight-1]);
-    printf("call mfnr process,outC0 =%d,outC=%d",outAddrVU[0], outAddrVU[srcStrideY * srcHeight/2-1]);
-
     //set out put
     printf("setoutput2" );
     env->SetIntArrayRegion(roi, 0, 4, (jint *)outRoi);
@@ -257,21 +241,18 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     env->ReleaseByteArrayElements(jniarrayY, srcYArray, 0);
     env->ReleaseByteArrayElements(jniarrayC, srcCArray, 0);
     printf("write out put file to vendor" );
-        FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/yuvout.yuv", "wb+");
+    FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/mfnrout.yuv", "wb+");
 
-    if ((pFile != NULL))
-    {
+    if ((pFile != NULL)){
         WriteData(pFile, outAddrY, srcWidth, srcHeight, srcStrideY);
         WriteData(pFile, outAddrVU, srcWidth, srcHeight/2, srcStrideY);
         fclose(pFile);
-    }
-    else
-    {
+    } else {
         printf( " pFile is NULL");
     }
 
     delete outRoi;
-    return 0;
+    return result;
 }
 
 jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDeAllocate(

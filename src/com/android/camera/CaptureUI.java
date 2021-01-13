@@ -116,6 +116,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private static final int ANIMATION_DURATION = 300;
     private static final int CLICK_THRESHOLD = 200;
     private static final int AUTOMATIC_MODE = 0;
+    private static final int ZOOM_SMOOTH_FRAME = 6;
     private static final String[] AWB_INFO_TITLE = {" R gain "," G gain "," B gain "," CCT "};
     private static final String[] AEC_INFO_TITLE = {" Lux "," Gain "," Sensitivity "," Exp Time "};
     private static final String[] STATS_NN_RESULT_TITLE = {" Width "," Height "," MapData "," NumROI "," ROIData "," ROIWeight "};
@@ -633,13 +634,26 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                         R.array.pref_camera2_zomm_switch_entries);
                 String[] values = mActivity.getResources().getStringArray(
                         R.array.pref_camera2_zomm_switch_entryvalues);
+                float[] zoomRatioRange = mSettingsManager.getSupportedRatioZoomRange(
+                        mModule.getMainCameraId());
+                if (zoomRatioRange != null && zoomRatioRange[0] <1){
+                    entries[entries.length - 1] = String.valueOf(zoomRatioRange[0])+"x";
+                    values[values.length - 1] = String.valueOf(zoomRatioRange[0]);
+                }
                 mZoomIndex = mZoomIndex + 1;
                 if (mZoomIndex > values.length -1)
                     mZoomIndex = 0;
-                if(mModule.onZoomChanged(Float.valueOf(values[mZoomIndex]))) {
+                float from  = mModule.getZoomValue();
+                float to = Float.valueOf(values[mZoomIndex]);
+                float range = to - from;
+                int frame = Math.abs((int)range * ZOOM_SMOOTH_FRAME);
+                if(frame == 0)
+                    frame = ZOOM_SMOOTH_FRAME;
+                module.updateZoomSmooth(from,to,frame);
+                if(mModule.onZoomChanged(to)) {
                     mZoomSwitch.setText(entries[mZoomIndex]);
                     if (mZoomRenderer != null) {
-                        mZoomRenderer.setZoom(Float.valueOf(values[mZoomIndex]));
+                        mZoomRenderer.setZoom(to);
                     }
                 }
             }
@@ -1891,15 +1905,9 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void doShutterAnimation() {
-        Exception e = new Exception();
-        Log.i(TAG,"doShutterAnimation", e);
         AnimationDrawable frameAnimation = (AnimationDrawable) mShutterButton.getDrawable();
         frameAnimation.stop();
-                Log.i(TAG, "animation, stop");
-
         frameAnimation.start();
-                Log.i(TAG, "animation, start");
-
     }
 
     public void showUI() {

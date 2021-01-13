@@ -92,7 +92,14 @@ jint JNICALL Java_com_android_camera_aide_AideUtil_nativeAIDenoiserEngineCreate(
     delete pOutputFrame;
     return createResult;
 }
-
+void WriteData(FILE *fp, unsigned char *pStart, int width, int height, int stride)
+{
+    for (int i = 0; i < height; i++)
+    {
+        fwrite(pStart, stride, 1, fp);
+        pStart += stride;
+    }
+}
 jint JNICALL Java_com_android_camera_aide_AideUtil_nativeAIDenoiserEngineProcessFrame(
         JNIEnv *env, jobject thiz, jbyteArray input, jbyteArray output,
         jlong expTimeInNs, jint iso, jfloat denoiseStrength, jint rGain, jint bGain, jint gGain, jintArray roi)
@@ -113,19 +120,21 @@ jint JNICALL Java_com_android_camera_aide_AideUtil_nativeAIDenoiserEngineProcess
     jbyte* inputArray = env->GetByteArrayElements(input, NULL);
     uint8_t *cinput = (uint8_t*)inputArray;
     uint8_t* cinputY = (uint8_t*)&(cinput[0]);
-    uint8_t* cinputVU = (uint8_t*)&(cinput[stride*height +1]);
+    uint8_t* cinputVU = (uint8_t*)&(cinput[stride*height]);
 
     jbyte* outputArray = env->GetByteArrayElements(output, NULL);
     uint8_t *coutput = (uint8_t*)outputArray;
     uint8_t* coutputY = (uint8_t*)&(coutput[0]);
-    uint8_t* coutputVU = (uint8_t*)&(coutput[stride*height +1]);
+    uint8_t* coutputVU = (uint8_t*)&(coutput[stride*height]);
 
     args.pInputLuma = cinputY;
     args.pInputChroma = cinputVU;
     args.pOutputLuma = coutputY;
     args.pOutputChroma = coutputVU;
     int result = AIDenoiserEngine_ProcessFrame(handle, &args, NULL);
-
+        FILE *inputFile = fopen("/data/data/org.codeaurora.snapcam/files/aideoutput.yuv", "wb+");
+        WriteData(inputFile, coutputY, width, height, stride);
+        WriteData(inputFile, coutputVU, width, height/2, stride);
     //set out put
     env->ReleaseByteArrayElements(input, inputArray, JNI_ABORT);
     env->ReleaseByteArrayElements(output, outputArray, JNI_ABORT);

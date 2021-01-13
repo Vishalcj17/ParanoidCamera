@@ -30,6 +30,7 @@ import android.content.SharedPreferences;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.content.SharedPreferences.Editor;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -273,6 +274,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private float mCctAWB = -1.0f;
     private float[] mAWBDecisionAfterTC = new float[2];
     private float[] mAECSensitivity = new float[3];
+    private float mAECLuxIndex = -1.0f;
 
     private long[] mAecFramecontrolExosureTime = new long[3];
     private float[] mAecFramecontrolLinearGain = new float[3];
@@ -498,9 +500,13 @@ public class CaptureModule implements CameraModule, PhotoController,
     //AEC warm start
     private static final CaptureResult.Key<float[]> aec_sensitivity =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECSensitivity", float[].class);
+    private static final CaptureResult.Key<Float> aec_start_up_luxindex_result =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
     private static final CaptureRequest.Key<Float[]> aec_start_up_sensitivity =
             new CaptureRequest.Key<>("org.quic.camera2.statsconfigs.AECStartUpSensitivity", Float[].class);
+    private static final CaptureRequest.Key<Float> aec_start_up_luxindex_request =
+            new CaptureRequest.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
     private static final CaptureResult.Key<long[]> aec_frame_control_exposure_time =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECExposureTime", long[].class);
     private static final CaptureResult.Key<float[]> aec_frame_control_linear_gain =
@@ -623,6 +629,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public static final CaptureResult.Key<byte[]> sWMFandAIDETuningParams =
             new CaptureResult.Key<>("org.quic.camera.SWMFandAIDenoiser.SWMFandAIDETuningParams", byte[].class);
+    TotalCaptureResult mCaptureResult;
     boolean enableGyroRefinementParam;
     int imageRegDescParam = 1;
     int imageRegModeParam;
@@ -635,7 +642,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     float sharpnessScoreThresholdParam = 0.7f;
     float denoiseStrengthParam = 0.3f;
     private Object mAideLock = new Object();
-
+    private boolean mMnfrCreated = false;
     private TouchTrackFocusRenderer mT2TFocusRenderer;
     private StateNNTrackFocusRenderer mStateNNFocusRenderer;
     private boolean mIsDepthFocus = false;
@@ -1196,6 +1203,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mUI.updateStatsNNVisibility(View.GONE);
             }
             getSWMFandAIDETuningParams(result);
+            mCaptureResult = result;
         }
     };
 
@@ -1231,8 +1239,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 sharpnessStrengthParam = byteArray2float(param, 32);
                 sharpnessScoreThresholdParam = byteArray2float(param, 36);
                 denoiseStrengthParam = byteArray2float(param, 40);
-                //Log.i(TAG, "enableGyroRefinementParam:"+ enableGyroRefinementParam + ",imageRegDescParam:" + imageRegDescParam + ",imageRegModeParam:" + imageRegModeParam + ",deghostingStrengthParam:" +deghostingStrengthParam + ",localMotionSmoothingStrengthParam: " + localMotionSmoothingStrengthParam +
-                //",dtfSpatialYStrengthParam:" +dtfSpatialYStrengthParam+",dtfSpatialChromaStrengthParam:" +dtfSpatialChromaStrengthParam+",denoiseStrengthParam:"+denoiseStrengthParam);
             }
         } catch (IllegalArgumentException e) {
             if (DEBUG) Log.d(TAG, "no SWMFandAIDETuningParams");
@@ -2189,7 +2195,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public boolean isSwMfnrEnabled(){
         String value = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
-        if(value != null && !value.equals("disable")&& Integer.parseInt(value) == 1 && mSettingsManager.isSWMFNRSupport() && SwmfnrUtil.isSwmfnrSupported()){
+        if(value != null &&  !value.equals("disable")&& Integer.parseInt(value) == 1 && mSettingsManager.isSWMFNRSupport() && SwmfnrUtil.isSwmfnrSupported()){
             return true;
         }
         return false;
@@ -2211,6 +2217,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
         if(isSwMfnrEnabled()){
             mActivity.getAIDenoiserService().createMfnr(this);
+            mMnfrCreated = true;
         }
         try {
             // We set up a CaptureRequest.Builder with the output Surface.
@@ -2238,6 +2245,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                             updateFaceDetection();
                             //apply swmfnr and aide param
                             try {
+                                Log.i(TAG, "setsemfnr enabled");
                                 mPreviewRequestBuilder[id].set(CaptureModule.isSWMFEnabled, (byte)(isSwMfnrEnabled() ? 0x01 : 0x00));
                                 mPreviewRequestBuilder[id].set(CaptureModule.isAIDEEnabled, (byte)(isAIDEEnabled() ? 0x01 : 0x00));
                             } catch (IllegalArgumentException e) {
@@ -2794,7 +2802,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mCaptureSession[id].setRepeatingRequest(mPreviewRequestBuilder[id]
                         .build(), mCaptureCallback, mCameraHandler);
             }
-        } catch (CameraAccessException | IllegalStateException e) {
+        } catch (CameraAccessException | IllegalStateException | IllegalArgumentException e) {
             e.printStackTrace();
         }
     }
@@ -3440,8 +3448,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                             deghostingStrengthParam, localMotionSmoothingStrengthParam, dtfSpatialYStrengthParam, dtfSpatialChromaStrengthParam, sharpnessStrengthParam, spatioTemporalDenoiseBalanceStrengthParam, sharpnessScoreThresholdParam);
                         mActivity.getAIDenoiserService().configureMfnr(mMfnrpictureSize.getWidth(), mMfnrpictureSize.getHeight(), mfnrParams);
                         mActivity.getAIDenoiserService().startMfnrProcess(mActivity, mAecFramecontrolLinearGain[2], isSwMfnrEnabled());
+                        unlockFocus(id);
                         if(!isAIDEEnabled()){
-                            byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, true, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, mCropRegion[getMainCameraId()]);
+                            byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, true, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, mCropRegion[getMainCameraId()], mCaptureResult);
                             Log.i(TAG,"save image:mOrientation:" +mOrientation  + ",ori:" + CameraUtil.getJpegRotation(id,mOrientation));
                             NamedEntity name = mNamedImages.getNextNameEntity();
                             String title = (name == null) ? null : name.title;
@@ -3452,12 +3461,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     CameraUtil.getJpegRotation(id,mOrientation), null, getMediaSavedListener(),
                                     mActivity.getContentResolver(), "jpeg");
                             mActivity.updateThumbnail(srcImage);
-                            unlockFocus(id);
                         } else {
                             Log.i(TAG,"start aide process" + ",rGain: " + mRGain + ",bGain:" + mBGain + ",gGain:" + mGGain + ",sensitivity：" + mIsoSensitivity);
                             //ISO = (sensitivity * sensitivityBoost)/100
                             mActivity.getAIDenoiserService().startAideProcess(100000, 100, denoiseStrengthParam, (int)(mRGain*1024), (int)(mBGain*1024), (int)(mGGain*1024));
-                            byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, false, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, mCropRegion[getMainCameraId()]);
+                            byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, false, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, mCropRegion[getMainCameraId()], mCaptureResult);
                             NamedEntity name = mNamedImages.getNextNameEntity();
                             String title = (name == null) ? null : name.title;
                             mActivity.getMediaSaveService().addImage(
@@ -3467,7 +3475,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     CameraUtil.getJpegRotation(id,mOrientation), null, getMediaSavedListener(),
                                     mActivity.getContentResolver(), "jpeg");
                             mActivity.updateThumbnail(srcImage);
-                            unlockFocus(id);
                         }
                     }
                 }
@@ -5258,17 +5265,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mPaused = true;
         mToast = null;
         mUI.onPause();
-        if (mLongshoting){
-            if (mCurrentSession != null) {
-                try {
-                    mCurrentSession.abortCaptures();
-                    mCurrentSession.stopRepeating();
-                } catch (CameraAccessException|IllegalStateException e) {
-                    e.printStackTrace();
-                }
-            }
-            mActivity.finish();
-        } else if (mIsRecordingVideo) {
+        if (mIsRecordingVideo) {
             stopRecordingVideo(getMainCameraId());
         } else if (!mIsCloseCamera){
             if (mIsPreviewingVideo && !mIsRecordingVideo) {
@@ -5312,6 +5309,17 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             writeXMLForWarmAwb();
         }
+        if (mLongshoting && isExitCamera) {
+            if (mCurrentSession != null) {
+                try {
+                    mCurrentSession.abortCaptures();
+                    mCurrentSession.stopRepeating();
+                } catch (CameraAccessException | IllegalStateException e) {
+                    e.printStackTrace();
+                }
+            }
+            mActivity.finish();
+        }
         if (mLocationManager != null) mLocationManager.recordLocation(false);
         if(isClearSightOn()) {
             ClearSightImageProcessor.getInstance().close();
@@ -5326,7 +5334,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             closeProcessors();
         }
-        if(isSwMfnrEnabled()){
+        if(mMnfrCreated && isSwMfnrEnabled()){
+            mMnfrCreated = false;
             mActivity.getAIDenoiserService().destoryMfnr();
         }
         resetAudioMute();
@@ -5962,11 +5971,27 @@ public class CaptureModule implements CameraModule, PhotoController,
         return true;
     }
 
+
     public void onZoomEnd() {
         if (mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE) {
             mUI.setFocusPosition(mClickPosition[0], mClickPosition[1]);
             mUI.onFocusStarted();
             mUI.onFocusSucceeded(false);
+        }
+    }
+
+    public void updateZoomSmooth(float from, float to, int frame) {
+        float delta = (to - from) / frame;
+        for (int i = 0; i < frame; i++) {
+            float zoom = mZoomValue + delta;
+            if (from > to && zoom <= to) {
+                mZoomValue = to;
+            } else if (from < to && zoom >= to){
+                mZoomValue = to;
+            } else {
+                mZoomValue = zoom;
+            }
+            applyZoomAndUpdate(getMainCameraId(),true);
         }
     }
 
@@ -6432,7 +6457,13 @@ public class CaptureModule implements CameraModule, PhotoController,
             onZoomChanged(Float.parseFloat(value));
             return;
         }
+
         mSettingsManager.setValue(key, value);
+        ComboPreferences pref = new ComboPreferences(mActivity);
+        pref.setLocalId(mActivity, getMainCameraId());
+        Editor editor = pref.edit();
+        editor.putString(key, value);
+        editor.apply();
         if(mCurrentSceneMode.mode == CameraMode.PRO_MODE) {
             if (key.equals(SettingsManager.KEY_FOCUS_DISTANCE)) {
                 mSettingsManager.setProModeSliderValueForAutTest(key, value);
@@ -6788,7 +6819,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void applyZoomAndUpdate() {
-        applyZoomAndUpdate(getMainCameraId());
+        applyZoomAndUpdate(getMainCameraId(),false);
         mUI.updateFaceViewCameraBound(mCropRegion[getMainCameraId()]);
         mUI.updateT2TCameraBound(mCropRegion[getMainCameraId()]);
         mUI.updateStatsNNCameraBound(mCropRegion[getMainCameraId()]);
@@ -10026,7 +10057,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         return updatePreview;
     }
 
-    private void applyZoomAndUpdate(int id) {
+    private void applyZoomAndUpdate(int id, boolean instant) {
         CaptureRequest.Builder captureRequest = mPreviewRequestBuilder[id];
         Log.i(TAG,"applyZoomAndUpdate, mRecordingPausing:" + mRecordingPausing);
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
@@ -10068,8 +10099,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                 if (session instanceof CameraConstrainedHighSpeedCaptureSession) {
                     List list = ((CameraConstrainedHighSpeedCaptureSession) mCurrentSession)
                             .createHighSpeedRequestList(captureRequest.build());
-                    ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
-                            , mCaptureCallback, mCameraHandler);
+                    if(!instant) {
+                        ((CameraConstrainedHighSpeedCaptureSession) session).captureBurst(list
+                                , mCaptureCallback, mCameraHandler);
+                    } else {
+                        ((CameraConstrainedHighSpeedCaptureSession) session).setRepeatingBurst(list
+                                , mCaptureCallback, mCameraHandler);
+                    }
                 } else if (isSSMEnabled()) {
                     session.setRepeatingBurst(createSSMBatchRequest(captureRequest),
                             mCaptureCallback, mCameraHandler);
@@ -10090,8 +10126,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                             mVideoRecordRequestBuilder.removeTarget(mVideoRecordingSurface);
                         }
                     } else {
-                        session.setRepeatingRequest(captureRequest
-                                .build(), mCaptureCallback, mCameraHandler);
+                        if (instant) {
+                            session.capture(captureRequest
+                                    .build(), mCaptureCallback, mCameraHandler);
+                        } else {
+                            session.setRepeatingRequest(captureRequest
+                                    .build(), mCaptureCallback, mCameraHandler);
+                        }
                     }
                 }
 
@@ -10311,6 +10352,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         float aec0 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_0, awbDefault);
         float aec1 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_1, awbDefault);
         float aec2 = pref.getFloat(SettingsManager.KEY_AEC_SENSITIVITY_2, awbDefault);
+        float luxIndex = pref.getFloat(SettingsManager.KEY_AEC_LUX_INDEX, awbDefault);
         if (rGain != awbDefault && gGain != awbDefault && gGain != bGain) {
             Float[] awbGains = {rGain, gGain, bGain};
             Float[] tcs = {tc0, tc1};
@@ -10336,6 +10378,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         } else {
             Log.v(TAG, " applyAWBCCTAndAgain aec0 :" + aec0 + " " + aec1 + " " + aec2);
         }
+        if (luxIndex != awbDefault) {
+            try {
+                request.set(CaptureModule.aec_start_up_luxindex_request, luxIndex);
+                result = true;
+            } catch (IllegalArgumentException e) {
+                Log.v(TAG, " applyAWBCCTAndAgain there is no vendorTag :" +
+                        aec_start_up_luxindex_request);
+            }
+        }
         return result;
     }
 
@@ -10352,6 +10403,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 }
                 if (mExistAECWarmTag) {
                     mAECSensitivity = captureResult.get(CaptureModule.aec_sensitivity);
+                    mAECLuxIndex = captureResult.get(aec_start_up_luxindex_result);
                 }
                 result = true;
             } catch (IllegalArgumentException e) {
@@ -10397,6 +10449,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_0, mAECSensitivity[0]);
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_1, mAECSensitivity[1]);
             editor.putFloat(SettingsManager.KEY_AEC_SENSITIVITY_2, mAECSensitivity[2]);
+        }
+        if (mAECLuxIndex != -1.0f) {
+            editor.putFloat(SettingsManager.KEY_AEC_LUX_INDEX, mAECLuxIndex);
         }
         editor.apply();
     }
@@ -11100,8 +11155,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void restartAll() {
         mResumed = false;
         int nextCameraId = getNextScreneModeId(mNextModeIndex);
-        Exception e = new Exception();
-        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId +",mLockAFAE" +  mLockAFAE,e);
+        Log.d(TAG, "restart all CURRENT_ID :" + CURRENT_ID + " nextCameraId :" + nextCameraId +",mLockAFAE" +  mLockAFAE);
         if(mLockAFAE != LOCK_AF_AE_STATE_NONE) {
             mLockAFAE = LOCK_AF_AE_STATE_NONE;
             applyIsAfLock(false);

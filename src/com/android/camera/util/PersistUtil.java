@@ -359,6 +359,10 @@ public class PersistUtil {
         return PERSIST_DUMP_DEPTH_ENABLED;
     }
 
+    public static boolean is3ADebugEnabled() {
+        return getBoolean("persist.sys.cameraapp.3adebug", false);
+    }
+
     public static boolean enableMediaRecorder() {
         return getBoolean("persist.sys.cameraapp.mediarecorder", true);
     }

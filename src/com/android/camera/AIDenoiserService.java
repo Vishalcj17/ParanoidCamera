@@ -204,15 +204,14 @@ public class AIDenoiserService extends Service {
         if (!mLock.tryAcquire()) {
             return;
         }
-        ByteBuffer[] mSrcY = new ByteBuffer[5];
-        ByteBuffer[] mSrcC = new ByteBuffer[5];
-        byte[][] pSrcY = new byte[5][];
-        byte[][] pSrcC = new byte[5][];
+
         try {
             List<ZSLQueue.ImageItem> itemsList = mMfnrQueue.getAllItems();
             ZSLQueue.ImageItem[] items = itemsList.toArray(new ZSLQueue.ImageItem[itemsList.size()]);
-            Log.i(TAG,"startMfnrProcess， items.size: " + itemsList.size());
+            Log.i(TAG,"startMfnrProcess, items.size: " + itemsList.size());
             int processSize = 5;
+            byte[][] pSrcY = new byte[processSize][];
+            byte[][] pSrcC = new byte[processSize][];
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -226,31 +225,24 @@ public class AIDenoiserService extends Service {
             mStrideC = items[0].getImage().getPlanes()[2].getRowStride();
 
             for (int i =0;i <processSize; i++){
-                Log.i(TAG, "startMfnrProcess， get item, i = " + i);
+                Log.i(TAG, "startMfnrProcess, get item, i = " + i);
                 Image image = items[i].getImage();
-                ByteBuffer yBuf = image.getPlanes()[0].getBuffer();
-                ByteBuffer cBuf = image.getPlanes()[2].getBuffer();
-                mSrcY[i] = ByteBuffer.allocateDirect(mStrideY * mHeight);
-                mSrcC[i] = ByteBuffer.allocateDirect(mStrideC * mHeight / 2);
-                yBuf.get(mSrcY[i].array(), 0, yBuf.remaining());
-                cBuf.get(mSrcC[i].array(), 1, cBuf.remaining());
-                byte[] dataY = new byte[mStrideY*mHeight];
-                mSrcY[i].get(dataY,0,mSrcY[i].remaining());
-                pSrcY[i] = dataY;
-                Log.i(TAG, "startMfnrProcess， yBuf, size=  " + yBuf.capacity() +",c,size:" + cBuf.capacity() + ",srcY size= " + dataY.length);
-                byte[] dataC = new byte[mStrideC*mHeight/2];
-                mSrcC[i].get(dataC,0,mSrcC[i].remaining());
-                pSrcC[i] = dataC;
-
-                byte[] data = new byte[mStrideY * mHeight * 3 /2];
-                System.arraycopy(pSrcY[i], 0, data, 0, pSrcY[i].length);
-                System.arraycopy(pSrcC[i], 0, data, pSrcY[i].length, pSrcC[i].length);
-                mActivity.getMediaSaveService().addRawImage(data,"mfnrinput" + i,"yuv");
+                ByteBuffer dataY= image.getPlanes()[0].getBuffer();
+                ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
+                dataY.rewind();
+                dataUV.rewind();
+                byte[] bytesY = new byte[dataY.remaining()];
+                dataY.get(bytesY);
+                byte[] bytesUV = new byte[dataUV.remaining()];
+                dataUV.get(bytesUV);
+                pSrcY[i] = bytesY;
+                pSrcC[i] = bytesUV;
             }
             mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
             Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
-            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY,pSrcC,5,mStrideY, mStrideC, mWidth, mHeight,
+            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY, pSrcC, pSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
                 mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
+
             mSwmfnrUtil.nativeMfnrDeAllocate();
             for (int i = 0; i < items.length; i++){
                 Image image = items[i].getImage();
@@ -275,16 +267,14 @@ public class AIDenoiserService extends Service {
         int result = mAideUtil.nativeAIDenoiserEngineCreate(inputFrameDim, outputFrameDim);
         mAideOut = ByteBuffer.allocate(mStrideY*mHeight *3/2);
 
-        mActivity.getMediaSaveService().addRawImage(mMfnrOut.array(),"aideinput","yuv");
         mAideUtil.nativeAIDenoiserEngineProcessFrame(mMfnrOut.array(), mAideOut.array(), expTimeInNs,
             iso, denoiseStrength, rGain, bGain, gGain, mOutRoi);
-        mActivity.getMediaSaveService().addRawImage(mAideOut.array(),"aideoutput","yuv");
 
         mAideUtil.nativeAIDenoiserEngineAbort();
         mAideUtil.nativeAIDenoiserEngineDestroy();
     }
 
-    public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect){
+    public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect, TotalCaptureResult captureResult){
 
         Log.d(TAG,"src mstrideY="+mStrideY+" mStrideC="+mStrideC);
         int dataLength = mStrideY * mHeight * 3 /2;
@@ -292,19 +282,47 @@ public class AIDenoiserService extends Service {
         int offset = mStrideY * mHeight;
 
         if(isMfnr){
-            mMfnrOut.get(srcImage,0,mMfnrOut.remaining());
+            srcImage = mMfnrOut.array();
         }else{
-            mAideOut.get(srcImage,0,mAideOut.remaining());
+            srcImage = mAideOut.array();
         }
-        Log.d(TAG,"cropYuvImage");
         if(rect.width() > (mOutRoi[2]-mOutRoi[0]) || rect.height() > mOutRoi[3]-mOutRoi[1]){
             rect = new Rect(mOutRoi[0],mOutRoi[1],mOutRoi[2],mOutRoi[3]);
         }
+        Log.d(TAG,"cropYuvImage, rect:" + rect.toString());
+        double maxRation = (double) mWidth/mHeight;
+        double targetRatio = (double) pictureSize.getWidth()/pictureSize.getHeight();
+        if((targetRatio-maxRation) > 0){
+            int newHeight = rect.width()*pictureSize.getHeight()/pictureSize.getWidth();
+            Log.i(TAG,"recalculate the height, new height:" + newHeight);
+            rect.top = rect.top + ((rect.height() - newHeight)/2);
+            rect.bottom = rect.top + newHeight;
+        } else if ((targetRatio-maxRation) < 0){
+            int newWidth = rect.height() * pictureSize.getWidth() /pictureSize.getHeight();
+            rect.left = rect.left + ((rect.width() - newWidth)/2);
+            rect.right = rect.left + newWidth;
+        }
+        Log.d(TAG,"nv21ToRgbAndResize, rect11:" + rect.toString());
+
+        if((rect.left&1)==1) {
+            rect.left = rect.left - 1;
+        }
+        if((rect.right&1)==1) {
+            rect.right = rect.right - 1;
+        }
+        if((rect.top&1)==1) {
+            rect.top = rect.top - 1;
+        }
+        if((rect.bottom&1)==1) {
+            rect.bottom = rect.bottom - 1;
+        }
+        Log.d(TAG,"nv21ToRgbAndResize, rect:" + rect.toString());
         srcImage = cropYuvImage(srcImage,mStrideY, mWidth, mHeight, rect);
+        mActivity.getMediaSaveService().addRawImage(srcImage,"aftercrop","yuv");
         Log.d(TAG,"nv21ToRgbAndResize, desWidth:" + pictureSize.getWidth() + ",height:" + pictureSize.getHeight());
         Bitmap bitmap = nv21ToRgbAndResize(activity, srcImage,rect.width(), rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
         Log.d(TAG,"bitmapToJpeg");
-        srcImage = bitmapToJpeg(bitmap, orientation,null);
+        srcImage = bitmapToJpeg(bitmap, orientation, captureResult);
         Log.d(TAG,"test done");
         System.gc();
         return srcImage;
@@ -443,6 +461,7 @@ public class AIDenoiserService extends Service {
             Log.e(TAG,"can crop this image with the roi "+cropRect.toString());
             return null;
         }
+        Log.i(TAG,"cropYuvImage,cropRect:" + cropRect.toString());
         int x = cropRect.left;
         int y = cropRect.top;
         int w = cropRect.width();
