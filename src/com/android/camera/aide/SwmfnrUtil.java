@@ -30,6 +30,8 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.android.camera.aide;
 
 import android.util.Log;
+
+import java.nio.ByteBuffer;
 import java.util.List;
 import android.os.SystemClock;
 import com.android.camera.CameraActivity;
@@ -51,8 +53,8 @@ public class SwmfnrUtil {
     public native int nativeMfnrConfigure(boolean enableGyroRefinement, int imageRegDesc, int imageRegMode, float deghostingStrength, float localMotionSmoothingStrength,
          float dtfSpatialYStrength, float dtfSpatialChromaStrength, float sharpnessStrength, float spatioTemporalDenoiseBalanceStrength, float sharpnessScoreThreshold);
 
-    public native int nativeMfnrRegisterAndProcess(byte[][] pSrcY, byte[][] pSrcC, int numImages, int srcStrideY, int srcStrideC,
-        int srcWidth, int srcHeight, byte[] pDst, int[] roi, float imageGain, boolean isAIDEenabled); //pDst,roi are all output
+    public native int nativeMfnrRegisterAndProcess(ByteBuffer[] pSrcY, ByteBuffer[] pSrcC, int numImages, int srcStrideY, int srcStrideC,
+                                                   int srcWidth, int srcHeight, byte[] pDst, int[] roi, float imageGain, boolean isAIDEenabled); //pDst,roi are all output
 
     public native int nativeMfnrDeAllocate();
 

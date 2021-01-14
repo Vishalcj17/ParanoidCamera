@@ -135,8 +135,8 @@ public class AIDenoiserService extends Service {
     int[] mOutRoi = new int[4];
     Semaphore mLock = new Semaphore(1);
     CameraActivity mActivity;
-    byte[][] mSrcY;
-    byte[][] mSrcC;
+    ByteBuffer[] mSrcY;
+    ByteBuffer[] mSrcC;
 
     class LocalBinder extends Binder {
         public AIDenoiserService getService() {
@@ -235,8 +235,8 @@ public class AIDenoiserService extends Service {
             Log.i(TAG,"saveImage, items.size: " + itemsList.size());
             int processSize = getFrameNumbers(imageGain);
             Log.i(TAG,"saveImage, frameNumbers: " + processSize);
-            mSrcY = new byte[processSize][];
-            mSrcC = new byte[processSize][];
+            mSrcY = new ByteBuffer[processSize];
+            mSrcC = new ByteBuffer[processSize];
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -256,12 +256,16 @@ public class AIDenoiserService extends Service {
                 ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
                 dataY.rewind();
                 dataUV.rewind();
-                byte[] bytesY = new byte[dataY.remaining()];
-                dataY.get(bytesY);
-                byte[] bytesUV = new byte[dataUV.remaining()];
-                dataUV.get(bytesUV);
-                mSrcY[i] = bytesY;
-                mSrcC[i] = bytesUV;
+//                byte[] bytesY = new byte[dataY.remaining()];
+//                dataY.get(bytesY);
+//                byte[] bytesUV = new byte[dataUV.remaining()];
+//                dataUV.get(bytesUV);
+                ByteBuffer srcY = ByteBuffer.allocateDirect(dataY.remaining());
+                srcY.put(dataY);
+                ByteBuffer srcUV = ByteBuffer.allocateDirect(dataUV.remaining());
+                srcUV.put(dataUV);
+                mSrcY[i] = srcY;
+                mSrcC[i] = srcUV;
             }
 
             for (int i = 0; i < items.length; i++){

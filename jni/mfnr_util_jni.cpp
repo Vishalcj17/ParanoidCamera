@@ -180,20 +180,20 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     printf("rows= %d,numImages=%d " , rows, numImages);
     UINT8* cpSrcY[rows];
     UINT8* cpSrcC[rows];
-    jbyteArray jniarrayY;
+    jobject jnibufY;
     jbyte *srcYArray;
     for (jint i = 0; i < rows; i++)
     {
-        jniarrayY = (jbyteArray)env->GetObjectArrayElement(pSrcY, i);
-        srcYArray = env->GetByteArrayElements(jniarrayY, NULL);
+        jnibufY = env->GetObjectArrayElement(pSrcY, i);
+        srcYArray = (jbyte*)env->GetDirectBufferAddress(jnibufY);
         cpSrcY[i] = (UINT8*)srcYArray;
     }
-    jbyteArray jniarrayC;
+    jobject jnibufC;
     jbyte *srcCArray;
     for (jint i = 0; i < rows; i++)
     {
-        jniarrayC = (jbyteArray)env->GetObjectArrayElement(pSrcC, i);
-        srcCArray = env->GetByteArrayElements(jniarrayC, NULL);
+        jnibufC = env->GetObjectArrayElement(pSrcC, i);
+        srcCArray = (jbyte*)env->GetDirectBufferAddress(jnibufC);
         cpSrcC[i] = (UINT8*)srcCArray;
     }
 
@@ -244,8 +244,6 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     printf("setoutput2" );
     env->SetIntArrayRegion(roi, 0, 4, (jint *)outRoi);
     env->ReleaseByteArrayElements(pDst, imageDataNV21Array, JNI_ABORT);
-    env->ReleaseByteArrayElements(jniarrayY, srcYArray, 0);
-    env->ReleaseByteArrayElements(jniarrayC, srcCArray, 0);
     printf("write out put file to vendor" );
     FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/mfnrout.yuv", "wb+");
 
