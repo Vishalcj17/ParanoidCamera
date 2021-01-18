@@ -866,6 +866,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final int CLEAR_SCREEN_DELAY = 4;
     private static final int UPDATE_RECORD_TIME = 5;
     private static final int VOICE_INTERACTION_CAPTURE = 7;
+    private static final int LIVE_SHOT_FOR_PERFORMANCE_TEST = 8;
+    private int mListShotNumbers = 0;
     private ContentValues mCurrentVideoValues;
     private String mVideoFilename;
     private boolean mRecordingPausing = false;
@@ -7133,6 +7135,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         mStartRecordingTime = System.currentTimeMillis();
         mRecordingPausingTime = 0;
+        mListShotNumbers = 0;
         Log.d(TAG, "triggerVideoRecording " + cameraId);
 
         mActivity.updateStorageSpaceAndHint();
@@ -7219,6 +7222,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                     if (!isHighSpeedRateCapture() && mSettingsManager.isLiveshotSupported(mVideoSize,
                             mSettingsManager.getVideoFPS())){
                         mUI.enableShutter(true);
+                        if (PersistUtil.isLiveShotNumbers() > 0) {
+                            mHandler.sendEmptyMessageDelayed(LIVE_SHOT_FOR_PERFORMANCE_TEST, 1200);
+                        }
                     } else {
                         mUI.enableShutter(false);
                     }
@@ -11516,6 +11522,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                     if (mIntentMode == INTENT_MODE_STILL_IMAGE_CAMERA && mIsVoiceTakePhote) {
                         onShutterButtonClick();
                         mIsVoiceTakePhote = false;
+                    }
+                    break;
+                }
+                case LIVE_SHOT_FOR_PERFORMANCE_TEST: {
+                    if (mIsRecordingVideo && PersistUtil.isLiveShotNumbers() > 0 &&
+                            mListShotNumbers < PersistUtil.isLiveShotNumbers()) {
+                        onShutterButtonClick();
+                        mListShotNumbers ++;
+                        mHandler.sendEmptyMessageDelayed(LIVE_SHOT_FOR_PERFORMANCE_TEST, 1200);
+                        Log.v(TAG, "LIVE_SHOT_FOR_PERFORMANCE_TEST mListShotNumbers:" + mListShotNumbers);
                     }
                     break;
                 }
