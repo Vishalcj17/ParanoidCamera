@@ -536,6 +536,21 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final CaptureResult.Key<Float> aec_frame_control_lux_index =
             new CaptureResult.Key<>("org.quic.camera2.statsconfigs.AECLuxIndex", Float.class);
 
+    private static final CaptureResult.Key<Float> ratio_long_to_short =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.ratioLongtoShort", Float.class);
+
+    private static final CaptureResult.Key<Float> ratio_long_to_safe =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.ratioLongtoSafe", Float.class);
+
+    private static final CaptureResult.Key<Float> ratio_safe_to_short =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.ratioSafetoShort", Float.class);
+
+    private static final CaptureResult.Key<Float> adrc_gain =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.compenADRCGain", Float.class);
+
+    private static final CaptureResult.Key<Float> dark_boost_gain =
+            new CaptureResult.Key<>("org.quic.camera2.statsconfigs.compenDarkBoostGain", Float.class);
+
     //Variable fps
     private static final CaptureRequest.Key<float[]> dynamicFSPConfigKey =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.dynamicFPSConfig", float[].class);
@@ -937,7 +952,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     // AWB Info
     private static String[] awbinfo_data = new String[4];
     // AEC Info
-    private static String[] aecinfo_data = new String[10];
+    private static String[] aecinfo_data = new String[15];
 
     private static final int SELFIE_FLASH_DURATION = 680;
     private static final int SESSION_CONFIGURE_TIMEOUT_MS = 3000;
@@ -1529,32 +1544,41 @@ public class CaptureModule implements CameraModule, PhotoController,
 
         // AEC Info display
         if (stats_visualizer.contains("4")) {
-            if (mAecFramecontrolLinearGain != null &&
-                    mAecFramecontrolSensitivity != null &&
-                    mAecFramecontrolExosureTime != null) {
-                try {
-                    aecinfo_data[0] = Float.toString(mAecFramecontrolLuxIndex);
-                    aecinfo_data[1] = String.format("%.5f", mAecFramecontrolLinearGain[0]);
-                    aecinfo_data[2] = String.format("%.5f", mAecFramecontrolLinearGain[1]);
-                    aecinfo_data[3] = String.format("%.5f", mAecFramecontrolLinearGain[2]);
-                    aecinfo_data[4] = String.format("%.2E", mAecFramecontrolSensitivity[0]);
-                    aecinfo_data[5] = String.format("%.2E", mAecFramecontrolSensitivity[1]);
-                    aecinfo_data[6] = String.format("%.2E", mAecFramecontrolSensitivity[2]);
-                    aecinfo_data[7] = Long.toString(mAecFramecontrolExosureTime[0]);
-                    aecinfo_data[8] = Long.toString(mAecFramecontrolExosureTime[1]);
-                    aecinfo_data[9] = Long.toString(mAecFramecontrolExosureTime[2]);
-                    synchronized (aecinfo_data) {
-                        mActivity.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mUI.updateAECInfoVisibility(View.VISIBLE);
-                                mUI.updateAecInfoText(aecinfo_data);
-                            }
-                        });
+            for (int i = 0; i < aecinfo_data.length;i++)
+                aecinfo_data[i] = "";
+            try {
+                aecinfo_data[0] = Float.toString(mAecFramecontrolLuxIndex);
+                aecinfo_data[1] = String.format("%.5f", mAecFramecontrolLinearGain[0]);
+                aecinfo_data[2] = String.format("%.5f", mAecFramecontrolLinearGain[2]);
+                aecinfo_data[3] = String.format("%.5f", mAecFramecontrolLinearGain[1]);
+                aecinfo_data[4] = String.format("%.2E", mAecFramecontrolSensitivity[0]);
+                aecinfo_data[5] = String.format("%.2E", mAecFramecontrolSensitivity[2]);
+                aecinfo_data[6] = String.format("%.2E", mAecFramecontrolSensitivity[1]);
+                aecinfo_data[7] = Long.toString(mAecFramecontrolExosureTime[0]);
+                aecinfo_data[8] = Long.toString(mAecFramecontrolExosureTime[2]);
+                aecinfo_data[9] = Long.toString(mAecFramecontrolExosureTime[1]);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try{
+                aecinfo_data[10] = Float.toString(result.get(ratio_long_to_short));
+                aecinfo_data[11] = Float.toString(result.get(ratio_long_to_safe));
+                aecinfo_data[12] = Float.toString(result.get(ratio_safe_to_short));
+                aecinfo_data[13] = Float.toString(result.get(adrc_gain));
+                aecinfo_data[14] = Float.toString(result.get(dark_boost_gain));
+            }catch (NullPointerException|IllegalArgumentException e){
+
+            }
+
+            synchronized (aecinfo_data) {
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mUI.updateAECInfoVisibility(View.VISIBLE);
+                        mUI.updateAecInfoText(aecinfo_data);
                     }
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                }
+                });
             }
         } else {
             mUI.updateAECInfoVisibility(View.GONE);
@@ -7661,6 +7685,9 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyTouchTrackFocus(builder);
         applyToneMapping(builder);
         applyStatsNNControl(builder);
+        applyHistogram(builder);
+        applyBGStats(builder);
+        applyBEStats(builder);
     }
 
     private void applyVideoHDR(CaptureRequest.Builder builder) {

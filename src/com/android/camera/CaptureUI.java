@@ -120,6 +120,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private static final int ZOOM_SMOOTH_FRAME_MAX = 2 * ZOOM_SMOOTH_FRAME;
     private static final String[] AWB_INFO_TITLE = {" R gain "," G gain "," B gain "," CCT "};
     private static final String[] AEC_INFO_TITLE = {" Lux "," Gain "," Sensitivity "," Exp Time "};
+    private static final String[] STATS_EXTENSION_TITLE = {" RatioLongtoShort "," RatioLongtoSafe ",
+            " RatioSafetoShort "," CompenADRCGain "," CompenDarkBoostGain "};
     private static final String[] STATS_NN_RESULT_TITLE = {" Width "," Height "," MapData "," NumROI "," ROIData "," ROIWeight "};
     private CameraActivity mActivity;
     private View mRootView;
@@ -288,17 +290,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private DecodeImageForReview mDecodeTaskForReview = null;
 
     private View mStatsAwbInfo;
-    private TextView mStatsAwbRText;
-    private TextView mStatsAwbGText;
-    private TextView mStatsAwbBText;
-    private TextView mStatsAwbCcText;
+    private TextView mStatsAwbText;
     private TextView mZoomValueText;
 
     private View mStatsAecInfo;
-    private TextView mStatsAecLuxText;
-    private TextView mStatsAeclinearGainText;
-    private TextView mStatsAecSensitivityText;
-    private TextView mStatsAecExposureTimeText;
+    private TextView mStatsAecText;
 
     private View mStatsNNResult;
     private TextView mStatsNNResultText;
@@ -551,16 +547,10 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mPauseButton.setOnPauseButtonListener(this);
 
         mStatsAwbInfo = mRootView.findViewById(R.id.stats_awb_info);
-        mStatsAwbRText = mRootView.findViewById(R.id.stats_awb_r_text);
-        mStatsAwbGText = mRootView.findViewById(R.id.stats_awb_g_text);
-        mStatsAwbBText = mRootView.findViewById(R.id.stats_awb_b_text);
-        mStatsAwbCcText = mRootView.findViewById(R.id.stats_awb_cc_text);
+        mStatsAwbText = mRootView.findViewById(R.id.stats_awb_text);
 
         mStatsAecInfo = mRootView.findViewById(R.id.stats_aec_info);
-        mStatsAecLuxText= mRootView.findViewById(R.id.stats_aec_lux_text);
-        mStatsAeclinearGainText= mRootView.findViewById(R.id.stats_aec_linear_gain_text);
-        mStatsAecSensitivityText= mRootView.findViewById(R.id.stats_aec_sensitivity_text);
-        mStatsAecExposureTimeText= mRootView.findViewById(R.id.stats_aec_exp_time_text);
+        mStatsAecText = mRootView.findViewById(R.id.stats_aec_text);
 
         mStatsNNResult = mRootView.findViewById(R.id.stats_nn_result_info);
         mStatsNNResultText= mRootView.findViewById(R.id.stats_nn_result_text);
@@ -981,23 +971,33 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     public void updateAwbInfoText(String[] info) {
         if (info == null || info.length <4)
             return;
-        mStatsAwbRText.setText(AWB_INFO_TITLE[0]+info[0]);
-        mStatsAwbGText.setText(AWB_INFO_TITLE[1]+info[1]);
-        mStatsAwbBText.setText(AWB_INFO_TITLE[2]+info[2]);
-        mStatsAwbCcText.setText(AWB_INFO_TITLE[3]+info[3]);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(AWB_INFO_TITLE[0]+info[0]).append("\r\n")
+                .append(AWB_INFO_TITLE[1]+info[1]).append("\r\n")
+                .append(AWB_INFO_TITLE[2]+info[2]).append("\r\n")
+                .append(AWB_INFO_TITLE[3]+info[3]);
+        mStatsAwbText.setText(stringBuilder.toString());
     }
 
     public void updateAecInfoText(String[] info) {
-        if (info == null || info.length <10)
+        if (info == null || info.length <15)
             return;
-        mStatsAecLuxText.setText(AEC_INFO_TITLE[0]+info[0]);
-        mStatsAeclinearGainText.setText(AEC_INFO_TITLE[1]+info[1]+" "+info[2]+" "+info[3]);
-        mStatsAecSensitivityText.setText(AEC_INFO_TITLE[2]+info[4]+" "+info[5]+" "+info[6]);
-        mStatsAecExposureTimeText.setText(AEC_INFO_TITLE[3]+info[7]+" "+info[8]+" "+info[9]);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(AEC_INFO_TITLE[0]+info[0]).append("\r\n")
+                .append(AEC_INFO_TITLE[1]+info[1]+" "+info[2]+" "+info[3]).append("\r\n")
+                .append(AEC_INFO_TITLE[2]+info[4]+" "+info[5]+" "+info[6]).append("\r\n")
+                .append(AEC_INFO_TITLE[3]+info[7]+" "+info[8]+" "+info[9]).append("\r\n")
+                .append("\r\n")
+                .append(STATS_EXTENSION_TITLE[0]+" "+info[10]).append("\r\n")
+                .append(STATS_EXTENSION_TITLE[1]+" "+info[11]).append("\r\n")
+                .append(STATS_EXTENSION_TITLE[2]+" "+info[12]).append("\r\n")
+                .append(STATS_EXTENSION_TITLE[3]+" "+info[13]).append("\r\n")
+                .append(STATS_EXTENSION_TITLE[4]+" "+info[14]);
+        mStatsAecText.setText(stringBuilder.toString());
     }
 
     public void updateStatsNNResultText(byte statsNNWidth, byte statsNNHeight, byte statsNNMapdata, byte statsNNNumroi, int[] statsNNRoiData, int statsNNRoiWeight) {
-        mStatsAecLuxText.setText(STATS_NN_RESULT_TITLE[0]+Byte.toString(statsNNWidth) +" " + "\r\n" +
+        mStatsAecText.setText(STATS_NN_RESULT_TITLE[0]+Byte.toString(statsNNWidth) +" " + "\r\n" +
                                  STATS_NN_RESULT_TITLE[1]+Byte.toString(statsNNHeight) +" " + "\r\n" +
                                  STATS_NN_RESULT_TITLE[2]+Byte.toString(statsNNMapdata) +" " + "\r\n" +
                                  STATS_NN_RESULT_TITLE[3]+Byte.toString(statsNNNumroi) +" " + "\r\n" +
@@ -1017,20 +1017,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         });
     }
 
-    public void updateAECInfoVisibility(int visibility) {
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                if(mStatsAecInfo != null) {
-                    mStatsAecInfo.setVisibility(visibility);
-                }
-            }
-        });
-    }
     public void updateStatsNNVisibility(int visibility) {
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
                 if(mStatsNNResult != null) {
                     mStatsNNResult.setVisibility(visibility);
+                }
+            }
+        });
+    }
+    public void updateAECInfoVisibility(int visibility) {
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                if(mStatsAecInfo != null) {
+                    mStatsAecInfo.setVisibility(visibility);
                 }
             }
         });
