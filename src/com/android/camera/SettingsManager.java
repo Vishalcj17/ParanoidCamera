@@ -2403,7 +2403,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        return map.getOutputSizes(cl);
+        Size[] picSize = map.getOutputSizes(cl);
+        Size[] highResSizes = map.getHighResolutionOutputSizes(ImageFormat.PRIVATE);
+        Size[] allPicSizes = new Size[picSize.length + highResSizes.length];
+        System.arraycopy(picSize, 0, allPicSizes, 0, picSize.length);
+        System.arraycopy(highResSizes, 0, allPicSizes, picSize.length, highResSizes.length);
+        return allPicSizes;
     }
 
     public Size[] getAllSupportedOutputSize(int cameraId) {
