@@ -412,8 +412,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.inSensorSHDRMode.inSensorSHDRMode", Byte.class);
     public static CameraCharacteristics.Key<Byte> support_hvx_shdr =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxSHDRMode.hvxSHDRSupported", Byte.class);
-
-
+    public static CameraCharacteristics.Key<Integer> support_swpdpc =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.SWPDPC.enableSWPDPC", Integer.class);
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.logicalCameraType.logical_camera_type", Byte.class);
     public static CaptureRequest.Key<Integer> support_video_hdr_values =
@@ -5246,6 +5246,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyExtendMaxZoom(builder);
         applyMctf(builder);
         applyQLL(builder);
+        applySWPDPC(builder);
         applyShadingCorrection(builder);
         applyGcSHDRMode(builder);
     }
@@ -10066,6 +10067,16 @@ public class CaptureModule implements CameraModule, PhotoController,
             Log.v(TAG, " applyQLL value :" + value);
             if (value.equals("1")) {
                 VendorTagUtil.setQLLMode(request, 1);
+            }
+        }
+    }
+
+    private void applySWPDPC(CaptureRequest.Builder request) {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_SWPDPC);
+        if (value != null ) {
+            Log.v(TAG, " applySWPDPC value :" + value);
+            if (value.equals("1")) {
+                VendorTagUtil.setSWPDPCMode(request, 1);
             }
         }
     }

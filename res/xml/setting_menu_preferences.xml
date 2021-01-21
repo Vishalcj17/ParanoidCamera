@@ -805,6 +805,15 @@
             android:summary="%s"/>
 
         <ListPreference
+            android:key="pref_camera2_swpdpc_key"
+            android:defaultValue="@string/pref_camera2_swpdpc_default"
+            android:title="@string/pref_camera2_swpdpc_title"
+            android:entries="@array/pref_camera2_swpdpc_entries"
+            android:entryValues="@array/pref_camera2_swpdpc_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
             android:key="pref_camera2_statsnn_control_key"
             android:defaultValue="@string/pref_camera2_statsnn_control_default"
             android:title="@string/pref_camera2_statsnn_control_title"

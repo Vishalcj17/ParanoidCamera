@@ -78,6 +78,8 @@ public class VendorTagUtil {
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.EnableMFHDR", Integer.class);
     private static final CaptureRequest.Key<Integer> qll_enable =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableQLL", Integer.class);
+    private static final CaptureRequest.Key<Integer> swpdpc_enable =
+            new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableSWPDPC", Integer.class);
 
     private static final int MANUAL_WB_DISABLE_MODE = 0;
     private static final int MANUAL_WB_CCT_MODE = 1;
@@ -257,6 +259,12 @@ public class VendorTagUtil {
     public static void setQLLMode(CaptureRequest.Builder builder, int enable) {
         if (isSupported(builder, qll_enable)) {
             builder.set(qll_enable, enable);
+        }
+    }
+
+    public static void setSWPDPCMode(CaptureRequest.Builder builder, int enable) {
+        if (isSupported(builder, swpdpc_enable)) {
+            builder.set(swpdpc_enable, enable);
         }
     }
 }
