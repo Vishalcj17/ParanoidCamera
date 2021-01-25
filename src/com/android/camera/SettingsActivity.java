@@ -156,7 +156,7 @@ public class SettingsActivity extends PreferenceActivity {
                 }
                 updateEISPreference();
                 updateMfnrPreference();
-            } else if (key.equals(SettingsManager.KEY_SAVERAW)) {
+            } else if (key.equals(SettingsManager.KEY_SAVERAW) || key.equals(SettingsManager.KEY_AUTO_HDR) || key.equals(SettingsManager.KEY_PICTURE_SIZE)) {
                 updateMfnrPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
@@ -180,17 +180,44 @@ public class SettingsActivity extends PreferenceActivity {
         }
     };
 
+    private Size parsePictureSize(String value) {
+        if(value == null){
+            return null;
+        }
+        int indexX = value.indexOf('x');
+        int width = Integer.parseInt(value.substring(0, indexX));
+        int height = Integer.parseInt(value.substring(indexX + 1));
+        return new Size(width, height);
+    }
+
+    private boolean isMfnrSupported4Size(Size size){
+        if(size != null){
+            if(size.getWidth() > size.getHeight()){
+                if(size.getWidth() < 640 || size.getHeight() < 480)
+                    return false;
+            } else {
+                if(size.getHeight() < 640 || size.getWidth() < 480)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     public void updateMfnrPreference(){
         ListPreference mfnrPref = (ListPreference) findPreference(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
         ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
         String scene = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         String saveRaw = mSettingsManager.getValue(SettingsManager.KEY_SAVERAW);
+        String autoHdr = mSettingsManager.getValue(SettingsManager.KEY_AUTO_HDR);
+        Size pictureSize = parsePictureSize(mSettingsManager.getValue(SettingsManager.KEY_PICTURE_SIZE));
 
         if (mfnrPref != null && mSettingsManager.isSWMFNRSupport()) {
             if((scene != null && Integer.parseInt(scene) == SettingsManager.SCENE_MODE_HDR_INT) ||
-                (selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
-                (saveRaw != null  && saveRaw.equals("enable"))){
+                    (selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
+                    (saveRaw != null  && saveRaw.equals("enable")) ||
+                    (autoHdr != null  && autoHdr.equals("enable")) ||
+                    !isMfnrSupported4Size(pictureSize)){
                 mfnrPref.setValue("0");
                 mfnrPref.setEnabled(false);
             } else {
