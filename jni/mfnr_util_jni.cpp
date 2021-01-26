@@ -226,8 +226,13 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
         char fileName[256];
         snprintf(fileName, sizeof(fileName), "/data/data/org.codeaurora.snapcam/files/input%d.yuv", i);
         FILE *inputFile = fopen(fileName, "wb+");
-        WriteData(inputFile, cpSrcY[i], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile, cpSrcC[i], srcWidth, srcHeight/2, srcStrideY);
+        if ((inputFile != NULL)){
+            WriteData(inputFile, cpSrcY[i], srcWidth, srcHeight, srcStrideY);
+            WriteData(inputFile, cpSrcC[i], srcWidth, srcHeight/2, srcStrideY);
+            fclose(inputFile);
+        } else {
+            printf( "inputFile is NULL");
+        }
     }
 
     printf("MfnrRegisterAndProcess_sessionId= %d " , sessionId);

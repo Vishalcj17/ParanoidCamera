@@ -132,9 +132,14 @@ jint JNICALL Java_com_android_camera_aide_AideUtil_nativeAIDenoiserEngineProcess
     args.pOutputLuma = coutputY;
     args.pOutputChroma = coutputVU;
     int result = AIDenoiserEngine_ProcessFrame(handle, &args, NULL);
-        FILE *inputFile = fopen("/data/data/org.codeaurora.snapcam/files/aideoutput.yuv", "wb+");
+    FILE *inputFile = fopen("/data/data/org.codeaurora.snapcam/files/aideoutput.yuv", "wb+");
+    if ((inputFile != NULL)){
         WriteData(inputFile, coutputY, width, height, stride);
         WriteData(inputFile, coutputVU, width, height/2, stride);
+        fclose(inputFile);
+    } else {
+        printf( "aideoutput is NULL");
+    }
     //set out put
     env->ReleaseByteArrayElements(input, inputArray, JNI_ABORT);
     env->ReleaseByteArrayElements(output, outputArray, JNI_ABORT);
