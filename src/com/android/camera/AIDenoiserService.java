@@ -121,7 +121,6 @@ public class AIDenoiserService extends Service {
     private AideUtil mAideUtil;
     private SwmfnrUtil mSwmfnrUtil;
     private static final String TAG = "snapcam_aideservice";
-    private LinkedList<ZSLQueue.ImageItem> mMfnrImages = new LinkedList<ZSLQueue.ImageItem>();
     private ZSLQueue mMfnrQueue;
     private ImageHandlerTask mImageHandlerTask;
     private Thread mThread;
@@ -185,7 +184,6 @@ public class AIDenoiserService extends Service {
             mMfnrQueue = null;
         }
         if(SwmfnrUtil.isSwmfnrSupported()) destoryMfnr();
-        clearImages();
     }
 
     @Override
@@ -269,9 +267,10 @@ public class AIDenoiserService extends Service {
                 srcUV.put(dataUV);
                 mSrcY[i] = srcY;
                 mSrcC[i] = srcUV;
+                image.close();
             }
-
-            for (int i = 0; i < items.length; i++){
+            Log.i(TAG, "send bytebuffer");
+            for (int i = processSize; i < items.length; i++){
                 Image image = items[i].getImage();
                 Log.i(TAG,"imgae close");
                 image.close();
@@ -286,7 +285,7 @@ public class AIDenoiserService extends Service {
         mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
         Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
         int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(mSrcY, mSrcC, mSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
-            mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
+            mMfnrOut, mOutRoi, imageGain, isAIDEenabled);
 
         mSwmfnrUtil.nativeMfnrDeAllocate();
         //param include the output
@@ -298,13 +297,12 @@ public class AIDenoiserService extends Service {
 
     public void startAideProcess(long expTimeInNs, int iso, float denoiseStrength, int rGain, int bGain, int gGain){
         Log.i(TAG,"startAideProcess, expTimeInNs：" + expTimeInNs + ",iso:" + iso + ",denoiseStrength:" +denoiseStrength + ",rGain:" + rGain + "rGain:" + bGain + ",gGain:" + gGain );
-        byte[] aideSrc = mMfnrOut.array();
         int[] inputFrameDim = {mWidth, mHeight, mStrideY};
         int[] outputFrameDim = {mWidth, mHeight, mStrideY};
         int result = mAideUtil.nativeAIDenoiserEngineCreate(inputFrameDim, outputFrameDim);
-        mAideOut = ByteBuffer.allocate(mStrideY*mHeight *3/2);
+        mAideOut = ByteBuffer.allocateDirect(mStrideY*mHeight *3/2);
 
-        mAideUtil.nativeAIDenoiserEngineProcessFrame(aideSrc, mAideOut.array(), expTimeInNs,
+        mAideUtil.nativeAIDenoiserEngineProcessFrame(mMfnrOut, mAideOut, expTimeInNs,
             iso, denoiseStrength, rGain, bGain, gGain, mOutRoi);
 
         mAideUtil.nativeAIDenoiserEngineAbort();
@@ -356,38 +354,8 @@ public class AIDenoiserService extends Service {
         Log.i(TAG, " destoryResult:" + destoryResult);
     }
 
-    private void clearImages() {
-        for(ZSLQueue.ImageItem item: mMfnrImages) {
-            try {
-                item.getImage().close();
-                Image raw = item.getRawImage();
-                if (raw != null) {
-                    raw.close();
-                }
-            } catch(Exception e) {
-            }
-        }
-        mMfnrImages.clear();
-    }
-
     public ImageHandlerTask getImageHandler() {
         return mImageHandlerTask;
-    }
-
-    private void addImage(ZSLQueue.ImageItem item) {
-        mMfnrImages.add(item);
-        if(mMfnrImages.size() >= MAX_REQUIRED_IMAGE_NUM - 1) {
-            ZSLQueue.ImageItem it = mMfnrImages.getFirst();
-            try {
-                it.getImage().close();
-                Image raw = item.getRawImage();
-                if (raw != null) {
-                    raw.close();
-                }
-            } catch(Exception e) {
-            }
-            mMfnrImages.removeFirst();
-        }
     }
 
     class ImageHandlerTask implements Runnable, ImageReader.OnImageAvailableListener {
