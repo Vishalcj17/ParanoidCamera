@@ -53,8 +53,11 @@ public class SwmfnrUtil {
     public native int nativeMfnrConfigure(boolean enableGyroRefinement, int imageRegDesc, int imageRegMode, float deghostingStrength, float localMotionSmoothingStrength,
          float dtfSpatialYStrength, float dtfSpatialChromaStrength, float sharpnessStrength, float spatioTemporalDenoiseBalanceStrength, float sharpnessScoreThreshold);
 
-    public native int nativeMfnrRegisterAndProcess(ByteBuffer[] pSrcY, ByteBuffer[] pSrcC, int numImages, int srcStrideY, int srcStrideC,
+    public native int nativeMfnrRegisterAndProcess(int numImages, int srcStrideY, int srcStrideC,
                                                    int srcWidth, int srcHeight, ByteBuffer pDst, int[] roi, float imageGain, boolean isAIDEenabled); //pDst,roi are all output
+    public native int nativeRegisterImage(ByteBuffer srcY, int yLength, ByteBuffer srcUV, int uvLength);
+
+    public native int nativeReleaseImage();
 
     public native int nativeMfnrDeAllocate();
 

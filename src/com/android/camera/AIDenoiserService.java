@@ -137,8 +137,6 @@ public class AIDenoiserService extends Service {
     int[] mOutRoi = new int[4];
     Semaphore mLock = new Semaphore(1);
     CameraActivity mActivity;
-    ByteBuffer[] mSrcY;
-    ByteBuffer[] mSrcC;
 
     class LocalBinder extends Binder {
         public AIDenoiserService getService() {
@@ -222,6 +220,7 @@ public class AIDenoiserService extends Service {
         } else {
             numFrames = 8;
         }
+        Log.i(TAG,"numFrames: " + numFrames);
         return numFrames;
     }
 
@@ -236,8 +235,6 @@ public class AIDenoiserService extends Service {
             Log.i(TAG,"saveImage, items.size: " + itemsList.size());
             int processSize = getFrameNumbers(imageGain);
             Log.i(TAG,"saveImage, frameNumbers: " + processSize);
-            mSrcY = new ByteBuffer[processSize];
-            mSrcC = new ByteBuffer[processSize];
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -257,16 +254,7 @@ public class AIDenoiserService extends Service {
                 ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
                 dataY.rewind();
                 dataUV.rewind();
-//                byte[] bytesY = new byte[dataY.remaining()];
-//                dataY.get(bytesY);
-//                byte[] bytesUV = new byte[dataUV.remaining()];
-//                dataUV.get(bytesUV);
-                ByteBuffer srcY = ByteBuffer.allocateDirect(dataY.remaining());
-                srcY.put(dataY);
-                ByteBuffer srcUV = ByteBuffer.allocateDirect(dataUV.remaining());
-                srcUV.put(dataUV);
-                mSrcY[i] = srcY;
-                mSrcC[i] = srcUV;
+                mSwmfnrUtil.nativeRegisterImage(dataY,mHeight*mStrideY,dataUV,mHeight*mStrideY/2);
                 image.close();
             }
             Log.i(TAG, "send bytebuffer");
@@ -284,10 +272,10 @@ public class AIDenoiserService extends Service {
         mActivity = activity;
         mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
         Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
-        int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(mSrcY, mSrcC, mSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
+        int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(getFrameNumbers(imageGain), mStrideY, mStrideC, mWidth, mHeight,
             mMfnrOut, mOutRoi, imageGain, isAIDEenabled);
-
         mSwmfnrUtil.nativeMfnrDeAllocate();
+        mSwmfnrUtil.nativeReleaseImage();
         //param include the output
         Log.i(TAG, " processResult:" + processResult);
         for (int i =0;i < 4;i++){

@@ -40,6 +40,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <process.h>
 #define  getpid()    _getpid()
 #endif
+#define MAX_ROW 8
 
 #ifndef _LINUX
 #define _LINUX
@@ -50,6 +51,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <android/log.h>
 #include <fstream>
 #include <iostream>
+#include <vector>
 #define LOG_TAG "MfnrJni"
 
 #ifdef __cplusplus
@@ -102,13 +104,19 @@ JNIEXPORT CamxResult JNICALL Java_com_android_camera_SwmfnrUtil_nativeMfnrProces
          jint& nBlendedFrames);
            */
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
-        JNIEnv* env, jobject thiz, jobjectArray pSrcY, jobjectArray pSrcC, jint numImages, jint srcStrideY, jint srcStrideC,
+        JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
         jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled);
 
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDeAllocate(
         JNIEnv* env, jobject thiz);
 
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDestroy(
+        JNIEnv* env, jobject thiz);
+
+JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeRegisterImage(
+        JNIEnv* env, jobject thiz, jobject srcY, int ylength, jobject srcCr, int crlength);
+
+JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
         JNIEnv* env, jobject thiz);
 #ifdef __cplusplus
 }
@@ -123,6 +131,9 @@ CamxResult LoadMFNRlib(uint8_t nCoresLib, void* fPtr);
 typedef unsigned char uint8_t;
 qrcpdefs::mfnrLib* m_funPtrs = (qrcpdefs::mfnrLib*) malloc(sizeof(qrcpdefs::mfnrLib));
 UINTPTR_T sessionId;
+uint8_t* cpSrcY[MAX_ROW];
+uint8_t* cpSrcC[MAX_ROW];
+int cpSrcIndex = 0;
 
 jlong JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrCreate(
         JNIEnv* env, jobject thiz) {
@@ -172,30 +183,41 @@ void WriteData(FILE *fp, unsigned char *pStart, int width, int height, int strid
     }
 }
 
+jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeRegisterImage(
+        JNIEnv* env, jobject thiz, jobject srcY, int ylength, jobject srcCr, int crlength)
+    {
+       jbyte* srcYArray = (jbyte*)env->GetDirectBufferAddress(srcY);
+       jbyte* srcCrArray = (jbyte*)env->GetDirectBufferAddress(srcCr);
+       cpSrcY[cpSrcIndex] = (uint8_t*)malloc(ylength * sizeof(uint8_t));
+       cpSrcC[cpSrcIndex] = (uint8_t*)malloc(crlength * sizeof (uint8_t));
+       memcpy(cpSrcY[cpSrcIndex], srcYArray, ylength * sizeof (uint8_t));
+       memcpy(cpSrcC[cpSrcIndex], srcCrArray, crlength * sizeof (uint8_t));
+       cpSrcIndex++;
+       return 0;
+    }
+
+
+jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
+        JNIEnv* env, jobject thiz)
+    {
+       for(int i = cpSrcIndex; i > 0; i--) {
+            cpSrcIndex--;
+            printf("cpSrcIndex=%d ", cpSrcIndex);
+            if ( cpSrcY[cpSrcIndex] != NULL){
+               free(cpSrcY[cpSrcIndex]);
+            }
+            if ( cpSrcC[cpSrcIndex] != NULL){
+               free(cpSrcC[cpSrcIndex]);
+            }
+        }
+        return 0;
+    }
+
 jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
-        JNIEnv* env, jobject thiz, jobjectArray pSrcY, jobjectArray pSrcC, jint numImages, jint srcStrideY, jint srcStrideC,
+        JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
         jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled){
 
-    jint rows = env->GetArrayLength(pSrcY);
-    printf("rows= %d,numImages=%d " , rows, numImages);
-    UINT8* cpSrcY[rows];
-    UINT8* cpSrcC[rows];
-    jobject jnibufY;
-    jbyte *srcYArray;
-    for (jint i = 0; i < rows; i++)
-    {
-        jnibufY = env->GetObjectArrayElement(pSrcY, i);
-        srcYArray = (jbyte*)env->GetDirectBufferAddress(jnibufY);
-        cpSrcY[i] = (UINT8*)srcYArray;
-    }
-    jobject jnibufC;
-    jbyte *srcCArray;
-    for (jint i = 0; i < rows; i++)
-    {
-        jnibufC = env->GetObjectArrayElement(pSrcC, i);
-        srcCArray = (jbyte*)env->GetDirectBufferAddress(jnibufC);
-        cpSrcC[i] = (UINT8*)srcCArray;
-    }
+    printf("numImages=%d ", numImages);
 
     //outout buffer
     uint8_t *out = (uint8_t *)env->GetDirectBufferAddress(pDst);

@@ -3475,7 +3475,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCaptureStartTime = System.currentTimeMillis();
             mNamedImages.nameNewImage(mCaptureStartTime);
             checkAndPlayShutterSound(id);
-            mActivity.getAIDenoiserService().getImageData(mAecFramecontrolLinearGain[2]);
+            float gain = mAecFramecontrolLinearGain[2];
+            mActivity.getAIDenoiserService().getImageData(gain);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -3483,7 +3484,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                         MfnrTunableParams mfnrParams = new MfnrTunableParams(enableGyroRefinementParam, imageRegDescParam, imageRegModeParam,
                             deghostingStrengthParam, localMotionSmoothingStrengthParam, dtfSpatialYStrengthParam, dtfSpatialChromaStrengthParam, sharpnessStrengthParam, spatioTemporalDenoiseBalanceStrengthParam, sharpnessScoreThresholdParam);
                         mActivity.getAIDenoiserService().configureMfnr(mPictureSize.getWidth(), mPictureSize.getHeight(), mfnrParams);
-                        mActivity.getAIDenoiserService().startMfnrProcess(mActivity, mAecFramecontrolLinearGain[2], isSwMfnrEnabled());
+                        mActivity.getAIDenoiserService().startMfnrProcess(mActivity, gain, isSwMfnrEnabled());
                         unlockFocus(id);
                         enableShutterButtonOnMainThread(id);
                         if(!isAIDEEnabled()){
