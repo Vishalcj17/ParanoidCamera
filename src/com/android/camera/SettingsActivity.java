@@ -1669,6 +1669,8 @@ public class SettingsActivity extends PreferenceActivity {
                 } else {
                     pref.setEnabled(false);
                 }
+            } else {
+                pref.setEnabled(false);
             }
         }
     }
