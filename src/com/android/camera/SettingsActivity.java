@@ -156,7 +156,10 @@ public class SettingsActivity extends PreferenceActivity {
                 }
                 updateEISPreference();
                 updateMfnrPreference();
-            } else if (key.equals(SettingsManager.KEY_SAVERAW) || key.equals(SettingsManager.KEY_AUTO_HDR) || key.equals(SettingsManager.KEY_PICTURE_SIZE)) {
+            } else if (key.equals(SettingsManager.KEY_SAVERAW) ||
+                    key.equals(SettingsManager.KEY_AUTO_HDR) ||
+                    key.equals(SettingsManager.KEY_QCFA) ||
+                    key.equals(SettingsManager.KEY_PICTURE_SIZE)) {
                 updateMfnrPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
@@ -210,13 +213,16 @@ public class SettingsActivity extends PreferenceActivity {
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         String saveRaw = mSettingsManager.getValue(SettingsManager.KEY_SAVERAW);
         String autoHdr = mSettingsManager.getValue(SettingsManager.KEY_AUTO_HDR);
+        String qcfa = mSettingsManager.getValue(SettingsManager.KEY_QCFA);
         Size pictureSize = parsePictureSize(mSettingsManager.getValue(SettingsManager.KEY_PICTURE_SIZE));
 
         if (mfnrPref != null && mSettingsManager.isSWMFNRSupport()) {
             if((scene != null && Integer.parseInt(scene) == SettingsManager.SCENE_MODE_HDR_INT) ||
-                    (selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
+                    (selectModePref != null && selectModePref.isEnabled() && selectMode != null &&
+                            (selectMode.equals("sat") || selectMode.equals("default"))) ||
                     (saveRaw != null  && saveRaw.equals("enable")) ||
                     (autoHdr != null  && autoHdr.equals("enable")) ||
+                    (qcfa != null && qcfa.equals("enable")) ||
                     !isMfnrSupported4Size(pictureSize)){
                 mfnrPref.setValue("0");
                 mfnrPref.setEnabled(false);
