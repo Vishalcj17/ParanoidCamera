@@ -6953,6 +6953,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             int cameraId = getMainCameraId();
             mCurrentSession = cameraCaptureSession;
             mCaptureSession[cameraId] = cameraCaptureSession;
+            if (mCurrentSessionClosed)
+                return;
             updateFaceDetection();
             // Create slow motion request list
             List<CaptureRequest> slowMoRequests = null;
