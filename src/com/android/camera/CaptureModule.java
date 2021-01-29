@@ -2253,6 +2253,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                             }
                             Log.i(TAG, "cameracapturesession - onConfigured "+ id);
                             setCameraModeSwitcherAllowed(true);
+                            enableShutter(true);
+
                             // When the session is ready, we start displaying the preview.
                             mCaptureSession[id] = cameraCaptureSession;
                             if(id == getMainCameraId()) {
@@ -2315,6 +2317,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                         @Override
                         public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
                             Log.e(TAG, "cameracapturesession - onConfigureFailed "+ id);
+                            enableShutter(true);
                             setCameraModeSwitcherAllowed(true);
                             if (mActivity.isFinishing()) {
                                 return;
@@ -2327,6 +2330,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                         @Override
                         public void onClosed(CameraCaptureSession session) {
                             Log.d(TAG, "cameracapturesession - onClosed");
+                            enableShutter(true);
                             setCameraModeSwitcherAllowed(true);
                         }
                     };
@@ -2490,14 +2494,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                 // Here, we create a CameraCaptureSession for camera preview.
                 mCameraDevice[id].createCaptureSession(list, captureSessionCallback, mCameraHandler);
             }
-        } catch (CameraAccessException | NullPointerException e) {
+        } catch (CameraAccessException | NullPointerException |IllegalStateException |IllegalArgumentException e) {
             Log.d(TAG, "create session error");
-            setCameraModeSwitcherAllowed(true);
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            setCameraModeSwitcherAllowed(true);
-            Log.v(TAG, "createSession: mPaused status occur Time out waiting for surface ");
-        } catch (IllegalArgumentException e) {
+            enableShutter(true);
             setCameraModeSwitcherAllowed(true);
             e.printStackTrace();
         }
@@ -4801,6 +4800,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         });
     }
 
+    private void enableShutter(boolean enable) {
+        mActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mUI.enableShutter(enable);
+            }
+        });
+    }
+
     private boolean isMFNREnabled() {
         boolean mfnrEnable = false;
         if (mSettingsManager != null) {
@@ -5834,7 +5842,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mActivity.updateStorageSpaceAndHint();
             }
         });
-        mUI.enableShutter(true);
         setProModeVisible();
         updateZoom();
         updateZoomSeekBarVisible();
