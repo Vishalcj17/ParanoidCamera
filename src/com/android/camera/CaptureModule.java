@@ -413,6 +413,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.inSensorSHDRMode.inSensorSHDRMode", Byte.class);
     public static CameraCharacteristics.Key<Byte> support_hvx_shdr =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxSHDRMode.hvxSHDRSupported", Byte.class);
+    public static CameraCharacteristics.Key<Byte> isHvxShdrRawBuffersRequired =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxSHDRMode.isRawBuffersRequired", Byte.class);
     public static CameraCharacteristics.Key<Integer> support_swpdpc =
             new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.SWPDPC.enableSWPDPC", Integer.class);
     public static CameraCharacteristics.Key<Byte> logical_camera_type =
@@ -2729,7 +2731,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             mIsPreviewingVideo = true;
 
             String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
-            if ("1".equals(value)){
+            boolean isRawBufferRequired = mSettingsManager.isHvxShdrRawBuffersRequired(cameraId);
+            if (value != null && !value.equals("0") && isRawBufferRequired){
                 for (int i=0;i<2;i++){
                     mHvxShdrRawReader[i] = ImageReader.newInstance(mSupportedRawPictureSize.getWidth(),
                             mSupportedRawPictureSize.getHeight(),ImageFormat.RAW10,3);
@@ -2741,7 +2744,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     },mImageAvailableHandler);
                     surfaces.add(mHvxShdrRawReader[i].getSurface());
-                    mVideoRecordRequestBuilder.addTarget(mHvxShdrRawReader[i].getSurface());
+                    if ("2".equals(value)){
+                        mVideoRecordRequestBuilder.addTarget(mHvxShdrRawReader[i].getSurface());
+                    }
                 }
             }
 
@@ -2998,8 +3003,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         if (mCurrentSceneMode == null) {
             int index = mIntentMode == INTENT_MODE_VIDEO ?
                     CameraMode.VIDEO.ordinal() : CameraMode.DEFAULT.ordinal();
-
-            mCurrentModeIndex =  mNextModeIndex = index;
+            mCurrentModeIndex = mNextModeIndex = index;
             mCurrentSceneMode = mSceneCameraIds.get(index);
         }
         for (int i = 0; i < removeList.length; i++) {
@@ -7050,6 +7054,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 } else {
                     int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
                             mSettingsManager.getVideoFPS());
+
                     if (previewFPS == 30 && mHighSpeedCaptureRate == 60) {
                         if (PersistUtil.enableMediaRecorder())  {
                             mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
@@ -7269,6 +7274,13 @@ public class CaptureModule implements CameraModule, PhotoController,
                 } else {
                     if (PersistUtil.enableMediaRecorder()) {
                         mVideoRecordRequestBuilder.addTarget(mVideoRecordingSurface);
+                        String hvx_shdr = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
+                        if("3".equals(hvx_shdr)){
+                            for (ImageReader reader : mHvxShdrRawReader){
+                                if (reader != null)
+                                    mVideoRecordRequestBuilder.addTarget(reader.getSurface());
+                            }
+                        }
                     }
                 }
                 int previewFPS = mSettingsManager.getVideoPreviewFPS(mVideoSize,
@@ -9763,7 +9775,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             return;//don't apply if not in dev mode
         }
         String value = mSettingsManager.getValue(SettingsManager.KEY_EIS_VALUE);
-
         if (DEBUG) {
             Log.d(TAG, "applyVideoEIS EISV select: " + value);
         }
@@ -9831,7 +9842,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             byte value = 0;
             String hvx_shdr = mSettingsManager.getValue(
                     SettingsManager.KEY_HVX_SHDR);
-            if("1".equals(hvx_shdr))
+            if(hvx_shdr != null && Integer.valueOf(hvx_shdr) > 0)
                 value = 1;
             request.set(CaptureModule.enable_hvx_shdr,value);
         } catch (IllegalArgumentException e){
