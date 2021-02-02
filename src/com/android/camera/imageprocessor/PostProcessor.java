@@ -389,6 +389,7 @@ public class PostProcessor{
     public void onMetaAvailable(TotalCaptureResult metadata) {
         if(mUseZSL && mZSLQueue != null) {
             mZSLQueue.add(metadata);
+            Log.d(TAG, "add meta of frame number " + metadata.getFrameNumber());
         }
         mLatestResultForLongShot = metadata;
     }
@@ -590,7 +591,7 @@ public class PostProcessor{
                 } catch (IllegalStateException e) {
                     Log.e(TAG, "Queueing more than it can have");
                 }
-                Log.i(TAG, "reprocess capture request");
+                Log.i(TAG, "reprocess capture request, send back frame: " + metadata.getFrameNumber());
                 mCaptureSession.capture(builder.build(), new CameraCaptureSession.CaptureCallback(){
                     @Override
                     public void onCaptureCompleted(CameraCaptureSession session,
