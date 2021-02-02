@@ -195,15 +195,11 @@ public class SettingsActivity extends PreferenceActivity {
 
     private boolean isMfnrSupported4Size(Size size){
         if(size != null){
-            if(size.getWidth() > size.getHeight()){
-                if(size.getWidth() < 640 || size.getHeight() < 480)
-                    return false;
-            } else {
-                if(size.getHeight() < 640 || size.getWidth() < 480)
-                    return false;
+            if((size.getWidth() * size.getHeight()) > (1920*1080)){
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public void updateMfnrPreference(){
