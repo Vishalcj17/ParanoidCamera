@@ -33,6 +33,7 @@ import android.util.Log;
 import android.os.SystemClock;
 import com.android.camera.CameraActivity;
 import com.android.camera.CaptureModule;
+import java.nio.ByteBuffer;
 
 public class AideUtil {
     private static final String TAG = "SnapCam_AideUtil";
@@ -42,7 +43,7 @@ public class AideUtil {
 
     public native int nativeAIDenoiserEngineCreate(int[] pInputFrameDim, int[] pOutputFrameDim);
 
-    public native int nativeAIDenoiserEngineProcessFrame(byte[] input, byte[] output,
+    public native int nativeAIDenoiserEngineProcessFrame(ByteBuffer input, ByteBuffer output,
         long expTimeInNs, int iso, float denoiseStrength, int rGain, int bGain, int gGain, int[] roi);
 
     public native int nativeAIDenoiserEngineAbort();

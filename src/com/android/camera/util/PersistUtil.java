@@ -148,6 +148,8 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.raw_reprocess_qcfa", false);
     private static final boolean PERSIST_RAW_CB_INFO_SUPPORTED =
             getBoolean("persist.sys.camera.rawcbinfo", false);
+    private static final int PERSIST_LIVE_SHOT_NUMBERS =
+            getInt("persist.sys.camera.live_shot_numbers", 0);
 
     public static String getHFRRate() {
         return PERSIST_HFR_LIMIT;
@@ -412,4 +414,6 @@ public class PersistUtil {
     }
 
     public static boolean isRawCbInfoSupported() {return PERSIST_RAW_CB_INFO_SUPPORTED; }
+
+    public static int isLiveShotNumbers() {return PERSIST_LIVE_SHOT_NUMBERS; }
 }

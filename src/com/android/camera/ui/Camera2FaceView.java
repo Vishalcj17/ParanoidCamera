@@ -78,6 +78,7 @@ public class Camera2FaceView extends FaceView {
     private boolean mFdBlinkEnable = false;
     private boolean mPostZoomFov = false;
     private boolean mZoomRationSupported = false;
+    private boolean mIsSingleCameraId = false;
 
     public Camera2FaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -113,6 +114,10 @@ public class Camera2FaceView extends FaceView {
         mZoomRationSupported = supported;
     }
 
+    public void setSingleRearCameraMode(boolean singleRearCameraMode) {
+        mIsSingleCameraId = singleRearCameraMode;
+    }
+
     public void setFaces(Face[] faces, ExtendedFace[] extendedFaces) {
         if (LOGV) Log.v(TAG, "Num of faces=" + faces.length);
         if (mPause) return;
@@ -139,9 +144,13 @@ public class Camera2FaceView extends FaceView {
         }
     }
 
+    private boolean isPostZoomFOVMode () {
+        return (mZoomRationSupported && mPostZoomFov) || mIsSingleCameraId;
+    }
+
     private boolean isFDRectOutOfBound(Rect faceRect) {
         boolean result = false;
-        if(mZoomRationSupported && mPostZoomFov) {
+        if(isPostZoomFOVMode()) {
             result = mOriginalCameraBound.left > faceRect.left ||
                     mOriginalCameraBound.top > faceRect.top ||
                     faceRect.right > mOriginalCameraBound.right ||
@@ -182,7 +191,7 @@ public class Camera2FaceView extends FaceView {
             // mMatrix assumes that the face coordinates are from -1000 to 1000.
             // so translate the face coordination to match the assumption.
             Matrix translateMatrix = new Matrix();
-            if(mZoomRationSupported && mPostZoomFov) {
+            if(isPostZoomFOVMode()) {
                 translateMatrix.preTranslate(-mOriginalCameraBound.width() / 2f,
                         -mOriginalCameraBound.height() / 2f);
                 translateMatrix.postScale(2000f / mOriginalCameraBound.width(),
@@ -198,7 +207,7 @@ public class Camera2FaceView extends FaceView {
                 Log.v(TAG, "onDraw w * H :" + mCameraBound.width() + " x " + mCameraBound.height());
             }
             Matrix bsgcTranslateMatrix = new Matrix();
-            if(mZoomRationSupported && mPostZoomFov) {
+            if(isPostZoomFOVMode()) {
                 bsgcTranslateMatrix.preTranslate(-mOriginalCameraBound.width() / 2f * mZoom,
                         -mOriginalCameraBound.height() / 2f * mZoom);
                 bsgcTranslateMatrix.postScale(2000f / mOriginalCameraBound.width(),
@@ -259,7 +268,7 @@ public class Camera2FaceView extends FaceView {
                 faceBound.offset(-mOriginalCameraBound.left, -mOriginalCameraBound.top);
                 if (isFDRectOutOfBound(faceBound)) continue;
                 mRect.set(faceBound);
-                if (mZoom != 1.0f && !(mZoomRationSupported && mPostZoomFov)) {
+                if (mZoom != 1.0f && !(isPostZoomFOVMode())) {
                     mRect.left = mRect.left - mCameraBound.left;
                     mRect.right = mRect.right - mCameraBound.left;
                     mRect.top = mRect.top - mCameraBound.top;

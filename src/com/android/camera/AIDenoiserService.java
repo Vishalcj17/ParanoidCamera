@@ -29,7 +29,9 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.android.camera;
 
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.camera2.TotalCaptureResult;
@@ -111,14 +113,14 @@ import com.android.camera.aide.SwmfnrUtil.*;
 
 import com.android.camera.imageprocessor.PostProcessor;
 
+import static com.android.camera.imageprocessor.PostProcessor.addExifTags;
+
 public class AIDenoiserService extends Service {
 
     private static final int MAX_REQUIRED_IMAGE_NUM = 11;
-    private CaptureModule mController;
     private AideUtil mAideUtil;
     private SwmfnrUtil mSwmfnrUtil;
     private static final String TAG = "snapcam_aideservice";
-    private LinkedList<ZSLQueue.ImageItem> mMfnrImages = new LinkedList<ZSLQueue.ImageItem>();
     private ZSLQueue mMfnrQueue;
     private ImageHandlerTask mImageHandlerTask;
     private Thread mThread;
@@ -151,6 +153,9 @@ public class AIDenoiserService extends Service {
         mHandlerThread = new HandlerThread("AideThread");
         mHandlerThread.start();
         mHandler = new ProcessorHandler(mHandlerThread.getLooper());
+        if(SwmfnrUtil.isSwmfnrSupported()) {
+            createMfnr();
+        }
         return mBinder;
     }
 
@@ -161,6 +166,7 @@ public class AIDenoiserService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.i(TAG,"service onDestory");
         mImageHandlerTask = null;
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -171,19 +177,19 @@ public class AIDenoiserService extends Service {
             mHandlerThread = null;
             mHandler = null;
         }
+        if(mMfnrQueue != null) {
+            mMfnrQueue.onClose();
+            mMfnrQueue = null;
+        }
+        if(SwmfnrUtil.isSwmfnrSupported()) destoryMfnr();
     }
 
     @Override
     public void onCreate() {
     }
 
-    public void startAiDenoiserProcess() {
-
-    }
-
-    public void createMfnr(CaptureModule module) {
-        mController = module;
-        mMfnrQueue = new ZSLQueue(mController);
+    public void createMfnr() {
+        mMfnrQueue = new ZSLQueue(null);
         long sessionId = mSwmfnrUtil.nativeMfnrCreate();
         Log.i(TAG,"createMfnr, sessionId:" + sessionId);
     }
@@ -199,8 +205,26 @@ public class AIDenoiserService extends Service {
         Log.i(TAG,"configureMfnr, configureResult" + configureResult);
     }
 
-    public void startMfnrProcess(CameraActivity activity, float imageGain, boolean isAIDEenabled) {
-        mActivity = activity;
+    private int getFrameNumbers(float realGain){
+        int numFrames = 3;
+        if (realGain <= 2.0f){
+            numFrames = 3;
+        } else if (realGain <= 4.0f) {
+            numFrames = 4;
+        } else if (realGain <= 8.0f){
+            numFrames = 5;
+        } else if (realGain <= 16.0f){
+            numFrames = 6;
+        } else if (realGain <= 32.0f) {
+            numFrames = 7;
+        } else {
+            numFrames = 8;
+        }
+        Log.i(TAG,"numFrames: " + numFrames);
+        return numFrames;
+    }
+
+    public void getImageData(float imageGain){
         if (!mLock.tryAcquire()) {
             return;
         }
@@ -208,10 +232,9 @@ public class AIDenoiserService extends Service {
         try {
             List<ZSLQueue.ImageItem> itemsList = mMfnrQueue.getAllItems();
             ZSLQueue.ImageItem[] items = itemsList.toArray(new ZSLQueue.ImageItem[itemsList.size()]);
-            Log.i(TAG,"startMfnrProcess, items.size: " + itemsList.size());
-            int processSize = 5;
-            byte[][] pSrcY = new byte[processSize][];
-            byte[][] pSrcC = new byte[processSize][];
+            Log.i(TAG,"saveImage, items.size: " + itemsList.size());
+            int processSize = getFrameNumbers(imageGain);
+            Log.i(TAG,"saveImage, frameNumbers: " + processSize);
             if (itemsList.size() < processSize) {
                 for (int i = 0; i < items.length; i++){
                     Image image = items[i].getImage();
@@ -225,39 +248,39 @@ public class AIDenoiserService extends Service {
             mStrideC = items[0].getImage().getPlanes()[2].getRowStride();
 
             for (int i =0;i <processSize; i++){
-                Log.i(TAG, "startMfnrProcess, get item, i = " + i);
+                Log.i(TAG, "saveImage, get item, i = " + i);
                 Image image = items[i].getImage();
                 ByteBuffer dataY= image.getPlanes()[0].getBuffer();
                 ByteBuffer dataUV = image.getPlanes()[2].getBuffer();
                 dataY.rewind();
                 dataUV.rewind();
-                byte[] bytesY = new byte[dataY.remaining()];
-                dataY.get(bytesY);
-                byte[] bytesUV = new byte[dataUV.remaining()];
-                dataUV.get(bytesUV);
-                pSrcY[i] = bytesY;
-                pSrcC[i] = bytesUV;
+                mSwmfnrUtil.nativeRegisterImage(dataY,mHeight*mStrideY,dataUV,mHeight*mStrideY/2);
+                image.close();
             }
-            mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
-            Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
-            int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(pSrcY, pSrcC, pSrcY.length, mStrideY, mStrideC, mWidth, mHeight,
-                mMfnrOut.array(), mOutRoi, imageGain, isAIDEenabled);
-
-            mSwmfnrUtil.nativeMfnrDeAllocate();
-            for (int i = 0; i < items.length; i++){
+            Log.i(TAG, "send bytebuffer");
+            for (int i = processSize; i < items.length; i++){
                 Image image = items[i].getImage();
                 Log.i(TAG,"imgae close");
                 image.close();
             }
-            //param include the output
-            Log.i(TAG, " processResult:" + processResult);
-            for (int i =0;i < 4;i++){
-                Log.i(TAG, " output roi:" + mOutRoi[i]);
-            }
         } finally {
              mLock.release();
         }
+    }
 
+    public void startMfnrProcess(CameraActivity activity, float imageGain, boolean isAIDEenabled) {
+        mActivity = activity;
+        mMfnrOut = ByteBuffer.allocateDirect(mStrideY * mHeight *3/2);
+        Log.i(TAG,"mWidth:" + mWidth + ",mHeight:" + mHeight + ",strideY:" + mStrideY +",strideC:" + mStrideC);
+        int processResult = mSwmfnrUtil.nativeMfnrRegisterAndProcess(getFrameNumbers(imageGain), mStrideY, mStrideC, mWidth, mHeight,
+            mMfnrOut, mOutRoi, imageGain, isAIDEenabled);
+        mSwmfnrUtil.nativeMfnrDeAllocate();
+        mSwmfnrUtil.nativeReleaseImage();
+        //param include the output
+        Log.i(TAG, " processResult:" + processResult);
+        for (int i =0;i < 4;i++){
+            Log.i(TAG, " output roi:" + mOutRoi[i]);
+        }
     }
 
     public void startAideProcess(long expTimeInNs, int iso, float denoiseStrength, int rGain, int bGain, int gGain){
@@ -265,13 +288,14 @@ public class AIDenoiserService extends Service {
         int[] inputFrameDim = {mWidth, mHeight, mStrideY};
         int[] outputFrameDim = {mWidth, mHeight, mStrideY};
         int result = mAideUtil.nativeAIDenoiserEngineCreate(inputFrameDim, outputFrameDim);
-        mAideOut = ByteBuffer.allocate(mStrideY*mHeight *3/2);
+        mAideOut = ByteBuffer.allocateDirect(mStrideY*mHeight *3/2);
 
-        mAideUtil.nativeAIDenoiserEngineProcessFrame(mMfnrOut.array(), mAideOut.array(), expTimeInNs,
+        mAideUtil.nativeAIDenoiserEngineProcessFrame(mMfnrOut, mAideOut, expTimeInNs,
             iso, denoiseStrength, rGain, bGain, gGain, mOutRoi);
 
         mAideUtil.nativeAIDenoiserEngineAbort();
         mAideUtil.nativeAIDenoiserEngineDestroy();
+        Log.i(TAG,"aide process finished");
     }
 
     public byte[] generateImage(CameraActivity activity,boolean isMfnr, int orientation, Size pictureSize, Rect rect, TotalCaptureResult captureResult){
@@ -290,19 +314,6 @@ public class AIDenoiserService extends Service {
             rect = new Rect(mOutRoi[0],mOutRoi[1],mOutRoi[2],mOutRoi[3]);
         }
         Log.d(TAG,"cropYuvImage, rect:" + rect.toString());
-        double maxRation = (double) mWidth/mHeight;
-        double targetRatio = (double) pictureSize.getWidth()/pictureSize.getHeight();
-        if((targetRatio-maxRation) > 0){
-            int newHeight = rect.width()*pictureSize.getHeight()/pictureSize.getWidth();
-            Log.i(TAG,"recalculate the height, new height:" + newHeight);
-            rect.top = rect.top + ((rect.height() - newHeight)/2);
-            rect.bottom = rect.top + newHeight;
-        } else if ((targetRatio-maxRation) < 0){
-            int newWidth = rect.height() * pictureSize.getWidth() /pictureSize.getHeight();
-            rect.left = rect.left + ((rect.width() - newWidth)/2);
-            rect.right = rect.left + newWidth;
-        }
-        Log.d(TAG,"nv21ToRgbAndResize, rect11:" + rect.toString());
 
         if((rect.left&1)==1) {
             rect.left = rect.left - 1;
@@ -316,13 +327,11 @@ public class AIDenoiserService extends Service {
         if((rect.bottom&1)==1) {
             rect.bottom = rect.bottom - 1;
         }
-        Log.d(TAG,"nv21ToRgbAndResize, rect:" + rect.toString());
+        Log.d(TAG,"cropYuvImage, rect:" + rect.toString());
         srcImage = cropYuvImage(srcImage,mStrideY, mWidth, mHeight, rect);
         mActivity.getMediaSaveService().addRawImage(srcImage,"aftercrop","yuv");
-        Log.d(TAG,"nv21ToRgbAndResize, desWidth:" + pictureSize.getWidth() + ",height:" + pictureSize.getHeight());
-        Bitmap bitmap = nv21ToRgbAndResize(activity, srcImage,rect.width(), rect.height(), pictureSize.getWidth(), pictureSize.getHeight());
-        Log.d(TAG,"bitmapToJpeg");
-        srcImage = bitmapToJpeg(bitmap, orientation, captureResult);
+        srcImage = nv21ToUpscaleJpeg(srcImage,orientation,rect.width(),rect.height(),
+                pictureSize.getWidth(), pictureSize.getHeight(),captureResult);
         Log.d(TAG,"test done");
         System.gc();
         return srcImage;
@@ -330,46 +339,11 @@ public class AIDenoiserService extends Service {
 
     public void destoryMfnr(){
         int destoryResult = mSwmfnrUtil.nativeMfnrDestroy();
-        if(mMfnrQueue != null) {
-            mMfnrQueue.onClose();
-            mMfnrQueue = null;
-        }
-        clearImages();
         Log.i(TAG, " destoryResult:" + destoryResult);
-    }
-
-    private void clearImages() {
-        for(ZSLQueue.ImageItem item: mMfnrImages) {
-            try {
-                item.getImage().close();
-                Image raw = item.getRawImage();
-                if (raw != null) {
-                    raw.close();
-                }
-            } catch(Exception e) {
-            }
-        }
-        mMfnrImages.clear();
     }
 
     public ImageHandlerTask getImageHandler() {
         return mImageHandlerTask;
-    }
-
-    private void addImage(ZSLQueue.ImageItem item) {
-        mMfnrImages.add(item);
-        if(mMfnrImages.size() >= MAX_REQUIRED_IMAGE_NUM - 1) {
-            ZSLQueue.ImageItem it = mMfnrImages.getFirst();
-            try {
-                it.getImage().close();
-                Image raw = item.getRawImage();
-                if (raw != null) {
-                    raw.close();
-                }
-            } catch(Exception e) {
-            }
-            mMfnrImages.removeFirst();
-        }
     }
 
     class ImageHandlerTask implements Runnable, ImageReader.OnImageAvailableListener {
@@ -479,13 +453,12 @@ public class AIDenoiserService extends Service {
         return ret;
     }
 
-    public Bitmap nv21ToRgbAndResize(CameraActivity activity, byte[] srcImage,int srcWidth, int srcHeight, int dstWidth,
+    public Bitmap nv21ToRgbAndResize(Context context, byte[] srcImage,int srcWidth, int srcHeight, int dstWidth,
                                      int dstHeight) {
-        RenderScript rs = RenderScript.create(activity.getApplicationContext());
+        RenderScript rs = RenderScript.create(context);
 
         ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic =
                 ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs));
-        ScriptIntrinsicResize resizeIntrinsic = ScriptIntrinsicResize.create(rs);
 
         Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs))
                 .setX(srcImage.length);
@@ -496,23 +469,23 @@ public class AIDenoiserService extends Service {
                 .setY(srcHeight);
         Allocation rgbaOut = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
 
-        Type.Builder rgbaResizeType = new Type.Builder(rs, Element.RGBA_8888(rs))
-                .setX(dstWidth)
-                .setY(dstHeight);
-
-        Allocation rgbaResizeOut = Allocation.createTyped(rs,rgbaResizeType.create(),
-                Allocation.USAGE_SCRIPT);
-
         yuvIn.copyFrom(srcImage);
 
         yuvToRgbIntrinsic.setInput(yuvIn);
         yuvToRgbIntrinsic.forEach(rgbaOut);
 
-        resizeIntrinsic.setInput(rgbaOut);
-        resizeIntrinsic.forEach_bicubic(rgbaResizeOut);
+        Bitmap rgba = Bitmap.createBitmap(srcWidth, srcHeight, Bitmap.Config.ARGB_8888);
+        rgbaOut.copyTo(rgba);
 
-        Bitmap ret = Bitmap.createBitmap(dstWidth, dstHeight, Bitmap.Config.ARGB_8888);
-        rgbaResizeOut.copyTo(ret);
+        float scaleWidth = ((float) dstWidth) / srcWidth;
+        float scaleHeight = ((float) dstHeight) / srcHeight;
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap ret = Bitmap.createBitmap(rgba, 0, 0, srcWidth, srcHeight, matrix,true);
+        if (rgba != null & !rgba.isRecycled()){
+            rgba.recycle();
+            rgba = null;
+        }
 
         return ret;
     }
@@ -521,8 +494,34 @@ public class AIDenoiserService extends Service {
         BitmapOutputStream bos = new BitmapOutputStream(1024);
         bitmap.compress(Bitmap.CompressFormat.JPEG,85,bos);
         byte[] bytes = bos.getArray();
-        bytes = PostProcessor.addExifTags(bytes, orientation, result);
+        bytes = addExifTags(bytes, orientation, result);
         return bytes;
+    }
+
+    public byte[] nv21ToUpscaleJpeg(byte[] srcImage,int orientation,int srcWidth, int srcHeight,
+                             int dstWidth,int dstHeight,
+                             TotalCaptureResult result){
+        BitmapOutputStream bos = new BitmapOutputStream(1024);
+        YuvImage image = new YuvImage(srcImage,ImageFormat.NV21,srcWidth,srcHeight,
+                new int[]{srcWidth,srcWidth});
+        Rect outRoi = new Rect(0,0,srcWidth,srcHeight);
+        image.compressToJpeg(outRoi, 100, bos);
+        byte[] bytes = bos.getArray();
+        Bitmap src = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+        float scaleWidth = ((float) dstWidth) / srcWidth;
+        float scaleHeight = ((float) dstHeight) / srcHeight;
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap finalImage = Bitmap.createBitmap(src, 0, 0, srcWidth, srcHeight, matrix,true);
+        if (src != null & !src.isRecycled()){
+            src.recycle();
+            src = null;
+        }
+        bos.reset();
+        finalImage.compress(Bitmap.CompressFormat.JPEG,100,bos);
+        byte[] ret = bos.getArray();
+        ret = addExifTags(ret, orientation, result);
+        return ret;
     }
 
     private class BitmapOutputStream extends ByteArrayOutputStream {

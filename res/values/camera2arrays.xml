@@ -1406,6 +1406,16 @@ for time lapse recording -->
         <item>@string/pref_camera2_mfhdr_entry_value_mfhdr</item>
     </string-array>
 
+    <string-array name="pref_camera2_gc_shdr_entries" translatable="false">
+        <item>@string/pref_camera2_gc_shdr_entry_on</item>
+        <item>@string/pref_camera2_gc_shdr_entry_off</item>
+    </string-array>
+
+    <string-array name="pref_camera2_gc_shdr_entryvalues" translatable="false">
+        <item>@string/pref_camera2_gc_shdr_entry_value_on</item>
+        <item>@string/pref_camera2_gc_shdr_entry_value_off</item>
+    </string-array>
+
     <string-array name="pref_camera2_shading_correction_entries" translatable="false">
         <item>@string/pref_camera2_shading_correction_entry_enable</item>
         <item>@string/pref_camera2_shading_correction_entry_disable</item>
@@ -1424,6 +1434,16 @@ for time lapse recording -->
     <string-array name="pref_camera2_extended_max_zoom_entryvalues" translatable="false">
         <item>@string/pref_camera2_extended_max_zoom_entry_value_disable</item>
         <item>@string/pref_camera2_extended_max_zoom_entry_value_enable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_hvx_shdr_entries" translatable="false">
+        <item>@string/pref_camera2_hvx_shdr_entry_disable</item>
+        <item>@string/pref_camera2_hvx_shdr_entry_enable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_hvx_shdr_entry_values" translatable="false">
+        <item>@string/pref_camera2_hvx_shdr_entry_value_disable</item>
+        <item>@string/pref_camera2_hvx_shdr_entry_value_enable</item>
     </string-array>
 
     <string-array name="pref_camera2_master_cb_entries" translatable="false">

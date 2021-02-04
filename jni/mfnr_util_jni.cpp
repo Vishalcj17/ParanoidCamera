@@ -40,6 +40,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <process.h>
 #define  getpid()    _getpid()
 #endif
+#define MAX_ROW 8
 
 #ifndef _LINUX
 #define _LINUX
@@ -50,6 +51,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <android/log.h>
 #include <fstream>
 #include <iostream>
+#include <vector>
 #define LOG_TAG "MfnrJni"
 
 #ifdef __cplusplus
@@ -102,13 +104,19 @@ JNIEXPORT CamxResult JNICALL Java_com_android_camera_SwmfnrUtil_nativeMfnrProces
          jint& nBlendedFrames);
            */
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
-        JNIEnv* env, jobject thiz, jobjectArray pSrcY, jobjectArray pSrcC, jint numImages, jint srcStrideY, jint srcStrideC,
-        jint srcWidth, jint srcHeight, jbyteArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled);
+        JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
+        jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled);
 
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDeAllocate(
         JNIEnv* env, jobject thiz);
 
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDestroy(
+        JNIEnv* env, jobject thiz);
+
+JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeRegisterImage(
+        JNIEnv* env, jobject thiz, jobject srcY, int ylength, jobject srcCr, int crlength);
+
+JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
         JNIEnv* env, jobject thiz);
 #ifdef __cplusplus
 }
@@ -123,6 +131,9 @@ CamxResult LoadMFNRlib(uint8_t nCoresLib, void* fPtr);
 typedef unsigned char uint8_t;
 qrcpdefs::mfnrLib* m_funPtrs = (qrcpdefs::mfnrLib*) malloc(sizeof(qrcpdefs::mfnrLib));
 UINTPTR_T sessionId;
+uint8_t* cpSrcY[MAX_ROW];
+uint8_t* cpSrcC[MAX_ROW];
+int cpSrcIndex = 0;
 
 jlong JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrCreate(
         JNIEnv* env, jobject thiz) {
@@ -172,34 +183,44 @@ void WriteData(FILE *fp, unsigned char *pStart, int width, int height, int strid
     }
 }
 
-jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
-        JNIEnv* env, jobject thiz, jobjectArray pSrcY, jobjectArray pSrcC, jint numImages, jint srcStrideY, jint srcStrideC,
-        jint srcWidth, jint srcHeight, jbyteArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled){
+jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeRegisterImage(
+        JNIEnv* env, jobject thiz, jobject srcY, int ylength, jobject srcCr, int crlength)
+    {
+       jbyte* srcYArray = (jbyte*)env->GetDirectBufferAddress(srcY);
+       jbyte* srcCrArray = (jbyte*)env->GetDirectBufferAddress(srcCr);
+       cpSrcY[cpSrcIndex] = (uint8_t*)malloc(ylength * sizeof(uint8_t));
+       cpSrcC[cpSrcIndex] = (uint8_t*)malloc(crlength * sizeof (uint8_t));
+       memcpy(cpSrcY[cpSrcIndex], srcYArray, ylength * sizeof (uint8_t));
+       memcpy(cpSrcC[cpSrcIndex], srcCrArray, crlength * sizeof (uint8_t));
+       cpSrcIndex++;
+       return 0;
+    }
 
-    jint rows = env->GetArrayLength(pSrcY);
-    printf("rows= %d,numImages=%d " , rows, numImages);
-    UINT8* cpSrcY[rows];
-    UINT8* cpSrcC[rows];
-    jbyteArray jniarrayY;
-    jbyte *srcYArray;
-    for (jint i = 0; i < rows; i++)
+
+jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
+        JNIEnv* env, jobject thiz)
     {
-        jniarrayY = (jbyteArray)env->GetObjectArrayElement(pSrcY, i);
-        srcYArray = env->GetByteArrayElements(jniarrayY, NULL);
-        cpSrcY[i] = (UINT8*)srcYArray;
+       for(int i = cpSrcIndex; i > 0; i--) {
+            cpSrcIndex--;
+            printf("cpSrcIndex=%d ", cpSrcIndex);
+            if ( cpSrcY[cpSrcIndex] != NULL){
+               free(cpSrcY[cpSrcIndex]);
+            }
+            if ( cpSrcC[cpSrcIndex] != NULL){
+               free(cpSrcC[cpSrcIndex]);
+            }
+        }
+        return 0;
     }
-    jbyteArray jniarrayC;
-    jbyte *srcCArray;
-    for (jint i = 0; i < rows; i++)
-    {
-        jniarrayC = (jbyteArray)env->GetObjectArrayElement(pSrcC, i);
-        srcCArray = env->GetByteArrayElements(jniarrayC, NULL);
-        cpSrcC[i] = (UINT8*)srcCArray;
-    }
+
+jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
+        JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
+        jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled){
+
+    printf("numImages=%d ", numImages);
 
     //outout buffer
-    jbyte* imageDataNV21Array = env->GetByteArrayElements(pDst, NULL);
-    uint8_t *out = (uint8_t*)imageDataNV21Array;
+    uint8_t *out = (uint8_t *)env->GetDirectBufferAddress(pDst);
     uint8_t* outAddrY = (uint8_t*)&(out[0]);
     uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight]);
 
@@ -215,13 +236,25 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     UINT32 nBlendedFrames = 0;
     //frameMetaDataPerImagePtr is not used now
 
+    for (int i = 0; i < 8; i++)
+    {
+        char fileName[256];
+        snprintf(fileName, sizeof(fileName), "/data/data/org.codeaurora.snapcam/files/input%d.yuv", i);
+        remove(fileName);
+    }
+
     for (int i = 0; i < numImages; i++)
     {
         char fileName[256];
         snprintf(fileName, sizeof(fileName), "/data/data/org.codeaurora.snapcam/files/input%d.yuv", i);
         FILE *inputFile = fopen(fileName, "wb+");
-        WriteData(inputFile, cpSrcY[i], srcWidth, srcHeight, srcStrideY);
-        WriteData(inputFile, cpSrcC[i], srcWidth, srcHeight/2, srcStrideY);
+        if ((inputFile != NULL)){
+            WriteData(inputFile, cpSrcY[i], srcWidth, srcHeight, srcStrideY);
+            WriteData(inputFile, cpSrcC[i], srcWidth, srcHeight/2, srcStrideY);
+            fclose(inputFile);
+        } else {
+            printf( "inputFile is NULL");
+        }
     }
 
     printf("MfnrRegisterAndProcess_sessionId= %d " , sessionId);
@@ -237,9 +270,6 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     //set out put
     printf("setoutput2" );
     env->SetIntArrayRegion(roi, 0, 4, (jint *)outRoi);
-    env->ReleaseByteArrayElements(pDst, imageDataNV21Array, JNI_ABORT);
-    env->ReleaseByteArrayElements(jniarrayY, srcYArray, 0);
-    env->ReleaseByteArrayElements(jniarrayC, srcCArray, 0);
     printf("write out put file to vendor" );
     FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/mfnrout.yuv", "wb+");
 

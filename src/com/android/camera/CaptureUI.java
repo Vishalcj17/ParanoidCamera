@@ -117,6 +117,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private static final int CLICK_THRESHOLD = 200;
     private static final int AUTOMATIC_MODE = 0;
     private static final int ZOOM_SMOOTH_FRAME = 6;
+    private static final int ZOOM_SMOOTH_FRAME_MAX = 18;
     private static final String[] AWB_INFO_TITLE = {" R gain "," G gain "," B gain "," CCT "};
     private static final String[] AEC_INFO_TITLE = {" Lux "," Gain "," Sensitivity "," Exp Time "};
     private static final String[] STATS_NN_RESULT_TITLE = {" Width "," Height "," MapData "," NumROI "," ROIData "," ROIWeight "};
@@ -607,6 +608,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             }
         });
 
+        showSceneModeLabel();
+        showRelatedIcons(mModule.getCurrenCameraMode());
         mCameraControls = (OneUICameraControls) mRootView.findViewById(R.id.camera_controls);
         mFaceView = (Camera2FaceView) mRootView.findViewById(R.id.face_view);
         mFaceView.initMode();
@@ -649,6 +652,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 int frame = Math.abs((int)range * ZOOM_SMOOTH_FRAME);
                 if(frame == 0)
                     frame = ZOOM_SMOOTH_FRAME;
+                else if(frame > ZOOM_SMOOTH_FRAME_MAX)
+                    frame = ZOOM_SMOOTH_FRAME_MAX;
                 module.updateZoomSmooth(from,to,frame);
                 if(mModule.onZoomChanged(to)) {
                     mZoomSwitch.setText(entries[mZoomIndex]);
@@ -848,13 +853,25 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void enableZoomSeekBar(boolean enable) {
-       if (mZoomSeekBar != null)
-           mZoomSeekBar.setEnabled(enable); 
+        if (mZoomSeekBar != null)
+           mZoomSeekBar.setEnabled(enable);
+        if(mZoomSwitch != null ){
+            mZoomSwitch.setEnabled(enable);
+        }
     }
 
     public boolean getZoomFixedSupport() {
         return mZoomRatioSupport && CaptureModule.MCXMODE &&
                 mModule.getCurrenCameraMode() != CaptureModule.CameraMode.HFR;
+    }
+
+    public boolean getSingleRearCameraMode() {
+        boolean result = false;
+        if (mSettingsManager != null) {
+            result = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE).equals(
+                    "single_rear_cameraid");
+        }
+        return result;
     }
 
     private boolean isRTBModeInSelectMode() {
@@ -1651,7 +1668,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (value == null) {
             mFrontBackSwitcher.setVisibility(View.INVISIBLE);
         }
-        if(mModule.mMFNREnable && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
+        String mfnrValue = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        if(mfnrValue != null && mfnrValue.equals("1") && mModule.getMainCameraId() ==  android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT){
             mFilterModeSwitcher.setVisibility(View.INVISIBLE);
             mSettingsManager.setValue(SettingsManager.KEY_COLOR_EFFECT,"0");
         }
@@ -2353,6 +2371,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mFaceView.setCameraBound(cameraBound);
         mFaceView.setOriginalCameraBound(originalCameraBound);
         mFaceView.setZoomRationSupported(getZoomFixedSupport());
+        mFaceView.setSingleRearCameraMode(getSingleRearCameraMode());
         float zoomValue = mModule.getZoomValue();
         if (zoomValue < 1.0f) {
             zoomValue = 1.0f;

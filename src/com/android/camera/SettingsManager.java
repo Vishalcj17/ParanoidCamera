@@ -196,6 +196,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SENSOR_MODE_FS2_VALUE = "pref_camera2_fs2_key";
     public static final String KEY_ABORT_CAPTURES = "pref_camera2_abort_captures_key";
     public static final String KEY_MFHDR = "pref_camera2_mfhdr_key";
+    public static final String KEY_GC_SHDR = "pref_camera2_gc_shdr_key";
     public static final String KEY_SHADING_CORRECTION = "pref_camera2_shading_correction_key";
     public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
@@ -238,6 +239,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_AEC_SENSITIVITY_1 = "pref_camera2_aec_sensitivity_1";
     public static final String KEY_AEC_SENSITIVITY_2 = "pref_camera2_aec_sensitivity_2";
     public static final String KEY_AEC_LUX_INDEX = "pref_camera2_aec_lux_index";
+    public static final String KEY_AEC_ADRC_GAIN = "pref_camera2_aec_adrc_gain";
+    public static final String KEY_AEC_DARK_BOOST_GAIN = "pref_camera2_aec_dark_boost_gain";
     public static final String KEY_STATS_VISUALIZER_VALUE = "pref_camera2_stats_visualizer_key";
 
     public static final HashMap<String, Integer> KEY_ISO_INDEX = new HashMap<String, Integer>();
@@ -254,6 +257,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_SELECT_MODE = "pref_camera2_select_mode_key";
     public static final String KEY_STATSNN_CONTROL = "pref_camera2_statsnn_control_key";
     public static final String KEY_RAW_CB_INFO = "pref_camera2_raw_cb_info_key";
+    public static final String KEY_HVX_SHDR = "pref_camera2_hvx_shdr_key";
     public static final String KEY_QLL = "pref_camera2_qll_key";
     public static final String KEY_AI_DENOISER = "pref_camera2_ai_denoiser_key";
 
@@ -749,7 +753,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
             String newValue = null;
             try {
                 newValue = dependencyList.getString(keyToProcess);
-            } catch (JSONException e) {
+            } catch (JSONException|NullPointerException e) {
                 Log.w(TAG, "initializeValueMap JSONException No value for:" + keyToProcess);
                 continue;
             }
@@ -1226,7 +1230,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference fsMode = mPreferenceGroup.findPreference(KEY_SENSOR_MODE_FS2_VALUE);
         ListPreference physicalCamera = mPreferenceGroup.findPreference(KEY_PHYSICAL_CAMERA);
         ListPreference mfhdr = mPreferenceGroup.findPreference(KEY_MFHDR);
+        ListPreference gcShdr = mPreferenceGroup.findPreference(KEY_GC_SHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
+        ListPreference hvx_shdr = mPreferenceGroup.findPreference(KEY_HVX_SHDR);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
         ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
 
@@ -1421,6 +1427,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
+        if (hvx_shdr != null) {
+            if (!isHvxShdrSupported(cameraId)){
+                mFilteredKeys.add(hvx_shdr.getKey());
+            }
+        }
+
         // filter dynamic lists.
         // These list can be changed run-time
         filterHFROptions();
@@ -1456,6 +1468,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
             int[] modes = isMFHDRSupported();
             if (!(modes != null && modes.length > 0) || isFacingFront(mCameraId)) {
                 removePreference(mPreferenceGroup, KEY_MFHDR);
+            }
+        }
+
+        if (gcShdr != null) {
+            if(!isGCShdrSupported()) {
+                removePreference(mPreferenceGroup, KEY_GC_SHDR);
             }
         }
 
@@ -2085,7 +2103,6 @@ public class SettingsManager implements ListMenu.SettingsListener {
         boolean isSupported = false;
         try {
             //set "CustomNoiseReduction" only if MFNRType is 1 i.e; for Lahaina, set "isSWMFEnabled" only if MFNRType is 2 i.e; for Mannar..
-            Log.i(TAG,"MFNRType:" + mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType));
             isSupported = (mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.MFNRType)) == 2;
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "cannot find vendor tag: " +
@@ -2096,9 +2113,9 @@ public class SettingsManager implements ListMenu.SettingsListener {
 
     public void updateMfnrPreference(){
         String scene = getValue(KEY_SCENE_MODE);
-        ListPreference mfnrPref = (ListPreference) mPreferenceGroup.findPreference(KEY_CAPTURE_MFNR_VALUE);
-        if (scene != null && Integer.parseInt(scene) == SCENE_MODE_HDR_INT && mfnrPref != null) {
-            mfnrPref.setValue("0");
+        if (scene != null && Integer.parseInt(scene) == SCENE_MODE_HDR_INT && mValuesMap != null && isSWMFNRSupport()) {
+            Values values = new Values("0", null);
+            mValuesMap.put(KEY_CAPTURE_MFNR_VALUE, values);
         }
     }
 
@@ -2160,6 +2177,18 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     CaptureModule.support_video_hdr_modes.toString());
         }
         return modes;
+    }
+
+    public boolean isGCShdrSupported() {
+        boolean result = false;
+        try {
+            result = (1 == mCharacteristics.get(getCurrentCameraId()).get(
+                    CaptureModule.support_video_gc_shdr_mode));
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_video_gc_shdr_mode.toString());
+        }
+        return result;
     }
 
     private boolean isQLLSupported() {
@@ -2245,6 +2274,20 @@ public class SettingsManager implements ListMenu.SettingsListener {
 //        }
 //        return ret;
         return true;
+    }
+
+    public boolean isHvxShdrSupported(int id) {
+        boolean ret = false;
+        try{
+            if (mCharacteristics.size() >0){
+                byte hvx_shdr_available = mCharacteristics.get(id).get(
+                        CaptureModule.support_hvx_shdr);
+                ret = hvx_shdr_available == 1;
+            }
+        } catch(IllegalArgumentException e){
+            e.printStackTrace();
+        }
+        return ret;
     }
 
     private boolean isFastShutterModeSupported(int id) {
@@ -2382,7 +2425,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (cameraId > mCharacteristics.size())return null;
         StreamConfigurationMap map = mCharacteristics.get(cameraId).get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        return map.getOutputSizes(cl);
+        Size[] picSize = map.getOutputSizes(cl);
+        Size[] highResSizes = map.getHighResolutionOutputSizes(ImageFormat.PRIVATE);
+        Size[] allPicSizes = new Size[picSize.length + highResSizes.length];
+        System.arraycopy(picSize, 0, allPicSizes, 0, picSize.length);
+        System.arraycopy(highResSizes, 0, allPicSizes, picSize.length, highResSizes.length);
+        return allPicSizes;
     }
 
     public Size[] getAllSupportedOutputSize(int cameraId) {

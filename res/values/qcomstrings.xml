@@ -1413,12 +1413,26 @@
     <string name="pref_camera2_mfhdr_entry_value_shdr" translatable="false">1</string>
     <string name="pref_camera2_mfhdr_entry_value_mfhdr" translatable="false">2</string>
 
+    <string name="pref_camera2_gc_shdr_title" translatable="true">GC SHDR</string>
+    <string name="pref_camera2_gc_shdr_default" translatable="false">0</string>
+    <string name="pref_camera2_gc_shdr_entry_on" translatable="true">enable</string>
+    <string name="pref_camera2_gc_shdr_entry_off" translatable="false">disable</string>
+    <string name="pref_camera2_gc_shdr_entry_value_on" translatable="false">1</string>
+    <string name="pref_camera2_gc_shdr_entry_value_off" translatable="false">0</string>
+
     <string name="pref_camera2_shading_correction_title" translatable="true">Shading Correction Feature</string>
     <string name="pref_camera2_shading_correction_default" translatable="false">1</string>
     <string name="pref_camera2_shading_correction_entry_disable" translatable="true">Disable</string>
     <string name="pref_camera2_shading_correction_entry_enable" translatable="true">Enable</string>
     <string name="pref_camera2_shading_correction_entry_value_disable" translatable="false">0</string>
     <string name="pref_camera2_shading_correction_entry_value_enable" translatable="false">1</string>
+
+    <string name="pref_camera2_hvx_shdr_title" translatable="true">Enable HVX SHDR</string>
+    <string name="pref_camera2_hvx_shdr_default" translatable="true">0</string>
+    <string name="pref_camera2_hvx_shdr_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_hvx_shdr_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_hvx_shdr_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_hvx_shdr_entry_value_disable" translatable="false">0</string>
 
     <string name="pref_camera2_extended_max_zoom_title" translatable="true">Extended max zoom</string>
     <string name="pref_camera2_extended_max_zoom_default" translatable="false">0</string>

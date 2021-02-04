@@ -1711,6 +1711,7 @@ public class CameraActivity extends Activity
         if (mAutoTestEnabled) {
             registerAutoTestReceiver();
         }
+        bindAIDenoiserService();
     }
 
     private void setRotationAnimation() {
@@ -1876,7 +1877,8 @@ public class CameraActivity extends Activity
         mCurrentModule.onResumeBeforeSuper();
         super.onResume();
         mPaused = false;
-        if(!isSwMfnrEnabled()){
+        Log.i(TAG,"swmfnr enable:" + isSwMfnrEnabled() + ",aideservice" + mAIDenoiserService);
+        if(!isSwMfnrEnabled() || mAIDenoiserService != null){
             //change onResumeAfterSuper to aide service connected
             mCurrentModule.onResumeAfterSuper();
         }
@@ -1901,10 +1903,10 @@ public class CameraActivity extends Activity
     public boolean isSwMfnrEnabled(){
         SettingsManager settingsManager = SettingsManager.getInstance();
         if (settingsManager == null) {
-            SettingsManager.createInstance(this);
+            settingsManager = SettingsManager.createInstance(this);
         }
         String value = settingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
-        if(value != null && !value.equals("disable") && Integer.parseInt(value) == 1){
+        if(value != null &&  !value.equals("disable")&& Integer.parseInt(value) == 1 && settingsManager.isSWMFNRSupport()){
             return true;
         }
         return false;
@@ -1927,7 +1929,6 @@ public class CameraActivity extends Activity
             return;
         }
         bindMediaSaveService();
-        bindAIDenoiserService();
         mPanoramaViewHelper.onStart();
     }
 
@@ -1939,11 +1940,11 @@ public class CameraActivity extends Activity
         }
         mPanoramaViewHelper.onStop();
         unbindMediaSaveService();
-        unbindAIDenoiserService();
     }
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "onDestroy");
         if (mWakeLock != null && mWakeLock.isHeld()) {
             mWakeLock.release();
             Log.d(TAG, "wake lock release");
@@ -1960,6 +1961,7 @@ public class CameraActivity extends Activity
         if(mCurrentModule != null){
             mCurrentModule.onDestroy();
         }
+        unbindAIDenoiserService();
         super.onDestroy();
     }
 
@@ -2217,6 +2219,7 @@ public class CameraActivity extends Activity
                     mCaptureModule = new CaptureModule();
                     mCaptureModule.init(this, mCameraCaptureModuleRootView);
                 } else {
+                    mCaptureModule.CURRENT_ID = mCaptureModule.getMainCameraId();
                     mCaptureModule.reinit();
                 }
                 mCurrentModule = mCaptureModule;
