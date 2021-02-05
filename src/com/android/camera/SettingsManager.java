@@ -498,16 +498,13 @@ public class SettingsManager implements ListMenu.SettingsListener {
         final SharedPreferences.Editor editor = pref.edit();
         boolean autoWrite = pref.getBoolean(AUTO_TEST_WRITE_CONTENT, true);
         if (autoWrite) {
-            Thread autoTest = new Thread() {
-                public void run() {
-                    writeAutoTextHelpTxt(editor);
-                }
-            };
-            autoTest.start();
+            writeAutoTextHelpTxt();
+            editor.putBoolean(AUTO_TEST_WRITE_CONTENT, false);
+            editor.apply();
         }
     }
 
-    private void writeAutoTextHelpTxt(SharedPreferences.Editor editor) {
+    private void writeAutoTextHelpTxt() {
         List<String> supportLists = new ArrayList<String>();
         /* Video Size */
         String[] videoSizes = getEntryValues(R.array.pref_camera2_video_quality_entryvalues);
@@ -551,10 +548,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
-        String filePath = AutoTestUtil.createFile(mContext);
-        boolean result = AutoTestUtil.writeFileContent(filePath, supportLists);
-        editor.putBoolean(AUTO_TEST_WRITE_CONTENT, false);
-        editor.apply();
+        Thread writeThread = new Thread(){
+            @Override
+            public void run() {
+                String filePath = AutoTestUtil.createFile(mContext);
+                AutoTestUtil.writeFileContent(filePath, supportLists);
+            }
+        };
+        writeThread.start();
     }
 
     private List<String> setCharSequenceToListStr(String title, CharSequence[] charSequences) {
