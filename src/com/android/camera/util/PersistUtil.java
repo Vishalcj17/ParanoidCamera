@@ -156,6 +156,8 @@ public class PersistUtil {
             getInt("persist.sys.camera.live_shot_numbers", 0);
     private static final int PERSIST_AIDE_FRAME_NUMBERS =
             getInt("persist.sys.camera.aide_frame_numbers", 0);
+    private static final String PERSIST_CAMERA_MAX_BURST_SHOT_FPS =
+            get("persist.sys.camera.maxBurstShotFPS", "0");
 
     public static String getHFRRate() {
         return PERSIST_HFR_LIMIT;
@@ -276,6 +278,9 @@ public class PersistUtil {
     public static float getStillmoreBrColor(){
         float brColor = Float.parseFloat(PERSIST_CAMERA_STILLMORE_BRCOLR);
         return brColor = (brColor < 0 || brColor > 1) ? 0.5f : brColor;
+    }
+    public static float getMaxBurstShotFPS(){
+        return Float.parseFloat(PERSIST_CAMERA_MAX_BURST_SHOT_FPS);
     }
 
     public static float getStillmoreBrIntensity(){
