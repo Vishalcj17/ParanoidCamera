@@ -34,7 +34,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.util.Log;
 
 public class VendorTagUtil {
-    private static final String TAG = "VendorTagUtil";
+    private static final String TAG = "Snapcam_VendorTagUtil";
 
     private static CaptureRequest.Key<Integer> CdsModeKey =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.CDS.cds_mode",
@@ -80,6 +80,8 @@ public class VendorTagUtil {
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableQLL", Integer.class);
     private static final CaptureRequest.Key<Integer> swpdpc_enable =
             new CaptureRequest.Key<>("org.codeaurora.qcamera3.sessionParameters.enableSWPDPC", Integer.class);
+    private static CaptureRequest.Key<Byte> dumpStart =
+            new CaptureRequest.Key<>("org.quic.camera.DebugDumpStart.dumpStart", Byte.class);
 
     private static final int MANUAL_WB_DISABLE_MODE = 0;
     private static final int MANUAL_WB_CCT_MODE = 1;
@@ -265,6 +267,15 @@ public class VendorTagUtil {
     public static void setSWPDPCMode(CaptureRequest.Builder builder, int enable) {
         if (isSupported(builder, swpdpc_enable)) {
             builder.set(swpdpc_enable, enable);
+        }
+    }
+
+    public static void setDumpStart(CaptureRequest.Builder builder, Byte value) {
+        try {
+            Log.d(TAG,"setDumpStart:" + value);
+            builder.set(dumpStart, value);
+        }catch(IllegalArgumentException exception) {
+            exception.printStackTrace();
         }
     }
 }

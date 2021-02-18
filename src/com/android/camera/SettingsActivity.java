@@ -291,6 +291,11 @@ public class SettingsActivity extends PreferenceActivity {
                     mSettingsManager.updatePictureAndVideoSize();
                     updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
                 }
+                if(pref.getKey().equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE) ||
+                        pref.getKey().equals(SettingsManager.KEY_AI_DENOISER) ||
+                        pref.getKey().equals(SettingsManager.KEY_ZSL)){
+                    update3AInfoPreference();
+                }
             }
         }
     };
@@ -1501,6 +1506,7 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoFlipPreference();
         updateAIDEPreference();
         updateLongShotPreference();
+        update3AInfoPreference();
     }
 
     private void updateAudioEncoderPreference() {
@@ -1603,6 +1609,34 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
         if(!mSettingsManager.isAIDESupport() || isSwMfnrDisabled()){
+            pref.setEnabled(false);
+        }
+    }
+
+    private void update3AInfoPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_3A_DEBUG_INFO);
+        if (pref == null) {
+            return;
+        }
+        String mfnrValue = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        boolean mfnrEnable = false;
+        if(mfnrValue != null && !mfnrValue.equals("disable")&& Integer.parseInt(mfnrValue) == 1 && mSettingsManager.isSWMFNRSupport()){
+            mfnrEnable = true;
+        }
+        String aideniserValue = mSettingsManager.getValue(SettingsManager.KEY_AI_DENOISER);
+        boolean aideEnable = false;
+        if(aideniserValue != null && !aideniserValue.equals("disable")&& Integer.parseInt(aideniserValue) == 1 && mSettingsManager.isAIDESupport()){
+            aideEnable = true;
+        }
+        ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
+        boolean appZsl = false;
+        if(ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())){
+            appZsl = true;
+        }
+        if(mfnrEnable || aideEnable || appZsl){
+            pref.setEnabled(true);
+        } else {
+            pref.setValue("0");
             pref.setEnabled(false);
         }
     }

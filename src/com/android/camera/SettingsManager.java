@@ -269,6 +269,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
     public static final String KEY_RAW_FORMAT_TYPE = "pref_camera2_raw_format_key";
+    public static final String KEY_3A_DEBUG_INFO = "pref_camera2_3A_debug_info_key";
     private static final String TAG = "SnapCam_SettingsManager";
 
     private static SettingsManager sInstance;
