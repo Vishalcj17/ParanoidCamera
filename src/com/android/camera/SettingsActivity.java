@@ -156,7 +156,10 @@ public class SettingsActivity extends PreferenceActivity {
                 }
                 updateEISPreference();
                 updateMfnrPreference();
-            } else if (key.equals(SettingsManager.KEY_SAVERAW) || key.equals(SettingsManager.KEY_AUTO_HDR) || key.equals(SettingsManager.KEY_PICTURE_SIZE)) {
+            } else if (key.equals(SettingsManager.KEY_SAVERAW) ||
+                    key.equals(SettingsManager.KEY_AUTO_HDR) ||
+                    key.equals(SettingsManager.KEY_QCFA) ||
+                    key.equals(SettingsManager.KEY_PICTURE_SIZE)) {
                 updateMfnrPreference();
             }
             List<String> list = mSettingsManager.getDependentKeys(key);
@@ -192,15 +195,11 @@ public class SettingsActivity extends PreferenceActivity {
 
     private boolean isMfnrSupported4Size(Size size){
         if(size != null){
-            if(size.getWidth() > size.getHeight()){
-                if(size.getWidth() < 640 || size.getHeight() < 480)
-                    return false;
-            } else {
-                if(size.getHeight() < 640 || size.getWidth() < 480)
-                    return false;
+            if((size.getWidth() * size.getHeight()) > (1920*1080)){
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public void updateMfnrPreference(){
@@ -210,13 +209,16 @@ public class SettingsActivity extends PreferenceActivity {
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         String saveRaw = mSettingsManager.getValue(SettingsManager.KEY_SAVERAW);
         String autoHdr = mSettingsManager.getValue(SettingsManager.KEY_AUTO_HDR);
+        String qcfa = mSettingsManager.getValue(SettingsManager.KEY_QCFA);
         Size pictureSize = parsePictureSize(mSettingsManager.getValue(SettingsManager.KEY_PICTURE_SIZE));
 
         if (mfnrPref != null && mSettingsManager.isSWMFNRSupport()) {
             if((scene != null && Integer.parseInt(scene) == SettingsManager.SCENE_MODE_HDR_INT) ||
-                    (selectModePref != null && selectModePref.isEnabled() && selectMode != null && (selectMode.equals("sat") || selectMode.equals("default"))) ||
+                    (selectModePref != null && selectModePref.isEnabled() && selectMode != null &&
+                            (selectMode.equals("sat") || selectMode.equals("default"))) ||
                     (saveRaw != null  && saveRaw.equals("enable")) ||
                     (autoHdr != null  && autoHdr.equals("enable")) ||
+                    (qcfa != null && qcfa.equals("enable")) ||
                     !isMfnrSupported4Size(pictureSize)){
                 mfnrPref.setValue("0");
                 mfnrPref.setEnabled(false);
@@ -1669,6 +1671,8 @@ public class SettingsActivity extends PreferenceActivity {
                 } else {
                     pref.setEnabled(false);
                 }
+            } else {
+                pref.setEnabled(false);
             }
         }
     }

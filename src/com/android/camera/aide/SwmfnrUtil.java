@@ -54,7 +54,7 @@ public class SwmfnrUtil {
          float dtfSpatialYStrength, float dtfSpatialChromaStrength, float sharpnessStrength, float spatioTemporalDenoiseBalanceStrength, float sharpnessScoreThreshold);
 
     public native int nativeMfnrRegisterAndProcess(int numImages, int srcStrideY, int srcStrideC,
-                                                   int srcWidth, int srcHeight, ByteBuffer pDst, int[] roi, float imageGain, boolean isAIDEenabled); //pDst,roi are all output
+                                                   int srcWidth, int srcHeight, byte[] pDst, int[] roi, float imageGain, boolean isAIDEenabled); //pDst,roi are all output
     public native int nativeRegisterImage(ByteBuffer srcY, int yLength, ByteBuffer srcUV, int uvLength);
 
     public native int nativeReleaseImage();

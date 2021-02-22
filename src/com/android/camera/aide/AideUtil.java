@@ -43,7 +43,7 @@ public class AideUtil {
 
     public native int nativeAIDenoiserEngineCreate(int[] pInputFrameDim, int[] pOutputFrameDim);
 
-    public native int nativeAIDenoiserEngineProcessFrame(ByteBuffer input, ByteBuffer output,
+    public native int nativeAIDenoiserEngineProcessFrame(byte[] input, byte[] output,
         long expTimeInNs, int iso, float denoiseStrength, int rGain, int bGain, int gGain, int[] roi);
 
     public native int nativeAIDenoiserEngineAbort();

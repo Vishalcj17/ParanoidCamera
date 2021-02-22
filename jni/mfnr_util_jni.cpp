@@ -105,7 +105,7 @@ JNIEXPORT CamxResult JNICALL Java_com_android_camera_SwmfnrUtil_nativeMfnrProces
            */
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
         JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
-        jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled);
+        jint srcWidth, jint srcHeight, jbyteArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled);
 
 JNIEXPORT jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrDeAllocate(
         JNIEnv* env, jobject thiz);
@@ -215,12 +215,13 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
 
 jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProcess(
         JNIEnv* env, jobject thiz, jint numImages, jint srcStrideY, jint srcStrideC,
-        jint srcWidth, jint srcHeight, jobjectArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled){
+        jint srcWidth, jint srcHeight, jbyteArray pDst, jintArray roi, jfloat imageGain, jboolean isAIDEenabled){
 
     printf("numImages=%d ", numImages);
 
     //outout buffer
-    uint8_t *out = (uint8_t *)env->GetDirectBufferAddress(pDst);
+    jbyte* imageDataNV21Array = env->GetByteArrayElements(pDst, NULL);
+    uint8_t *out = (uint8_t*)imageDataNV21Array;
     uint8_t* outAddrY = (uint8_t*)&(out[0]);
     uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight]);
 
@@ -270,6 +271,7 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     //set out put
     printf("setoutput2" );
     env->SetIntArrayRegion(roi, 0, 4, (jint *)outRoi);
+    env->ReleaseByteArrayElements(pDst, imageDataNV21Array, JNI_ABORT);
     printf("write out put file to vendor" );
     FILE *pFile = fopen("/data/data/org.codeaurora.snapcam/files/mfnrout.yuv", "wb+");
 
