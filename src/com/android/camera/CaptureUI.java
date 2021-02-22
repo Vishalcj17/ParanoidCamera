@@ -320,7 +320,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
     private void previewUIReady() {
         if((mSurfaceHolder != null && mSurfaceHolder.getSurface().isValid())) {
-            if (mSettingsManager.getPhysicalCameraId() == null){
+            if (mSettingsManager.getPhysicalCameraId() == null &&
+                    mSettingsManager.getSinglePhysicalCamera() == null){
                 mModule.onPreviewUIReady();
             } else {
                 checkSurfaceReady();
@@ -341,11 +342,19 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     private void checkSurfaceReady(){
-        mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+        String physical_id = mSettingsManager.getSinglePhysicalCamera();
+        if (physical_id != null) {
+            mPreviewCount = mSettingsManager.getAllPhysicalCameraId().size()+1;
+        } else {
+            mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+        }
         Log.d(TAG,"checkSurfaceReady SurfaceReady="+ Arrays.toString(mSurfaceReady));
         for (int i = 0; i< mPreviewCount; i++){
             if (!mSurfaceReady[i])
                 return;
+        }
+        if(physical_id != null && !mSurfaceHolder.getSurface().isValid()){
+            return;
         }
         mModule.onPreviewUIReady();
     }
@@ -2136,10 +2145,19 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     public void initPhysicalSurfaces(Size logicalPreviewSize,Size[] physicalPreviewSizes){
-        if (mSettingsManager.getPhysicalCameraId() == null)
+        String physical_id = mSettingsManager.getSinglePhysicalCamera();
+        if (mSettingsManager.getPhysicalCameraId() == null && physical_id == null)
             return;
-        mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
-        Set<String> physicalIds = mSettingsManager.getPhysicalCameraId();
+        Set<String> physicalIds;
+        if (physical_id != null) {
+            physicalIds = mSettingsManager.getAllPhysicalCameraId();
+            mPreviewCount = mSettingsManager.getAllPhysicalCameraId().size()+1;
+            mSurfaceView.bringToFront();
+        } else {
+            physicalIds = mSettingsManager.getPhysicalCameraId();
+            mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+        }
+
         Log.d(TAG,"initPhysicalSurfaces count="+mPreviewCount);
 
         mPhysicalHolders[0] = mPhysicalViews[0].getHolder();
@@ -2163,6 +2181,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                         && physicalPreviewSizes[physicalSizeIndex] != null){
                       preview = new Size(physicalPreviewSizes[physicalSizeIndex].getHeight(),
                                 physicalPreviewSizes[physicalSizeIndex].getWidth());
+                } else if(physical_id != null){
+                    preview = new Size(mPreviewHeight,mPreviewWidth);
                 } else {
                     preview = new Size(mPreviewHeight/2,mPreviewWidth/2);
                 }

@@ -1372,6 +1372,7 @@ public class SettingsActivity extends PreferenceActivity {
     }
 
     private void initializePhysicalPreferences(){
+        updatePreference(SettingsManager.KEY_SINGLE_PHYSICAL_CAMERA);
         updatePreference(SettingsManager.KEY_MULTI_CAMERA_MODE);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMCORDER);

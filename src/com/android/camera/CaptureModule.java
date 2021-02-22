@@ -1220,7 +1220,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                 updateFocusStateChange(result);
                 updateAWBCCTAndgains(result);
                 updateAECGainAndExposure(result);
-                Face[] faces = result.get(CaptureResult.STATISTICS_FACES);
+                String physical_id = mSettingsManager.getSinglePhysicalCamera();
+                Face[] faces;
+                if (physical_id != null &&
+                        !SettingsManager.LOGICAL_AND_PHYSICAL.equals(physical_id)) {
+                    faces = result.getPhysicalCameraResults().get(physical_id).get(
+                            CaptureResult.STATISTICS_FACES);
+                } else {
+                    faces = result.get(CaptureResult.STATISTICS_FACES);
+                }
+
                 if (FD_DEBUG)
                     Log.d(FD_TAG,"onCaptureCompleted Detected Face size = " + Integer.toString(faces == null? 0 : faces.length));
                 if (faces != null && mSettingsManager.isFDRenderingAtPreview()){
@@ -1660,6 +1669,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraOpenCloseLock.release();
             mCamerasOpened = false;
             mIsCloseCamera = true;
+
             if(mActivity.getAIDenoiserService() != null && mActivity.getAIDenoiserService().getFrameNumbers(mGain) != mActivity.getAIDenoiserService().getImagesNum() && mActivity.getAIDenoiserService().isDoingMfnr()){
                 warningToast("No enough images for picture.");
                 mActivity.getAIDenoiserService().setDoingMfnr(false);
@@ -2411,7 +2421,6 @@ public class CaptureModule implements CameraModule, PhotoController,
                     List<OutputConfiguration> physicalOutput =
                             getPhysicalOutputConfiguration();
                     outputConfigurations.addAll(physicalOutput);
-
                     List<Surface> previewSurfaces = mUI.getPhysicalSurfaces();
                     if(previewSurfaces != null){
                         if (mSettingsManager.isLogicalEnable()) {
@@ -2475,7 +2484,35 @@ public class CaptureModule implements CameraModule, PhotoController,
                         }
                     }
                     for (Surface s : list) {
-                        outputConfigurations.add(new OutputConfiguration(s));
+                        if (s == surface) {
+                            String physical_id = mSettingsManager.getSinglePhysicalCamera();
+                            OutputConfiguration out = new OutputConfiguration(s);
+                            if (physical_id != null){
+                                boolean enableLogical =
+                                        SettingsManager.LOGICAL_AND_PHYSICAL.equals(physical_id);
+                                if (!enableLogical)
+                                    out.setPhysicalCameraId(physical_id);
+                                outputConfigurations.add(out);
+                                List<Surface> physicalSurfaces = mUI.getPhysicalSurfaces();
+                                Set<String> allPhysicalIds =
+                                        mSettingsManager.getAllPhysicalCameraId();
+                                int i = 1;
+                                for(String physical : allPhysicalIds) {
+                                    if (!physical_id.equals(physical)){
+                                        OutputConfiguration o = new OutputConfiguration(
+                                                physicalSurfaces.get(i));
+                                        o.setPhysicalCameraId(physical);
+                                        outputConfigurations.add(o);
+                                        mPreviewRequestBuilder[id].addTarget(physicalSurfaces.get(i));
+                                        i++;
+                                    }
+                                }
+                            } else {
+                                outputConfigurations.add(out);
+                            }
+                        } else {
+                            outputConfigurations.add(new OutputConfiguration(s));
+                        }
                     }
 
                     if (mSettingsManager.isHeifWriterEncoding()) {
@@ -5981,6 +6018,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
 
 
+
+
         // Set up sound playback for shutter button, video record and video stop
         if (mSoundPlayer == null) {
             mSoundPlayer = SoundClips.getPlayer(mActivity);
@@ -6686,7 +6725,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     @Override
     public void onPreviewUIReady() {
         updatePreviewSurfaceReadyState(true);
-
         if (mPaused || mIsRecordingVideo) {
             return;
         }
@@ -11466,10 +11504,21 @@ public class CaptureModule implements CameraModule, PhotoController,
                         || !mSettingsManager.isFDRenderingAtPreview())
                     mUI.onStopFaceDetection();
                 else {
-                    mUI.onStartFaceDetection(mDisplayOrientation,
-                            mSettingsManager.isFacingFront(getMainCameraId()),
-                            mCropRegion[getMainCameraId()],
-                            mSettingsManager.getSensorActiveArraySize(getMainCameraId()));
+                    String physical_id = mSettingsManager.getSinglePhysicalCamera();
+                    if (physical_id != null &&
+                            !SettingsManager.LOGICAL_AND_PHYSICAL.equals(physical_id)) {
+                        int id = Integer.valueOf(physical_id);
+                        cropRegionForZoom(id);
+                        mUI.onStartFaceDetection(mDisplayOrientation,
+                                mSettingsManager.isFacingFront(getMainCameraId()),
+                                mCropRegion[id],
+                                mSettingsManager.getSensorActiveArraySize(id));
+                    } else {
+                        mUI.onStartFaceDetection(mDisplayOrientation,
+                                mSettingsManager.isFacingFront(getMainCameraId()),
+                                mCropRegion[getMainCameraId()],
+                                mSettingsManager.getSensorActiveArraySize(getMainCameraId()));
+                    }
                 }
             }
         });
