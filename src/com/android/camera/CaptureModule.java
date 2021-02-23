@@ -97,6 +97,7 @@ import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -5650,27 +5651,34 @@ public class CaptureModule implements CameraModule, PhotoController,
     public void updateStatsParameters(CaptureResult result) {
         int[] info = mSettingsManager.getStatsInfo(result);
         if (info != null) {
-            int width = info[0];
-            int height = info[1];
-            int depth = info[2];
-            if (width != -1 && height != -1){
-                BGSTATS_DATA = height*width;
-                BGSTATS_WIDTH = width*10;
-                BGSTATS_HEIGHT = height*10;
+            int bg_width = info[0];
+            int bg_height = info[1];
+            int be_width = info[2];
+            int be_height = info[3];
+            int depth = info[4];
+            if (bg_width != -1 && bg_height != -1){
+                BGSTATS_DATA = bg_width*bg_height;
+                BGSTATS_WIDTH = bg_width*10;
+                BGSTATS_HEIGHT = bg_height*10;
 
                 bg_statsdata = new int[BGSTATS_DATA*10*10];
                 bg_r_statsdata = new int[BGSTATS_DATA];
                 bg_g_statsdata = new int[BGSTATS_DATA];
                 bg_b_statsdata = new int[BGSTATS_DATA];
-
-                BESTATS_DATA = height*width;
-                BESTATS_WIDTH = width*10;
-                BESTATS_HEIGHT = height*10;
+                bgstats_view.updateViewSize();
+            }
+            if(be_width != -1 && be_height != -1) {
+                BESTATS_DATA = be_width*be_height;
+                BESTATS_WIDTH = be_width*10;
+                BESTATS_HEIGHT = be_height*10;
                 be_statsdata   = new int[BESTATS_DATA*10*10];
                 be_r_statsdata = new int[BESTATS_DATA];
                 be_g_statsdata = new int[BESTATS_DATA];
                 be_b_statsdata = new int[BESTATS_DATA];
+                bestats_view.updateViewSize();
             }
+
+
             if (depth != -1) {
                 STATS_DATA_BIT_SHIFT = depth - 8;
                 statsParametersUpdated = STATS_PARAMETER_UPDATE;
@@ -12350,6 +12358,13 @@ class Camera2BGBitMap extends View {
     public void setCaptureModuleObject(CaptureModule captureModule) {
         mCaptureModule = captureModule;
     }
+
+    public void updateViewSize(){
+        mWidth = CaptureModule.BGSTATS_WIDTH;
+        mHeight = CaptureModule.BGSTATS_HEIGHT;
+        mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+        mCanvas.setBitmap(mBitmap);
+    }
 }
 
 class Camera2BEBitMap extends View {
@@ -12406,6 +12421,13 @@ class Camera2BEBitMap extends View {
 
     public void setCaptureModuleObject(CaptureModule captureModule) {
         mCaptureModule = captureModule;
+    }
+
+    public void updateViewSize(){
+        mWidth = CaptureModule.BESTATS_WIDTH;
+        mHeight = CaptureModule.BESTATS_HEIGHT;
+        mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+        mCanvas.setBitmap(mBitmap);
     }
 }
 

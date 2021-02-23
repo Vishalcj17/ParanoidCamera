@@ -2661,17 +2661,17 @@ public class SettingsManager implements ListMenu.SettingsListener {
     }
 
     public int[] getStatsInfo(CaptureResult result) {
-        int[] ret = {-1,-1,-1};
+        int[] ret = {-1,-1,-1,-1,-1};
         try {
-            int width = result.get(CaptureModule.stats_width);
-            int height = result.get(CaptureModule.stats_height);
-            ret[0] = width;
-            ret[1] = height;
+            ret[0] = result.get(CaptureModule.bgWidth);
+            ret[1] = result.get(CaptureModule.bgHeight);
+            ret[2] = result.get(CaptureModule.beWidth);
+            ret[3] = result.get(CaptureModule.beHeight);
         } catch (Exception e){
         }
         try {
             int depth = result.get(CaptureModule.stats_bitdepth);
-            ret[2] = depth;
+            ret[4] = depth;
         }catch (Exception e){
         }
         return ret;

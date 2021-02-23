@@ -289,7 +289,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="88dip"
-            android:layout_marginLeft="260dip" />
+            android:layout_marginLeft="200dip" />
         <LinearLayout
             android:id="@+id/stats_awb_info"
             android:layout_marginTop="68dip"
