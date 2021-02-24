@@ -10580,7 +10580,6 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private boolean updateAWBCCTAndgains(CaptureResult captureResult) {
-        boolean result = false;
         if (captureResult != null) {
             try {
                 if (mExistAWBVendorTag) {
@@ -10590,24 +10589,33 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mCctAWB = captureResult.get(CaptureModule.awbFrame_control_cct);
                     mAWBDecisionAfterTC = captureResult.get(CaptureModule.awbFrame_decision_after_tc);
                 }
+            } catch (IllegalArgumentException | NullPointerException e) {
+                mExistAWBVendorTag = false;
+                e.printStackTrace();
+            }
+            try {
                 if (mExistAECWarmTag) {
                     mAECSensitivity = captureResult.get(CaptureModule.aec_sensitivity);
+                    Log.v("daming", " updateAWBCCTAndgains mAECSensitivity[0] :" + mAECSensitivity[0] +
+                            ", mAECSensitivity[1] :" + mAECSensitivity[1] + ", mAECSensitivity[2] :" + mAECSensitivity[2]);
                     mAECLuxIndex = captureResult.get(aec_start_up_luxindex_result);
                 }
+
+            } catch (IllegalArgumentException | NullPointerException e) {
+                mExistAECWarmTag = false;
+                e.printStackTrace();
+            }
+            try {
                 if (mExistAECDarkGainTag) {
                     mDarkBoostGain = captureResult.get(aecFrame_dark_boost_gain);
                     mAdrcGain = captureResult.get(aecFrame_adrc_gain);
                 }
-                result = true;
-            } catch (IllegalArgumentException e) {
-                mExistAWBVendorTag = false;
-                mExistAECWarmTag = false;
+            } catch (IllegalArgumentException | NullPointerException e) {
                 mExistAECDarkGainTag = false;
                 e.printStackTrace();
-            } catch(NullPointerException e) {
             }
         }
-        return result;
+        return mExistAWBVendorTag && mExistAECWarmTag && mExistAECDarkGainTag;
     }
 
     private boolean updateAECGainAndExposure(CaptureResult captureResult) {
