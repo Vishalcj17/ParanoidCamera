@@ -89,7 +89,7 @@ jint JNICALL Java_com_android_camera_aide_AideUtil_nativeAIDenoiserEngineCreate(
     env->SetIntArrayRegion(pOutputFrameDim, 0, 3, (jint *)pOutputFrame);
     env->ReleaseIntArrayElements(pInputFrameDim, inputFrameDim, 0);
     env->ReleaseIntArrayElements(pOutputFrameDim, outputFrameDim, 0);
-    delete pOutputFrame;
+    delete [] pOutputFrame;
     return createResult;
 }
 void WriteData(FILE *fp, unsigned char *pStart, int width, int height, int stride)

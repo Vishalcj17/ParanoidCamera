@@ -84,6 +84,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -310,6 +311,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final boolean DEBUG_MEDIACODEC =
             (PersistUtil.getCamera2Debug() == PersistUtil.CAMERA2_DEBUG_MEDIACODEC);
     private static final boolean FD_DEBUG = PersistUtil.getFdDebug();
+    private static final boolean TRACE_DEBUG = PersistUtil.getTraceDebug();
     private static final String FD_TAG = "SnapCam_FD";
 
     private static final String HFR_RATE = PersistUtil.getHFRRate();
@@ -1621,6 +1623,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraOpenCloseLock.release();
             mCamerasOpened = false;
             mIsCloseCamera = true;
+            if(mActivity.getAIDenoiserService().getFrameNumbers(mGain) != mActivity.getAIDenoiserService().getImagesNum() && mActivity.getAIDenoiserService().isDoingMfnr()){
+                warningToast("No enough images for picture.");
+                mActivity.getAIDenoiserService().setDoingMfnr(false);
+            }
         }
 
     };
@@ -3898,13 +3904,16 @@ public class CaptureModule implements CameraModule, PhotoController,
                 @Override
                 public void run() {
                     synchronized (mAideLock) {
+                        if (TRACE_DEBUG) Trace.beginSection("mfnr process");
                         MfnrTunableParams mfnrParams = new MfnrTunableParams(enableGyroRefinementParam, imageRegDescParam, imageRegModeParam,
                             deghostingStrengthParam, localMotionSmoothingStrengthParam, dtfSpatialYStrengthParam, dtfSpatialChromaStrengthParam, sharpnessStrengthParam, spatioTemporalDenoiseBalanceStrengthParam, sharpnessScoreThresholdParam);
                         mActivity.getAIDenoiserService().configureMfnr(mPictureSize.getWidth(), mPictureSize.getHeight(), mfnrParams);
                         mActivity.getAIDenoiserService().startMfnrProcess(mActivity, mGain, isSwMfnrEnabled());
+                        if (TRACE_DEBUG) Trace.endSection();
                         unlockFocus(id);
                         enableShutterButtonOnMainThread(id);
                         if(!isAIDEEnabled()){
+                            if (TRACE_DEBUG) Trace.beginSection("save jpeg");
                             byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, true, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, cropRegion, mCaptureResult, quality);
                             Log.i(TAG,"save image:mOrientation:" +mOrientation  + ",ori:" + CameraUtil.getJpegRotation(id,mOrientation));
                             NamedEntity name = mNamedImages.getNextNameEntity();
@@ -3916,10 +3925,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     CameraUtil.getJpegRotation(id,mOrientation), null, getMediaSavedListener(),
                                     mActivity.getContentResolver(), "jpeg");
                             mActivity.updateThumbnail(srcImage);
+                            if (TRACE_DEBUG) Trace.endSection();
                         } else {
                             Log.i(TAG,"start aide process" + ",rGain: " + mRGain + ",bGain:" + mBGain + ",gGain:" + mGGain + ",sensitivity：" + mIsoSensitivity);
                             //ISO = (sensitivity * sensitivityBoost)/100
+                            if (TRACE_DEBUG) Trace.beginSection("aide process");
                             mActivity.getAIDenoiserService().startAideProcess(100000, 100, denoiseStrengthParam, (int)(mRGain*1024), (int)(mBGain*1024), (int)(mGGain*1024));
+                            if (TRACE_DEBUG) Trace.endSection();
+                            if (TRACE_DEBUG) Trace.beginSection("save jpeg");
                             byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, false, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, cropRegion, mCaptureResult, quality);
                             NamedEntity name = mNamedImages.getNextNameEntity();
                             String title = (name == null) ? null : name.title;
@@ -3930,6 +3943,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     CameraUtil.getJpegRotation(id,mOrientation), null, getMediaSavedListener(),
                                     mActivity.getContentResolver(), "jpeg");
                             mActivity.updateThumbnail(srcImage);
+                            if (TRACE_DEBUG) Trace.endSection();
                         }
                     }
                 }
@@ -9516,6 +9530,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     + mActivity.getStorageSpaceBytes());
             return;
         }
+        if (TRACE_DEBUG) Trace.beginSection("onShutterButtonClick");
         mLongshoting = false;
         mNumFramesArrived.getAndSet(0);
         Log.d(TAG,"onShutterButtonClick");
@@ -9548,6 +9563,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mUI.enableZoomSeekBar(false);
             checkSelfieFlashAndTakePicture();
         }
+        if (TRACE_DEBUG) Trace.endSection();
     }
 
     private void warningToast(final String msg) {

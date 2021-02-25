@@ -226,7 +226,7 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeMfnrRegisterAndProces
     uint8_t* outAddrVU = (uint8_t*)&(out[srcStrideY*srcHeight]);
 
     uint32_t* outRoi = new uint32_t[4];
-    qrcpdefs::RoiWindow outputRoi;
+    qrcpdefs::RoiWindow outputRoi = {0};
     std::vector<qrcpdefs::FrameMetaData> frameMetaDataPerImage( numImages );
     std::vector<qrcpdefs::FrameMetaData *> frameMetaDataPerImagePtr(numImages);
     for (int i = 0; i < numImages; i++)
