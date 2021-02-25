@@ -2115,14 +2115,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
     }
 
-    private CaptureRequest.Builder getRequestBuilder(int id) throws CameraAccessException {
-        int templateType = CameraDevice.TEMPLATE_PREVIEW;
-        if(mPostProcessor.isZSLEnabled() && id == getMainCameraId()) {
-            templateType = CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG;
-        } else {
-            templateType = CameraDevice.TEMPLATE_PREVIEW;
+    private CaptureRequest.Builder getRequestBuilder(int id, int templateType) throws CameraAccessException {
+        if (templateType == 0) {
+            if(mPostProcessor.isZSLEnabled() && id == getMainCameraId()) {
+                templateType = CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG;
+            } else {
+                templateType = CameraDevice.TEMPLATE_PREVIEW;
+            }
         }
-        CaptureRequest.Builder builder;
+        CaptureRequest.Builder builder = null;
         if (mSettingsManager.getPhysicalCameraId()!= null){
             Set<String> physical_ids = mSettingsManager.getPhysicalCameraId();
             builder = mCameraDevice[id].createCaptureRequest(templateType,physical_ids);
@@ -2134,22 +2135,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             applySessionParameters(builder);
         }
 
-        return builder;
-    }
-
-    private CaptureRequest.Builder getRequestBuilder(int templateType,int id, Set<String> physicalIds)
-            throws CameraAccessException{
-        CaptureRequest.Builder builder = null;
-        if (physicalIds != null){
-            builder = mCameraDevice[id].createCaptureRequest(
-                    templateType,physicalIds);
-        } else {
-            builder = mCameraDevice[id].createCaptureRequest(
-                    templateType);
-        }
-        if (builder != null){
-            applySessionParameters(builder);
-        }
         return builder;
     }
 
@@ -2247,7 +2232,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         mControlAFMode = CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
         try {
             // We set up a CaptureRequest.Builder with the output Surface.
-            mPreviewRequestBuilder[id] = getRequestBuilder(id);
+            mPreviewRequestBuilder[id] = getRequestBuilder(id, 0);
             mPreviewRequestBuilder[id].setTag(id);
 
             CameraCaptureSession.StateCallback captureSessionCallback =
@@ -3296,7 +3281,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         try {
             mState[id] = STATE_WAITING_AF_AE_LOCK;
-            CaptureRequest.Builder builder = getRequestBuilder(id);
+            CaptureRequest.Builder builder = getRequestBuilder(id, 0);
             builder.setTag(id);
             addPreviewSurface(builder, null, id);
             // lock AF and Precapture
@@ -3376,7 +3361,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
 
         try {
-            CaptureRequest.Builder builder = getRequestBuilder(id);
+            CaptureRequest.Builder builder = getRequestBuilder(id, 0);
             builder.setTag(id);
             addPreviewSurface(builder, null, id);
 
@@ -3418,7 +3403,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             return;
         }
         try {
-            CaptureRequest.Builder builder = getRequestBuilder(id);
+            CaptureRequest.Builder builder = getRequestBuilder(id, 0);
             builder.setTag(id);
             if((mCurrentSceneMode.mode == CameraMode.VIDEO ||
                     (mCurrentSceneMode.mode == CameraMode.HFR && !isHighSpeedRateCapture())) && !mIsRecordingVideo){
@@ -3489,7 +3474,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     }
 
     private void captureStillPicture(final int id) {
-        Log.d(TAG, "captureStillPicture " + id  + ".isSwMfnrEnabled():" + isSwMfnrEnabled() + "isAIDEEnabled:" + isAIDEEnabled());
+        Log.d(TAG, "captureStillPicture " + id  + ",isSwMfnrEnabled():" + isSwMfnrEnabled()
+                + ",isAIDEEnabled:" + isAIDEEnabled());
         mGain = mAecFramecontrolLinearGain[2];
         mActivity.getAIDenoiserService().setGain(mGain);
         mJpegImageData = null;
@@ -3506,9 +3492,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                 warningToast("Camera is not ready yet to take a picture.");
                 return;
             }
-
-            CaptureRequest.Builder captureBuilder = getRequestBuilder(
-                CameraDevice.TEMPLATE_STILL_CAPTURE, id, mSettingsManager.getPhysicalCameraId());
+            int templateType = mPostProcessor.isZSLEnabled() ? CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG
+                    : CameraDevice.TEMPLATE_STILL_CAPTURE;
+            CaptureRequest.Builder captureBuilder = getRequestBuilder(id, templateType);
             if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
                 applySettingsForLockExposure(captureBuilder, id);
             }
@@ -4072,8 +4058,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 return;
             }
             checkAndPlayShutterSound(id);
-            CaptureRequest.Builder captureBuilder = getRequestBuilder(
-                    CameraDevice.TEMPLATE_VIDEO_SNAPSHOT,id,mSettingsManager.getPhysicalCameraId());
+            CaptureRequest.Builder captureBuilder = getRequestBuilder(id, CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
 
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, CameraUtil.getJpegRotation(id, mOrientation));
             captureBuilder.set(CaptureRequest.JPEG_THUMBNAIL_SIZE, mVideoSnapshotThumbSize);
@@ -4213,7 +4198,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             return;
         }
         try {
-            CaptureRequest.Builder builder = getRequestBuilder(id);
+            CaptureRequest.Builder builder = getRequestBuilder(id, 0);
             builder.setTag(id);
             addPreviewSurface(builder, null, id);
             if(mLockAFAE == LOCK_AF_AE_STATE_LOCK_DONE){
@@ -4794,7 +4779,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         try {
             if (mUI.getCurrentProMode() != ProMode.MANUAL_MODE) {
-                CaptureRequest.Builder builder = getRequestBuilder(id);
+                CaptureRequest.Builder builder = getRequestBuilder(id, 0);
                 builder.setTag(id);
                 addPreviewSurface(builder, null, id);
                 applySettingsForUnlockFocus(builder, id);
@@ -7564,8 +7549,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private void setUpVideoCaptureRequestBuilder(int cameraId) throws CameraAccessException{
         if(mVideoRecordRequestBuilder == null){
             Log.d(TAG, "mVideoRecordRequestBuilder is null.");
-            mVideoRecordRequestBuilder = getRequestBuilder(CameraDevice.TEMPLATE_RECORD,
-                    cameraId,mSettingsManager.getPhysicalCameraId());
+            mVideoRecordRequestBuilder = getRequestBuilder(cameraId, CameraDevice.TEMPLATE_RECORD);
         }
         mVideoRecordRequestBuilder.setTag(cameraId);
         if (mHighSpeedCapture && !isVariableFPSEnabled()) {
@@ -7598,8 +7582,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     private void setUpVideoPreviewRequestBuilder(Surface surface, int cameraId) {
         try {
-            mVideoPreviewRequestBuilder = getRequestBuilder(
-                    CameraDevice.TEMPLATE_PREVIEW,cameraId,mSettingsManager.getPhysicalCameraId());
+            mVideoPreviewRequestBuilder = getRequestBuilder(cameraId, CameraDevice.TEMPLATE_PREVIEW);
         } catch (CameraAccessException e) {
             Log.w(TAG, "setUpVideoPreviewRequestBuilder, Camera access failed");
             return;
