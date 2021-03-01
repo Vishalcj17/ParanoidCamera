@@ -1132,8 +1132,8 @@ public class PostProcessor{
         exif.addDateTimeStampTag(ExifInterface.TAG_DATE_TIME, System.currentTimeMillis(),
                 TimeZone.getDefault());
         if(result != null) {
-            if(result.get(CaptureResult.FLASH_MODE) != null) {
-                exif.addFlashTag(result.get(CaptureResult.FLASH_MODE) != CaptureResult.FLASH_MODE_OFF);
+            if(result.get(CaptureResult.FLASH_STATE) != null) {
+                exif.addFlashTag(result.get(CaptureResult.FLASH_STATE) == CaptureRequest.FLASH_STATE_FIRED);
             }
             if(result.get(CaptureResult.LENS_FOCAL_LENGTH) != null) {
                 exif.addFocalLength(new Rational((int)(result.get(CaptureResult.LENS_FOCAL_LENGTH)*100), 100));
