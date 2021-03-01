@@ -263,6 +263,9 @@ public class AIDenoiserService extends Service {
         } else {
             numFrames = 8;
         }
+        if(PersistUtil.getAideFrameNumbers() > 0) {
+            numFrames = PersistUtil.getAideFrameNumbers();
+        }
         Log.i(TAG,"numFrames: " + numFrames);
         return numFrames;
     }
