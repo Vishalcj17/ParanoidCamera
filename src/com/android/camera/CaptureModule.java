@@ -10261,14 +10261,18 @@ public class CaptureModule implements CameraModule, PhotoController,
         String selectMode = mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
         boolean isUseVideoPreview = true;
         if (mCurrentSceneMode.mode == CameraMode.HFR ) {
-            if(selectMode != null && selectMode.equals("default") && isHighSpeedRateCapture()){
+            if((selectMode != null && (selectMode.equals("default")||selectMode.equals("single_rear_cameraid")) && isHighSpeedRateCapture()) ||
+            !isHighSpeedRateCapture()){
                 isUseVideoPreview = false;
             }
+        } else {
+           isUseVideoPreview = false;
         }
-        if (mCurrentSceneMode.mode == CameraMode.VIDEO ) {
+        if (mRecordingPausing) {
             isUseVideoPreview = false;
         }
-        if (mRecordingPausing && isUseVideoPreview) {
+
+        if (isUseVideoPreview) {
             captureRequest = mVideoPreviewRequestBuilder;
             String value = mSettingsManager.getValue(SettingsManager.KEY_EIS_VALUE);
             boolean noNeedEndofStreamWhenPause = value != null && value.equals("V3");
