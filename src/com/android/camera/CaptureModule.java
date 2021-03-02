@@ -658,6 +658,8 @@ public class CaptureModule implements CameraModule, PhotoController,
             new CaptureResult.Key<>("com.qti.chi.metadataOwnerInfo.MetadataOwner", Integer.class);
 
     //vendor tag for AIDE
+    public static final CaptureRequest.Key<Byte> totalFrameNums =
+            new CaptureRequest.Key<>("org.quic.camera.appMultiFeatureParameters.totalFramesReq", byte.class);
     public static final CameraCharacteristics.Key<Byte> AIDESupport =
             new CameraCharacteristics.Key<>("org.quic.camera.AIDESupported.isAIDESupported", byte.class);
     public static final CameraCharacteristics.Key<Integer> MFNRType =
@@ -3999,6 +4001,15 @@ public class CaptureModule implements CameraModule, PhotoController,
         return cropRegion;
     }
 
+    private void setTotalFrameNumsTag(CaptureRequest.Builder captureBuilder, int captureNumbers){
+        try {
+            Log.i(TAG, "set totalFrameNums " + captureNumbers);
+            captureBuilder.set(CaptureModule.totalFrameNums, (byte)(captureNumbers));
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG,"can not read totalFramesReq tag");
+        }
+    }
+
     private void captureStillPictureForCommon(CaptureRequest.Builder captureBuilder, int id) throws CameraAccessException{
         Log.i(TAG,"captureStillPictureForCommon, captureBuilder:" + captureBuilder.toString());
         checkAndPlayShutterSound(id);
@@ -4016,6 +4027,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 mActivity.getAIDenoiserService().resetImagesNum();
                 int captureNumbers = mActivity.getAIDenoiserService().getFrameNumbers(mGain);
                 for (int i = 0; i < captureNumbers; i++) {
+                    setTotalFrameNumsTag(captureBuilder, i == 0 ? captureNumbers : 0);
                     captureBuilder.setTag("capture");
                     burstList.add(captureBuilder.build());
                 }
