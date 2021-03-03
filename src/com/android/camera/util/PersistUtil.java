@@ -86,6 +86,8 @@ public class PersistUtil {
             getInt("persist.sys.camera.debug", 0);
     private static final boolean PERSIST_CAMERA_FD_DEBUG =
             getBoolean("persist.sys.camera.fd.debug", false);
+    private static final boolean PERSIST_CAMERA_TRACE_DEBUG =
+            getBoolean("persist.sys.camera.trace.debug", false);
     private static final int PERSIST_CAMERA_DEV_DEBUG_OPTION =
             getInt("persist.sys.camera.devoption.debug", 0);
     // StillMore filter start
@@ -255,6 +257,10 @@ public class PersistUtil {
 
     public static boolean getFdDebug(){
         return PERSIST_CAMERA_FD_DEBUG;
+    }
+
+    public static boolean getTraceDebug(){
+        return PERSIST_CAMERA_TRACE_DEBUG;
     }
 
     public static int getDevOptionLevel() {

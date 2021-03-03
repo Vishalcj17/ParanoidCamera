@@ -142,7 +142,7 @@ public class AIDenoiserService extends Service {
         public synchronized void waitUntilIs(int targetValue) {
             while (value != targetValue) {
                 try {
-                    wait();
+                    wait(3000);
                 } catch(InterruptedException e) {
                     // ignore
                 }
@@ -242,6 +242,10 @@ public class AIDenoiserService extends Service {
 
     public boolean isDoingMfnr(){
         return isDoingMfnr;
+    }
+
+    public void setDoingMfnr(boolean value){
+        isDoingMfnr = value;
     }
 
     public int getFrameNumbers(float realGain){
@@ -380,6 +384,10 @@ public class AIDenoiserService extends Service {
 
     public void wantImagesNum(int num) {
         imagesNum.waitUntilIs(num);
+    }
+
+    public int getImagesNum() {
+        return imagesNum.get();
     }
 
     class ProcessorHandler extends Handler {
