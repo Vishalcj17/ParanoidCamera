@@ -261,5 +261,11 @@
     "3": {},
     "4": {},
     "5": {}
+  },
+  "pref_camera2_swpdpc_key":
+  {
+    "1": {"pref_camera2_longshot_key":"off",
+          "pref_camera2_zsl_key":"hal-zsl"},
+    "0":{}
   }
 }
