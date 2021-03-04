@@ -1433,6 +1433,28 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (hvx_shdr != null) {
             if (!isHvxShdrSupported(cameraId)){
                 mFilteredKeys.add(hvx_shdr.getKey());
+            } else {
+                CharSequence[] entry = hvx_shdr.getEntries();
+                CharSequence[] entryValues = hvx_shdr.getEntryValues();
+                int start = 0;
+                int end = 0;
+                if (!isHvxShdrRawBuffersRequired(cameraId)){
+                    start = 0;
+                    end = 1;
+                } else {
+                    start = 1;
+                    end = 3;
+                }
+                CharSequence[] newEntry = new CharSequence[end - start +1];
+                CharSequence[] newEntryValues = new CharSequence[end - start +1];
+                int index = 0;
+                for (int i = start; i <= end; i++){
+                    newEntry[index] = entry[i];
+                    newEntryValues[index] = entryValues[i];
+                    index ++;
+                }
+                hvx_shdr.setEntries(newEntry);
+                hvx_shdr.setEntryValues(newEntryValues);
             }
         }
 
@@ -2308,7 +2330,21 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         CaptureModule.support_hvx_shdr);
                 ret = hvx_shdr_available == 1;
             }
-        } catch(IllegalArgumentException e){
+        } catch(IllegalArgumentException|NullPointerException e){
+            e.printStackTrace();
+        }
+        return ret;
+    }
+
+    public boolean isHvxShdrRawBuffersRequired(int id){
+        boolean ret = false;
+        try{
+            if (mCharacteristics.size() >0){
+                byte isRawBuffersRequired = mCharacteristics.get(id).get(
+                        CaptureModule.isHvxShdrRawBuffersRequired);
+                ret = isRawBuffersRequired == 1;
+            }
+        } catch(IllegalArgumentException|NullPointerException e){
             e.printStackTrace();
         }
         return ret;
