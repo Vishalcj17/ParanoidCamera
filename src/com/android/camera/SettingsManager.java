@@ -279,7 +279,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private boolean mIsMonoCameraPresent = false;
     private boolean mIsFrontCameraPresent = false;
     private boolean mHasMultiCamera = false;
-    private boolean mIsHFRSupported = false;
+    private boolean mIsHFRSupported = true;
     private JSONObject mDependency;
     private int mCameraId;
     private int mBackCamId = -1;
@@ -1824,11 +1824,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public void filterHFROptions() {
         ListPreference hfrPref = mPreferenceGroup.findPreference(KEY_VIDEO_HIGH_FRAME_RATE);
         if (hfrPref != null) {
-            hfrPref.reloadInitialEntriesAndEntryValues();
-            mIsHFRSupported = !filterUnsupportedOptions(hfrPref,
-                    getSupportedHighFrameRate());
-            if (!mIsHFRSupported) {
-                mFilteredKeys.add(hfrPref.getKey());
+            if (mCaptureModule != null) {
+                CaptureModule.CameraMode mode = mCaptureModule.getCurrenCameraMode();
+                if (mode == CaptureModule.CameraMode.HFR){
+                    hfrPref.reloadInitialEntriesAndEntryValues();
+                    mIsHFRSupported = !filterUnsupportedOptions(hfrPref,
+                            getSupportedHighFrameRate());
+                    if (!mIsHFRSupported) {
+                        mFilteredKeys.add(hfrPref.getKey());
+                    }
+                }
             }
         }
     }
