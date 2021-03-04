@@ -148,6 +148,8 @@ public class PersistUtil {
             getBoolean("persist.sys.camera.raw_reprocess_enable", false);
     private static final boolean PERSIST_RAW_REPROCESS_QCFA =
             getBoolean("persist.sys.camera.raw_reprocess_qcfa", false);
+    private static final int PERSIST_ZOOM_FRAME_VALUE =
+            getInt("persist.sys.camera.zoom.frame", 10);
     private static final boolean PERSIST_RAW_CB_INFO_SUPPORTED =
             getBoolean("persist.sys.camera.rawcbinfo", false);
     private static final int PERSIST_LIVE_SHOT_NUMBERS =
@@ -242,6 +244,8 @@ public class PersistUtil {
             return def;
         }
     }
+
+    public static int getZoomFrameValue() {return  PERSIST_ZOOM_FRAME_VALUE; }
 
     public static boolean getCamera2Mode() {
         return PERSIST_CAMERA_CAMERA2;
