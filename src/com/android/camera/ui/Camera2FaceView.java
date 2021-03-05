@@ -78,7 +78,6 @@ public class Camera2FaceView extends FaceView {
     private boolean mFdBlinkEnable = false;
     private boolean mPostZoomFov = false;
     private boolean mZoomRationSupported = false;
-    private boolean mIsSingleCameraId = false;
 
     public Camera2FaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -114,10 +113,6 @@ public class Camera2FaceView extends FaceView {
         mZoomRationSupported = supported;
     }
 
-    public void setSingleRearCameraMode(boolean singleRearCameraMode) {
-        mIsSingleCameraId = singleRearCameraMode;
-    }
-
     public void setFaces(Face[] faces, ExtendedFace[] extendedFaces) {
         if (LOGV) Log.v(TAG, "Num of faces=" + faces.length);
         if (mPause) return;
@@ -145,7 +140,7 @@ public class Camera2FaceView extends FaceView {
     }
 
     private boolean isPostZoomFOVMode () {
-        return (mZoomRationSupported && mPostZoomFov) || mIsSingleCameraId;
+        return (mZoomRationSupported && mPostZoomFov);
     }
 
     private boolean isFDRectOutOfBound(Rect faceRect) {

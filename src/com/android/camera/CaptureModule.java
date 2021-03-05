@@ -6406,18 +6406,6 @@ public class CaptureModule implements CameraModule, PhotoController,
         return mCurrentSceneMode.getCurrentId();
     }
 
-    public boolean isSingleCameraMode(){
-        if(CaptureModule.FRONT_ID==mCurrentSceneMode.getCurrentId())
-            return true;
-        String selectMode=mSettingsManager.getValue(SettingsManager.KEY_SELECT_MODE);
-        if(selectMode!=null&&selectMode.equals("single_rear_cameraid")
-                &&mSingleRearId!=-1){
-            return true;
-        }else{
-            return false;
-        }
-    }
-
     public boolean isTakingPicture() {
         for (int i = 0; i < mTakingPicture.length; i++) {
             if (mTakingPicture[i]) return true;

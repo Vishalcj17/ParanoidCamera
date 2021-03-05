@@ -137,7 +137,7 @@ public class PersistUtil {
     private static final boolean PERSIST_FD_RENDERING_SUPPORTED =
             getBoolean("persist.sys.camera.isFDRenderingSupported", false);
     private static final boolean PERSIST_CAM_ENABLE_POST_ZOOM_FOV =
-            getBoolean("persist.sys.enable_post_zoom_fov", false);
+            getBoolean("persist.sys.enable_post_zoom_fov", true);
     public static final boolean PERSIST_MULTI_CAMERA_ENABLED =
             getBoolean("persist.sys.camera.multiCameraEnabled", false);
     private static final boolean PERSIST_CAM_FD_SUPPORTED =
