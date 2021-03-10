@@ -3098,7 +3098,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mSceneCameraIds.get(CameraMode.PRO_MODE.ordinal()).rearCameraId = defaultId;
                     if (mSettingsManager.isHFRSupported()) { // filter HFR mode
                         removeList[CameraMode.HFR.ordinal()] = false;
-                        mSceneCameraIds.get(CameraMode.HFR.ordinal()).rearCameraId = mSingleRearId;
+                        if (mSingleRearId != -1) {
+                            mSceneCameraIds.get(CameraMode.HFR.ordinal()).rearCameraId = mSingleRearId;
+                        } else {
+                            mSceneCameraIds.get(CameraMode.HFR.ordinal()).rearCameraId = defaultId;
+                        }
                     }
                     if (mCurrentSceneMode == null) {
                         int index = mIntentMode == INTENT_MODE_VIDEO ?
