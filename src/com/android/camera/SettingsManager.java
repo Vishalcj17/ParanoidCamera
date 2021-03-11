@@ -2227,6 +2227,19 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return result;
     }
 
+    public boolean is4kRTBVideoSupported() {
+        boolean result = true;
+        try {
+            result = (1 == mCharacteristics.get(getCurrentCameraId()).get(
+                    CaptureModule.support_4k_rtb_video));
+        } catch (Exception e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_4k_rtb_video.toString());
+        }
+        Log.v(TAG, " is4kRTBVideoSupported result = " + result);
+        return result;
+    }
+
     private boolean isQLLSupported() {
         int result = 0;
         try {
@@ -2600,6 +2613,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
                     }
                     if (isEISV3Enabled && Math.min(sizes[i].getWidth(),sizes[i].getHeight()) < 720) {
                         //video size should't be larger than 720p when EIS V3 is enabled
+                        continue;
+                    }
+                    if (!is4kRTBVideoSupported() && getValue(KEY_SELECT_MODE) != null &&
+                            getValue(KEY_SELECT_MODE).equals("rtb") &&
+                            sizes[i].toString().equals("3840x2160")) {
+                        //video size should't supported the 4K size in RTB mode
                         continue;
                     }
                     res.add(sizes[i].toString());
