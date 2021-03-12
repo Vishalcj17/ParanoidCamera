@@ -3930,7 +3930,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                         if (TRACE_DEBUG) Trace.endSection();
                         unlockFocus(id);
                         enableShutterButtonOnMainThread(id);
-                        if(!isAIDEEnabled()){
+                        float aecLuxIndex = mCaptureResult.get(aec_start_up_luxindex_result);
+                        Log.i(TAG,"aecLuxIndex:"+ aecLuxIndex);
+                        if(!isAIDEEnabled() || ( isAIDEEnabled() && aecLuxIndex < 320)){
                             if (TRACE_DEBUG) Trace.beginSection("save jpeg");
                             byte[] srcImage = mActivity.getAIDenoiserService().generateImage(mActivity, true, CameraUtil.getJpegRotation(id,mOrientation), mPictureSize, cropRegion, mCaptureResult, quality);
                             Log.i(TAG,"save image:mOrientation:" +mOrientation  + ",ori:" + CameraUtil.getJpegRotation(id,mOrientation));
