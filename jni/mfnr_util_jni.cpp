@@ -186,13 +186,17 @@ void WriteData(FILE *fp, unsigned char *pStart, int width, int height, int strid
 jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeRegisterImage(
         JNIEnv* env, jobject thiz, jobject srcY, int ylength, jobject srcCr, int crlength)
     {
-       jbyte* srcYArray = (jbyte*)env->GetDirectBufferAddress(srcY);
-       jbyte* srcCrArray = (jbyte*)env->GetDirectBufferAddress(srcCr);
-       cpSrcY[cpSrcIndex] = (uint8_t*)malloc(ylength * sizeof(uint8_t));
-       cpSrcC[cpSrcIndex] = (uint8_t*)malloc(crlength * sizeof (uint8_t));
-       memcpy(cpSrcY[cpSrcIndex], srcYArray, ylength * sizeof (uint8_t));
-       memcpy(cpSrcC[cpSrcIndex], srcCrArray, crlength * sizeof (uint8_t));
-       cpSrcIndex++;
+        if(cpSrcIndex < MAX_ROW){
+            jbyte* srcYArray = (jbyte*)env->GetDirectBufferAddress(srcY);
+            jbyte* srcCrArray = (jbyte*)env->GetDirectBufferAddress(srcCr);
+            cpSrcY[cpSrcIndex] = (uint8_t*)malloc(ylength * sizeof(uint8_t));
+            cpSrcC[cpSrcIndex] = (uint8_t*)malloc(crlength * sizeof (uint8_t));
+            memcpy(cpSrcY[cpSrcIndex], srcYArray, ylength * sizeof (uint8_t));
+            memcpy(cpSrcC[cpSrcIndex], srcCrArray, crlength * sizeof (uint8_t));
+            cpSrcIndex++;
+        }else {
+            return -1;
+        }
        return 0;
     }
 
@@ -203,10 +207,10 @@ jint JNICALL Java_com_android_camera_aide_SwmfnrUtil_nativeReleaseImage(
        for(int i = cpSrcIndex; i > 0; i--) {
             cpSrcIndex--;
             printf("cpSrcIndex=%d ", cpSrcIndex);
-            if ( cpSrcY[cpSrcIndex] != NULL){
+            if ( cpSrcIndex >= 0 && cpSrcY[cpSrcIndex] != NULL){
                free(cpSrcY[cpSrcIndex]);
             }
-            if ( cpSrcC[cpSrcIndex] != NULL){
+            if ( cpSrcIndex >= 0 && cpSrcC[cpSrcIndex] != NULL){
                free(cpSrcC[cpSrcIndex]);
             }
         }
