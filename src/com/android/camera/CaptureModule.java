@@ -3577,9 +3577,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             }
             //apply swmfnr and aide param
             try {
-                Log.i(TAG, "setsemfnr enabled");
+                Log.i(TAG, "setsemfnr enabled, mAECLuxIndex: " + mAECLuxIndex);
                 captureBuilder.set(CaptureModule.isSWMFEnabled, (byte)(isSwMfnrEnabled() ? 0x01 : 0x00));
-                captureBuilder.set(CaptureModule.isAIDEEnabled, (byte)(isAIDEEnabled() ? 0x01 : 0x00));
+                captureBuilder.set(CaptureModule.isAIDEEnabled, (byte)(isAIDEEnabled() && mAECLuxIndex >= 320 ? 0x01 : 0x00));
             } catch (IllegalArgumentException e) {
                 Log.i(TAG,"can not read swmfnr enable or aide enable tag");
             }
