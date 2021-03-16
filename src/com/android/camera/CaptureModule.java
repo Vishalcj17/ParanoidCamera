@@ -10632,8 +10632,6 @@ public class CaptureModule implements CameraModule, PhotoController,
             try {
                 if (mExistAECWarmTag) {
                     mAECSensitivity = captureResult.get(CaptureModule.aec_sensitivity);
-                    Log.v("daming", " updateAWBCCTAndgains mAECSensitivity[0] :" + mAECSensitivity[0] +
-                            ", mAECSensitivity[1] :" + mAECSensitivity[1] + ", mAECSensitivity[2] :" + mAECSensitivity[2]);
                     mAECLuxIndex = captureResult.get(aec_start_up_luxindex_result);
                 }
 
@@ -12101,12 +12099,14 @@ public class CaptureModule implements CameraModule, PhotoController,
                     mUI.hideZoomSeekBar();
                     return;
                 } else if (zoomRatioRange != null && zoomRatioRange[0] != zoomRatioRange[1]) {
-                    mZoomValue = zoomRatioRange[0];
+                    if (mZoomValue < zoomRatioRange[0]) {
+                        mZoomValue = zoomRatioRange[0];
+                    }
                     mUI.showZoomSeekBar();
                     if (zoomRatioRange[0] > 1){
                         mUI.hideZoomSwitch();
                     }
-                    Log.v(TAG, "updateZoomSeekBarVisible showZoomSeekBar");
+                    Log.v(TAG, "updateZoomSeekBarVisible showZoomSeekBar mZoomValue :" + mZoomValue);
                     return;
                 }
             }
