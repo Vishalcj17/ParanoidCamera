@@ -5001,8 +5001,9 @@ public class CaptureModule implements CameraModule, PhotoController,
             if (null != mCaptureSession[i]) {
                 if (mCamerasOpened) {
                     try {
-                        mCaptureSession[i].capture(mPreviewRequestBuilder[i].build(), null,
-                                mCameraHandler);
+                        if (!(mCurrentSceneMode.mode == CameraMode.HFR && isHighSpeedRateCapture())) {
+                            mCaptureSession[i].capture(mPreviewRequestBuilder[i].build(), null, mCameraHandler);
+                        }
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     } catch (IllegalStateException e) {
@@ -7394,7 +7395,7 @@ public class CaptureModule implements CameraModule, PhotoController,
              public void run() {
                  mUI.showUIafterRecording();
                  mFrameProcessor.setVideoOutputSurface(null);
-                 restartSession(true);
+                 restartSession(false);
              }
         });
     }
