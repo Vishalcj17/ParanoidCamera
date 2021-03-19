@@ -199,6 +199,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_GC_SHDR = "pref_camera2_gc_shdr_key";
     public static final String KEY_SHADING_CORRECTION = "pref_camera2_shading_correction_key";
     public static final String KEY_EXTENDED_MAX_ZOOM = "pref_camera2_extended_max_zoom_key";
+    public static final String KEY_SWPDPC = "pref_camera2_swpdpc_key";
     public static final String KEY_SAVERAW = "pref_camera2_saveraw_key";
     public static final String KEY_ZOOM = "pref_camera2_zoom_key";
     public static final String KEY_SHARPNESS_CONTROL_MODE = "pref_camera2_sharpness_control_key";
@@ -278,7 +279,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     private boolean mIsMonoCameraPresent = false;
     private boolean mIsFrontCameraPresent = false;
     private boolean mHasMultiCamera = false;
-    private boolean mIsHFRSupported = false;
+    private boolean mIsHFRSupported = true;
     private JSONObject mDependency;
     private int mCameraId;
     private int mBackCamId = -1;
@@ -1234,6 +1235,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference gcShdr = mPreferenceGroup.findPreference(KEY_GC_SHDR);
         ListPreference extendedMaxZoom = mPreferenceGroup.findPreference(KEY_EXTENDED_MAX_ZOOM);
         ListPreference hvx_shdr = mPreferenceGroup.findPreference(KEY_HVX_SHDR);
+        ListPreference swpdpc = mPreferenceGroup.findPreference(KEY_SWPDPC);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
         ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
 
@@ -1431,6 +1433,28 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (hvx_shdr != null) {
             if (!isHvxShdrSupported(cameraId)){
                 mFilteredKeys.add(hvx_shdr.getKey());
+            } else {
+                CharSequence[] entry = hvx_shdr.getEntries();
+                CharSequence[] entryValues = hvx_shdr.getEntryValues();
+                int start = 0;
+                int end = 0;
+                if (!isHvxShdrRawBuffersRequired(cameraId)){
+                    start = 0;
+                    end = 1;
+                } else {
+                    start = 1;
+                    end = 3;
+                }
+                CharSequence[] newEntry = new CharSequence[end - start +1];
+                CharSequence[] newEntryValues = new CharSequence[end - start +1];
+                int index = 0;
+                for (int i = start; i <= end; i++){
+                    newEntry[index] = entry[i];
+                    newEntryValues[index] = entryValues[i];
+                    index ++;
+                }
+                hvx_shdr.setEntries(newEntry);
+                hvx_shdr.setEntryValues(newEntryValues);
             }
         }
 
@@ -1481,6 +1505,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if (extendedMaxZoom != null) {
             if (CaptureModule.CURRENT_MODE == CaptureModule.CameraMode.HFR) {
                 removePreference(mPreferenceGroup, KEY_EXTENDED_MAX_ZOOM);
+            }
+        }
+
+        if (swpdpc != null) {
+            if (!isSWPDPCSupported()) {
+                removePreference(mPreferenceGroup, KEY_SWPDPC);
             }
         }
 
@@ -1816,11 +1846,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public void filterHFROptions() {
         ListPreference hfrPref = mPreferenceGroup.findPreference(KEY_VIDEO_HIGH_FRAME_RATE);
         if (hfrPref != null) {
-            hfrPref.reloadInitialEntriesAndEntryValues();
-            mIsHFRSupported = !filterUnsupportedOptions(hfrPref,
-                    getSupportedHighFrameRate());
-            if (!mIsHFRSupported) {
-                mFilteredKeys.add(hfrPref.getKey());
+            if (mCaptureModule != null) {
+                CaptureModule.CameraMode mode = mCaptureModule.getCurrenCameraMode();
+                if (mode == CaptureModule.CameraMode.HFR){
+                    hfrPref.reloadInitialEntriesAndEntryValues();
+                    mIsHFRSupported = !filterUnsupportedOptions(hfrPref,
+                            getSupportedHighFrameRate());
+                    if (!mIsHFRSupported) {
+                        mFilteredKeys.add(hfrPref.getKey());
+                    }
+                }
             }
         }
     }
@@ -2204,6 +2239,16 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return (result == 1);
     }
 
+    private boolean isSWPDPCSupported() {
+        int result = 0;
+        try {
+            result = mCharacteristics.get(getCurrentCameraId()).get(CaptureModule.support_swpdpc);
+            Log.v(TAG, "isSWPDPCSupported result :" + result);
+        } catch (Exception e) {
+        }
+        return (result == 1);
+    }
+
     public boolean isAutoExposureRegionSupported(int id) {
         Integer maxAERegions = mCharacteristics.get(id).get(
                 CameraCharacteristics.CONTROL_MAX_REGIONS_AE);
@@ -2285,7 +2330,21 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         CaptureModule.support_hvx_shdr);
                 ret = hvx_shdr_available == 1;
             }
-        } catch(IllegalArgumentException e){
+        } catch(IllegalArgumentException|NullPointerException e){
+            e.printStackTrace();
+        }
+        return ret;
+    }
+
+    public boolean isHvxShdrRawBuffersRequired(int id){
+        boolean ret = false;
+        try{
+            if (mCharacteristics.size() >0){
+                byte isRawBuffersRequired = mCharacteristics.get(id).get(
+                        CaptureModule.isHvxShdrRawBuffersRequired);
+                ret = isRawBuffersRequired == 1;
+            }
+        } catch(IllegalArgumentException|NullPointerException e){
             e.printStackTrace();
         }
         return ret;

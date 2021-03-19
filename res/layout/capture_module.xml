@@ -299,25 +299,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
             <TextView
-                android:id="@+id/stats_awb_r_text"
-                android:textSize="15sp"
-                android:padding="10dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/stats_awb_g_text"
-                android:textSize="15sp"
-                android:padding="10dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/stats_awb_b_text"
-                android:textSize="15sp"
-                android:padding="10dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/stats_awb_cc_text"
+                android:id="@+id/stats_awb_text"
                 android:textSize="15sp"
                 android:padding="10dp"
                 android:layout_width="wrap_content"
@@ -334,25 +316,23 @@
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/stats_aec_lux_text"
+                android:id="@+id/stats_aec_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/stats_aec_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dip"
+            android:layout_marginTop="272dip"
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <TextView
-                android:id="@+id/stats_aec_linear_gain_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/stats_aec_exp_time_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/stats_aec_sensitivity_text"
+                android:id="@+id/stats_aec_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="15sp" />

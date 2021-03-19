@@ -1196,6 +1196,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_FD_BLINK);
                         videoAddList.add(SettingsManager.KEY_FACE_DETECTION_MODE);
                         videoAddList.add(SettingsManager.KEY_FACIAL_CONTOUR);
+                        videoAddList.add(SettingsManager.KEY_STATS_VISUALIZER_VALUE);
                         if (PersistUtil.is3ADebugEnabled()) {
                             videoAddList.add(SettingsManager.KEY_MANUAL_EXPOSURE);
                             videoAddList.add(SettingsManager.KEY_MANUAL_WB);
@@ -1217,6 +1218,7 @@ public class SettingsActivity extends PreferenceActivity {
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
                     videoAddList.add(SettingsManager.KEY_STATSNN_CONTROL);
+                    videoAddList.add(SettingsManager.KEY_SWPDPC);
                     addDeveloperOptions(developer, videoAddList);
                 }
                 removePreference(mode == VIDEO ?
@@ -1231,6 +1233,7 @@ public class SettingsActivity extends PreferenceActivity {
                     if (mSettingsManager.isMultiCameraEnabled()){
                         RTBList = new ArrayList<>(multiCameraPhotoList);
                         RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
+                        RTBList.add(SettingsManager.KEY_SWPDPC);
                     } else {
                         RTBList = new ArrayList<>(multiCameraSettingList);
                         RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
@@ -1246,6 +1249,7 @@ public class SettingsActivity extends PreferenceActivity {
                     ArrayList<String> SATList = new ArrayList<>(multiCameraSettingList);
                     SATList.add(SettingsManager.KEY_HDR);
                     SATList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
+                    SATList.add(SettingsManager.KEY_SWPDPC);
                     addDeveloperOptions(developer, SATList);
                 }
                 break;
@@ -1411,6 +1415,7 @@ public class SettingsActivity extends PreferenceActivity {
         updatePreference(SettingsManager.KEY_SWITCH_CAMERA);
         updatePreference(SettingsManager.KEY_TONE_MAPPING);
         updatePreference(SettingsManager.KEY_LIVE_PREVIEW);
+        updatePreference(SettingsManager.KEY_HVX_SHDR);
         updateMultiPreference(SettingsManager.KEY_STATS_VISUALIZER_VALUE);
         updatePictureSizePreferenceButton();
         updateVideoHDRPreference();

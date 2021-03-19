@@ -1429,8 +1429,12 @@
 
     <string name="pref_camera2_hvx_shdr_title" translatable="true">Enable HVX SHDR</string>
     <string name="pref_camera2_hvx_shdr_default" translatable="true">0</string>
+    <string name="pref_camera2_hvx_shdr_entry_recording" translatable="true">From recording</string>
+    <string name="pref_camera2_hvx_shdr_entry_preview" translatable="true">From preview</string>
     <string name="pref_camera2_hvx_shdr_entry_enable" translatable="true">enable</string>
     <string name="pref_camera2_hvx_shdr_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_hvx_shdr_entry_value_recording" translatable="false">3</string>
+    <string name="pref_camera2_hvx_shdr_entry_value_preview" translatable="false">2</string>
     <string name="pref_camera2_hvx_shdr_entry_value_enable" translatable="false">1</string>
     <string name="pref_camera2_hvx_shdr_entry_value_disable" translatable="false">0</string>
 
@@ -1440,6 +1444,13 @@
     <string name="pref_camera2_extended_max_zoom_entry_disable" translatable="true">disable</string>
     <string name="pref_camera2_extended_max_zoom_entry_value_enable" translatable="false">1</string>
     <string name="pref_camera2_extended_max_zoom_entry_value_disable" translatable="false">0</string>
+
+    <string name="pref_camera2_swpdpc_title" translatable="true">SWPDPC</string>
+    <string name="pref_camera2_swpdpc_default" translatable="false">0</string>
+    <string name="pref_camera2_swpdpc_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_swpdpc_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_swpdpc_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_swpdpc_entry_value_disable" translatable="false">0</string>
 
     <string name="pref_camera2_burst_limit_title" translatable="true">Burst Limit</string>
     <string name="pref_camera2_burst_limit_default" translatable="false">0</string>
