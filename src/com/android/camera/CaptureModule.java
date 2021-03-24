@@ -4422,7 +4422,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                                             exif = Exif.getExif(bytes);
                                             orientation = Exif.getOrientation(exif);
                                         } else {
-                                            orientation = CameraUtil.getJpegRotation(getMainCameraId(),mOrientation);
+                                            orientation = CameraUtil.getJpegRotation(mCamId,mOrientation);
                                         }
 
                                         if (mIntentMode != CaptureModule.INTENT_MODE_NORMAL &&
