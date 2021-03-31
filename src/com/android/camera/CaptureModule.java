@@ -3654,6 +3654,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     return;
                 }
                 if (mLongshotActive) {
+                    setTotalFrameNumsTag(captureBuilder, 2);
                     captureStillPictureForLongshot(captureBuilder, id);
                 } else {
                     captureStillPictureForCommon(captureBuilder, id);
@@ -3896,6 +3897,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                     captureBuilder.setTag("capture");
                     burstList.add(captureBuilder.build());
                     previewNum -= burstShotFpsNums;
+                    setTotalFrameNumsTag(captureBuilder, 0);
                 } else {
                     mPreviewRequestBuilder[id].setTag("preview");
                     burstList.add(mPreviewRequestBuilder[id].build());
