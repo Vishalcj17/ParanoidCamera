@@ -8136,6 +8136,11 @@ public class CaptureModule implements CameraModule, PhotoController,
                     }
                     captureRequestBuilder = mVideoPreviewRequestBuilder;
                     applyVideoCommentSettings(captureRequestBuilder, getMainCameraId());
+                } else if (!(mCurrentSession instanceof CameraConstrainedHighSpeedCaptureSession)) {
+                    captureRequestBuilder = mVideoPreviewRequestBuilder;
+                    applyVideoCommentSettings(captureRequestBuilder, getMainCameraId());
+                    mCurrentSession.setRepeatingRequest(captureRequestBuilder.build(),
+                            mCaptureCallback, mCameraHandler);
                 }
             }
 
