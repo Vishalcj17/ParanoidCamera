@@ -1362,17 +1362,22 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         String value = mSettingsManager.getValue(SettingsManager.KEY_SCENE_MODE);
         if (value == null) return;
         mSceneModeSwitcher.setVisibility(View.VISIBLE);
-        mSceneModeSwitcher.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clearFocus();
-                removeFilterMenu(false);
-                Intent intent = new Intent(mActivity, SceneModeActivity.class);
-                intent.putExtra(CameraUtil.KEY_IS_SECURE_CAMERA, mActivity.isSecureCamera());
-                intent.putExtra(SettingsActivity.CAMERA_MODULE, mModule.getCurrenCameraMode());
-                mActivity.startActivity(intent);
-            }
-        });
+        if (mSettingsManager.isMultiCameraEnabled()){
+            mSceneModeSwitcher.setEnabled(false);
+        } else {
+            mSceneModeSwitcher.setEnabled(true);
+            mSceneModeSwitcher.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    clearFocus();
+                    removeFilterMenu(false);
+                    Intent intent = new Intent(mActivity, SceneModeActivity.class);
+                    intent.putExtra(CameraUtil.KEY_IS_SECURE_CAMERA, mActivity.isSecureCamera());
+                    intent.putExtra(SettingsActivity.CAMERA_MODULE, mModule.getCurrenCameraMode());
+                    mActivity.startActivity(intent);
+                }
+            });
+        }
     }
 
     private void initFilterModeButton() {
@@ -2029,7 +2034,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mMakeupButton.setVisibility(View.GONE);
         }
         mFilterModeSwitcher.setEnabled(enableFilterMenu);
-        mSceneModeSwitcher.setEnabled(enableSceneMenu);
+        if (mSettingsManager.isMultiCameraEnabled()){
+            mSceneModeSwitcher.setEnabled(false);
+        } else {
+            mSceneModeSwitcher.setEnabled(enableSceneMenu);
+        }
     }
 
     public void toggleProgressBar(boolean show) {
