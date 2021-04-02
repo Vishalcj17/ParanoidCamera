@@ -625,15 +625,20 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mZoomSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String[] entries = mActivity.getResources().getStringArray(
-                        R.array.pref_camera2_zomm_switch_entries);
-                String[] values = mActivity.getResources().getStringArray(
-                        R.array.pref_camera2_zomm_switch_entryvalues);
+                String[] entries;
+                String[] values;
                 float[] zoomRatioRange = mSettingsManager.getSupportedRatioZoomRange(
                         mModule.getMainCameraId());
                 if (zoomRatioRange != null && zoomRatioRange[0] <1){
-                    entries[entries.length - 1] = String.valueOf(zoomRatioRange[0])+"x";
-                    values[values.length - 1] = String.valueOf(zoomRatioRange[0]);
+                    entries = mActivity.getResources().getStringArray(
+                            R.array.pref_camera2_zomm_switch_wide_entries);
+                    values = mActivity.getResources().getStringArray(
+                            R.array.pref_camera2_zomm_switch_wide_entryvalues);
+                } else {
+                    entries = mActivity.getResources().getStringArray(
+                            R.array.pref_camera2_zomm_switch_entries);
+                    values = mActivity.getResources().getStringArray(
+                            R.array.pref_camera2_zomm_switch_entryvalues);
                 }
 
                 mZoomIndex = mZoomIncrease? mZoomIndex+1 : mZoomIndex -1;
@@ -805,6 +810,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mZoomFixedValue = 1.0f;
             mZoomSeekBar.setMax(zoomMax.intValue() * 100 - 100);
             mZoomRatioSupport = false;
+        }
+        if(mZoomFixedValue < 1) {
+            mZoomIndex = 1;
+            mZoomIncrease = true;
+        } else {
+            mZoomIndex = 0;
+            mZoomIncrease = true;
         }
         updateZoomSeekBar(zoomMin);
         mZoomLinearLayout.setVisibility(View.VISIBLE);
@@ -1137,8 +1149,6 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
                 mSurfaceViewMono.setVisibility(View.GONE);
             }
         }
-        mZoomIndex = 0;
-        mZoomIncrease = true;
         mZoomSwitch.setText("1x");
         if(mModule.getCurrenCameraMode() == CaptureModule.CameraMode.RTB ||
                 isRTBModeInSelectMode()) {
