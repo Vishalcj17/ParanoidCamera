@@ -3304,6 +3304,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
         init();
     }
 
+
+    public long geMinFrameDuration(int format, Size size){
+        StreamConfigurationMap map = mCharacteristics.get(getCurrentCameraId()).get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Long minFrameDuration = map.getOutputMinFrameDuration(format, size);
+        return minFrameDuration;
+    }
+
     private void clearPerCameraPreferences() {
         String[] preferencesNames = ComboPreferences.getSharedPreferencesNames(mContext, mPrepNameKeys);
         for ( String name : preferencesNames ) {

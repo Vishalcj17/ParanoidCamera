@@ -7706,6 +7706,20 @@ public class CaptureModule implements CameraModule, PhotoController,
             } catch (IllegalArgumentException e) {
             }
         }
+        if(SettingsManager.getInstance().isZSLInAppEnabled()){
+            long minFrameDuration = 0;
+            if(mPictureSize.getWidth() * mPictureSize.getHeight() < mSupportedMaxPictureSize.getWidth()*mSupportedMaxPictureSize.getHeight()){
+                minFrameDuration = mSettingsManager.geMinFrameDuration(ImageFormat.PRIVATE, mSupportedMaxPictureSize);
+                Log.i(TAG,"mChosenImageFormat:" + ImageFormat.PRIVATE + ",mSupportedMaxPictureSize:" + mSupportedMaxPictureSize.toString());
+            }else {
+                minFrameDuration = mSettingsManager.geMinFrameDuration(ImageFormat.JPEG, mPictureSize);
+                Log.i(TAG,"mChosenImageFormat:" + ImageFormat.JPEG + ",mPictureSize:" + mPictureSize.toString());
+            }
+            int fps = (int)(1000000000/minFrameDuration);
+            Log.i(TAG, "frameduration:" + minFrameDuration + "fps:" + fps);
+            Range range = new Range(fps, fps);
+            builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, range);
+        }
     }
 
     private void lockAfAeForRequestBuilder(CaptureRequest.Builder builder, int id){
