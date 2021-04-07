@@ -267,5 +267,10 @@
     "1": {"pref_camera2_longshot_key":"off",
           "pref_camera2_zsl_key":"hal-zsl"},
     "0":{}
+  },
+  "pref_camera2_select_mode_key":
+  {
+    "rtb": {"pref_camera2_touch_track_focus_key": "off"}
   }
+
 }
