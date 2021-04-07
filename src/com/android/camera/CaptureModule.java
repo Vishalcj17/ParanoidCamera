@@ -3279,6 +3279,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         return mLongshotActive;
     }
 
+    public boolean isLongshoting(){
+        return mLongshoting;
+    }
+
     private void parallelLockFocusExposure(int id) {
         if (mActivity == null || mCameraDevice[id] == null
                 || !checkSessionAndBuilder(mCaptureSession[id], mPreviewRequestBuilder[id])) {

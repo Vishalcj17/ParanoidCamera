@@ -876,6 +876,7 @@
     <string name="pref_camera_longshot_default" translatable="false">off</string>
     <string name="pref_camera_longshot_title">Continuous Shot</string>
     <string name="msg_cancel_longshot_for_limited_memory">run out of memory, canceling longshot</string>
+    <string name="msg_not_allow_settings_in_longshot">Cannot launch settings during processing longshot</string>
 
     <string name="pref_camera_gridline_title">Grid Line</string>
     <!-- Toast showing non-supported functionality for flash in AE bracket -->

@@ -67,6 +67,7 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.camera.imageprocessor.filter.BeautificationFilter;
 import com.android.camera.data.Camera2ModeAdapter;
@@ -1270,6 +1271,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mPreviewLayout != null && mPreviewLayout.getVisibility() == View.VISIBLE) {
             return;
         }
+        if (mModule.isLongshoting()){
+            Toast.makeText(mActivity,
+                    R.string.msg_not_allow_settings_in_longshot,Toast.LENGTH_SHORT).show();
+            return;
+        }
         clearFocus();
         removeFilterMenu(false);
         Intent intent = new Intent(mActivity, SettingsActivity.class);
@@ -1598,6 +1604,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (mModule.getCurrentIntentMode() == CaptureModule.INTENT_MODE_NORMAL) {
             mShutterButton.setVisibility(View.VISIBLE);
         }
+    }
+
+    public void setSettingIconEnabled(boolean enabled){
+        if(mSettingsIcon != null)
+            mSettingsIcon.setEnabled(enabled);
     }
 
     public void showUIafterRecording() {
