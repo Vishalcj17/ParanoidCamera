@@ -1438,14 +1438,23 @@ public class SettingsManager implements ListMenu.SettingsListener {
             } else {
                 CharSequence[] entry = hvx_shdr.getEntries();
                 CharSequence[] entryValues = hvx_shdr.getEntryValues();
+                boolean enableDefault = false;
+                boolean enablePreview = false;
+                String previousValue = hvx_shdr.getValue();
                 int start = 0;
                 int end = 0;
                 if (!isHvxShdrRawBuffersRequired(cameraId)){
                     start = 0;
                     end = 1;
+                    if ("2".equals(previousValue) || "3".equals(previousValue)){
+                        enableDefault = true;
+                    }
                 } else {
                     start = 1;
                     end = 3;
+                    if ("0".equals(previousValue)){
+                        enablePreview = true;
+                    }
                 }
                 CharSequence[] newEntry = new CharSequence[end - start +1];
                 CharSequence[] newEntryValues = new CharSequence[end - start +1];
@@ -1457,6 +1466,11 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 }
                 hvx_shdr.setEntries(newEntry);
                 hvx_shdr.setEntryValues(newEntryValues);
+                if (enablePreview){
+                    hvx_shdr.setValueIndex(1);
+                } else if (enableDefault){
+                    hvx_shdr.setValueIndex(0);
+                }
             }
         }
 
