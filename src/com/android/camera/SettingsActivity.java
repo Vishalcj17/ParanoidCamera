@@ -308,8 +308,7 @@ public class SettingsActivity extends PreferenceActivity {
         boolean isInSATOrRTBMode = false;
         CaptureModule.CameraMode mode =
                 (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
-        boolean legacyRTB = mode == RTB && !CaptureModule.MCXMODE;
-        if (mode != null && (mode ==SAT || legacyRTB)){
+        if (mode != null && (mode == SAT || mode == RTB)){
             isInSATOrRTBMode = true;
         }
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
