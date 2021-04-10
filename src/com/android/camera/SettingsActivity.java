@@ -282,6 +282,10 @@ public class SettingsActivity extends PreferenceActivity {
                     updateVideoHfrFpsPreference();
                 }
 
+                if (pref.getKey().equals(SettingsManager.KEY_HVX_SHDR)) {
+                    updateEISPreference();
+                }
+
                 if (pref.getKey().equals(SettingsManager.KEY_MFHDR) ||
                         pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)) {
                     mSettingsManager.updatePictureAndVideoSize();
@@ -304,7 +308,8 @@ public class SettingsActivity extends PreferenceActivity {
         boolean isInSATOrRTBMode = false;
         CaptureModule.CameraMode mode =
                 (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
-        if (mode != null && mode ==SAT) {
+        boolean legacyRTB = mode == RTB && !CaptureModule.MCXMODE;
+        if (mode != null && (mode ==SAT || legacyRTB)){
             isInSATOrRTBMode = true;
         }
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
@@ -1721,6 +1726,12 @@ public class SettingsActivity extends PreferenceActivity {
                 if (selectModePref.getValue().equals("rtb") && mode == CaptureModule.CameraMode.VIDEO) {
                     eisPref.setEnabled(false);
                 }
+            }
+            ListPreference hvx_shdr = (ListPreference)findPreference(
+                    SettingsManager.KEY_HVX_SHDR);
+            if(hvx_shdr != null && Integer.valueOf(hvx_shdr.getValue()) > 0) {
+                eisPref.setValue("V3");
+                eisPref.setEnabled(false);
             }
         }
     }
