@@ -1363,7 +1363,7 @@
     <string name="stats_visualizer_bg_label">BG GraphView</string>
     <string name="stats_visualizer_be_label">BE GraphView</string>
 
-    <string name="pref_camera2_variable_fps_title" translatable="true">VARIABLE FPS</string>
+    <string name="pref_camera2_variable_fps_title" translatable="true">DYNAMIC FPS</string>
     <string name="pref_camera2_variable_fps_default" translatable="false">0</string>
     <string name="pref_camera2_variable_fps_entry_enable" translatable="true">enable</string>
     <string name="pref_camera2_variable_fps_entry_disable" translatable="true">disable</string>
