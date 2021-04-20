@@ -168,6 +168,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executor;
 import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -1669,8 +1670,10 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCameraOpenCloseLock.release();
             mCamerasOpened = false;
             mIsCloseCamera = true;
-
-            if(mActivity.getAIDenoiserService() != null && mActivity.getAIDenoiserService().getFrameNumbers(mGain) != mActivity.getAIDenoiserService().getImagesNum() && mActivity.getAIDenoiserService().isDoingMfnr()){
+            if(mActivity.getAIDenoiserService() != null &&
+                    mActivity.getAIDenoiserService().getFrameNumbers(mGain) !=
+                            mActivity.getAIDenoiserService().getImagesNum() &&
+                    mActivity.getAIDenoiserService().isDoingMfnr()){
                 warningToast("No enough images for picture.");
                 mActivity.getAIDenoiserService().setDoingMfnr(false);
             }
@@ -6708,7 +6711,13 @@ public class CaptureModule implements CameraModule, PhotoController,
             return;
         }
 
-        mSettingsManager.setValue(key, value);
+        if (value.contains(";")) {
+            String[] splitValues = value.split(";");
+            Set<String> set= new HashSet<>(Arrays.asList(splitValues));
+            mSettingsManager.setValue(key, set);
+        } else {
+            mSettingsManager.setValue(key, value);
+        }
         ComboPreferences pref = new ComboPreferences(mActivity);
         pref.setLocalId(mActivity, getMainCameraId());
         Editor editor = pref.edit();
