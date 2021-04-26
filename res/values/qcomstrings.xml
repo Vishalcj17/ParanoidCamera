@@ -1351,6 +1351,20 @@
     <string name="pref_camera2_force_aux_entry_value_on" translatable="false">on</string>
     <string name="pref_camera2_force_aux_entry_value_off" translatable="false">off</string>
 
+    <string name="pref_camera2_oncapturebufferlost_title" translatable="false">onCaptureBufferLost hint</string>
+    <string name="pref_camera2_oncapturebufferlost_default" translatable="false">off</string>
+    <string name="pref_camera2_oncapturebufferlost_entry_on" translatable="false">on</string>
+    <string name="pref_camera2_oncapturebufferlost_entry_off" translatable="false">off</string>
+    <string name="pref_camera2_oncapturebufferlost_entry_value_on" translatable="false">on</string>
+    <string name="pref_camera2_oncapturebufferlost_entry_value_off" translatable="false">off</string>
+
+    <string name="pref_camera2_stats_visualizer_enable_title" translatable="false">Stats Visualizer Enable</string>
+    <string name="pref_camera2_stats_visualizer_enable_default" translatable="false">0</string>
+    <string name="pref_camera2_stats_visualizer_entry_enable" translatable="false">enable</string>
+    <string name="pref_camera2_stats_visualizer_entry_disable" translatable="false">disable</string>
+    <string name="pref_camera2_stats_visualizer_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_stats_visualizer_entry_value_disable" translatable="false">0</string>
+
     <string name="pref_camera2_stats_visualizer_title" translatable="true">Stats Visualizer</string>
     <string name="pref_camera2_stats_visualizer_default" translatable="false"></string>
     <string name="pref_camera2_stats_visualizer_entry_bg_stats" translatable="false">BG Stats</string>

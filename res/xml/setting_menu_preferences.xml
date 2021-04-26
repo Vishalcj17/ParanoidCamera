@@ -663,6 +663,15 @@
             android:summary="%s"/>
 
         <ListPreference
+            android:key="pref_camera2_oncapturebufferlost_key"
+            android:defaultValue="@string/pref_camera2_oncapturebufferlost_default"
+            android:title="@string/pref_camera2_oncapturebufferlost_title"
+            android:entries="@array/pref_camera2_oncapturebufferlost_entries"
+            android:entryValues="@array/pref_camera2_oncapturebufferlost_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
             android:defaultValue="@string/pref_camera2_switch_camera_default"
             android:key="pref_camera2_switch_camera_key"
             android:layout="@layout/preference"

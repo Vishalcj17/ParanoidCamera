@@ -492,6 +492,13 @@
         camera:entryValues="@array/pref_camera2_force_aux_entryvalues" />
 
     <ListPreference
+        camera:key="pref_camera2_oncapturebufferlost_key"
+        camera:defaultValue="@string/pref_camera2_oncapturebufferlost_default"
+        camera:title="@string/pref_camera2_oncapturebufferlost_title"
+        camera:entries="@array/pref_camera2_oncapturebufferlost_entries"
+        camera:entryValues="@array/pref_camera2_oncapturebufferlost_entryvalues" />
+
+    <ListPreference
         camera:defaultValue="@string/pref_camera2_switch_camera_default"
         camera:key="pref_camera2_switch_camera_key"
         camera:title="@string/pref_camera2_switch_camera_title"/>

@@ -146,6 +146,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_REDEYE_REDUCTION = "pref_camera2_redeyereduction_key";
     public static final String KEY_FRONT_REAR_SWITCHER_VALUE = "pref_camera2_switcher_key";
     public static final String KEY_FORCE_AUX = "pref_camera2_force_aux_key";
+    public static final String KEY_ONCAPTUREBUFFERLOST_HINT = "pref_camera2_oncapturebufferlost_key";
     public static final String KEY_SWITCH_CAMERA = "pref_camera2_switch_camera_key";
     public static final String KEY_MULTI_CAMERA_MODE = "pref_camera2_multi_camera_mode_key";
     public static final String KEY_PHYSICAL_CAMERA = "pref_camera2_physical_camera_key";

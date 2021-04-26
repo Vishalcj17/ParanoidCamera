@@ -1246,7 +1246,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             processCaptureResult(result);
             mPostProcessor.onMetaAvailable(result);
             if (statsParametersUpdated <= STATS_PARAMETER_UPDATE) {
-                updateStatsParameters(result);
+                //updateStatsParameters(result);
             }
             String stats_visualizer = mSettingsManager.getValue(
                     SettingsManager.KEY_STATS_VISUALIZER_VALUE);
@@ -4126,7 +4126,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                                                 long frameNumber) {
                     Log.d(TAG, "captureStillPictureForCommon onCaptureBufferLost: frameNumber is "
                             + frameNumber);
-                    showToast("Capture failed: buffer lost!");
+                    if (!mPaused && isOnCaptureBufferLostHintOn()) {
+                        showToast("Capture failed: buffer lost!");
+                    }
                 }
 
                 @Override
@@ -4273,7 +4275,9 @@ public class CaptureModule implements CameraModule, PhotoController,
                                                         long frameNumber) {
                             Log.d(TAG, "captureVideoshot onCaptureBufferLost: frameNumber is "
                                     + frameNumber);
-                            showToast("Capture failed: buffer lost!");
+                            if (!mPaused && isOnCaptureBufferLostHintOn()) {
+                                showToast("Capture failed: buffer lost!");
+                            }
                         }
 
                         @Override
@@ -12338,6 +12342,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             this.swithCameraId = swithCameraId;
         }
 
+    }
+
+    private boolean isOnCaptureBufferLostHintOn() {
+        String value = mSettingsManager.getValue(SettingsManager.KEY_ONCAPTUREBUFFERLOST_HINT);
+        return value != null && value.equals("on");
     }
 
     private boolean isForceAUXOn(CameraMode mode) {
