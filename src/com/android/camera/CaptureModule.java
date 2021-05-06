@@ -5569,8 +5569,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                 updateLockAFAEVisibility();
                 mUI.initFlashButton();
             }
-            writeXMLForWarmAwb();
         }
+        writeXMLForWarmAwb();
         if (mLongshoting && isExitCamera) {
             if (mCurrentSession != null) {
                 try {
@@ -7816,6 +7816,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyHistogram(builder);
         applyBGStats(builder);
         applyBEStats(builder);
+        applyAWBCCTAndAgain(builder);
     }
 
     private void applyVideoHDR(CaptureRequest.Builder builder) {
