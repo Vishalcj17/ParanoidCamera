@@ -124,6 +124,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
 	public static final int SCENE_MODE_DEEPPORTRAIT_INT = SCENE_MODE_CUSTOM_START + 11;
     public static final int JPEG_FORMAT = 0;
     public static final int HEIF_FORMAT = 1;
+    public static final String LOGICAL_AND_PHYSICAL = "99";
     public static final String SCENE_MODE_DUAL_STRING = "100";
     public static final String SCENE_MODE_SUNSET_STRING = "10";
     public static final String SCENE_MODE_LANDSCAPE_STRING = "4";
@@ -145,6 +146,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_REDEYE_REDUCTION = "pref_camera2_redeyereduction_key";
     public static final String KEY_FRONT_REAR_SWITCHER_VALUE = "pref_camera2_switcher_key";
     public static final String KEY_FORCE_AUX = "pref_camera2_force_aux_key";
+    public static final String KEY_ONCAPTUREBUFFERLOST_HINT = "pref_camera2_oncapturebufferlost_key";
     public static final String KEY_SWITCH_CAMERA = "pref_camera2_switch_camera_key";
     public static final String KEY_MULTI_CAMERA_MODE = "pref_camera2_multi_camera_mode_key";
     public static final String KEY_PHYSICAL_CAMERA = "pref_camera2_physical_camera_key";
@@ -243,6 +245,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_AEC_ADRC_GAIN = "pref_camera2_aec_adrc_gain";
     public static final String KEY_AEC_DARK_BOOST_GAIN = "pref_camera2_aec_dark_boost_gain";
     public static final String KEY_STATS_VISUALIZER_VALUE = "pref_camera2_stats_visualizer_key";
+    public static final String KEY_SINGLE_PHYSICAL_CAMERA = "pref_camera2_single_physical_camera_key";
 
     public static final HashMap<String, Integer> KEY_ISO_INDEX = new HashMap<String, Integer>();
     public static final String KEY_FD_SMILE = "pref_camera2_fd_smile_key";
@@ -261,6 +264,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
     public static final String KEY_HVX_SHDR = "pref_camera2_hvx_shdr_key";
     public static final String KEY_QLL = "pref_camera2_qll_key";
     public static final String KEY_AI_DENOISER = "pref_camera2_ai_denoiser_key";
+    public static final String KEY_INSENSOR_ZOOM = "pref_camera2_insensor_zoom_key";
 
     public static final String KEY_RAW_REPROCESS_TYPE = "pref_camera2_raw_reprocess_key";
     public static final String KEY_RAWINFO_TYPE = "pref_camera2_rawinfo_type_key";
@@ -917,6 +921,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
         return "1".equals(enable);
     }
 
+    public String getSinglePhysicalCamera(){
+        String id = getValue(KEY_SINGLE_PHYSICAL_CAMERA);
+        if (!"logical".equals(id) && id != null)
+            return id;
+        else
+            return null;
+    }
+
 
     public Set<String> getPhysicalCameraId() {
         if (!isMultiCameraEnabled())
@@ -1238,6 +1250,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
         ListPreference swpdpc = mPreferenceGroup.findPreference(KEY_SWPDPC);
         ListPreference qll = mPreferenceGroup.findPreference(KEY_QLL);
         ListPreference shadingCorrection = mPreferenceGroup.findPreference(KEY_SHADING_CORRECTION);
+        ListPreference inSensorZoom = mPreferenceGroup.findPreference(KEY_INSENSOR_ZOOM);
 
         if (forceAUX != null && !mHasMultiCamera) {
             removePreference(mPreferenceGroup, KEY_FORCE_AUX);
@@ -1436,14 +1449,23 @@ public class SettingsManager implements ListMenu.SettingsListener {
             } else {
                 CharSequence[] entry = hvx_shdr.getEntries();
                 CharSequence[] entryValues = hvx_shdr.getEntryValues();
+                boolean enableDefault = false;
+                boolean enablePreview = false;
+                String previousValue = hvx_shdr.getValue();
                 int start = 0;
                 int end = 0;
                 if (!isHvxShdrRawBuffersRequired(cameraId)){
                     start = 0;
                     end = 1;
+                    if ("2".equals(previousValue) || "3".equals(previousValue)){
+                        enableDefault = true;
+                    }
                 } else {
                     start = 1;
                     end = 3;
+                    if ("0".equals(previousValue)){
+                        enablePreview = true;
+                    }
                 }
                 CharSequence[] newEntry = new CharSequence[end - start +1];
                 CharSequence[] newEntryValues = new CharSequence[end - start +1];
@@ -1455,6 +1477,11 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 }
                 hvx_shdr.setEntries(newEntry);
                 hvx_shdr.setEntryValues(newEntryValues);
+                if (enablePreview){
+                    hvx_shdr.setValueIndex(1);
+                } else if (enableDefault){
+                    hvx_shdr.setValueIndex(0);
+                }
             }
         }
 
@@ -1522,6 +1549,12 @@ public class SettingsManager implements ListMenu.SettingsListener {
             }
         }
 
+        if (inSensorZoom != null) {
+            if (!isInSensorZoomSupported()) {
+                removePreference(mPreferenceGroup, KEY_INSENSOR_ZOOM);
+            }
+        }
+
         if (physicalCamera != null) {
             if (!buildPhysicalCamera(cameraId, physicalCamera) ||
                     !PersistUtil.isMultiCameraEnabled()){
@@ -1533,6 +1566,7 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_RAW_CALLBACK);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_HDR);
                 removePreference(mPreferenceGroup, KEY_PHYSICAL_MFNR);
+                removePreference(mPreferenceGroup,KEY_SINGLE_PHYSICAL_CAMERA);
                 for (String key : SettingsManager.KEY_PHYSICAL_SIZE) {
                     removePreference(mPreferenceGroup, key);
                 }
@@ -1555,6 +1589,8 @@ public class SettingsManager implements ListMenu.SettingsListener {
                         KEY_PHYSICAL_HDR);
                 ListPreference physicalMFNR = mPreferenceGroup.findPreference(
                         KEY_PHYSICAL_MFNR);
+                ListPreference singlePhysicalCamera = mPreferenceGroup.findPreference(
+                        KEY_SINGLE_PHYSICAL_CAMERA);
                 preferences.add(physicalCamcorder);
                 preferences.add(physicalJpegCallback);
                 preferences.add(physicalMFNR);
@@ -1580,6 +1616,15 @@ public class SettingsManager implements ListMenu.SettingsListener {
                 physicalYuvCallback.setEntryValues(newEntryValues);
                 physicalRawCallback.setEntries(newEntries);
                 physicalRawCallback.setEntryValues(newEntryValues);
+                CharSequence[] singlePhysicalEntries = new CharSequence[newEntries.length + 1];
+                CharSequence[] singlePhysicalValues = new CharSequence[newEntryValues.length + 1];
+                System.arraycopy(newEntries, 0, singlePhysicalEntries, 0, newEntries.length);
+                System.arraycopy(newEntryValues, 0, singlePhysicalValues, 0,
+                        newEntryValues.length);
+                singlePhysicalEntries[singlePhysicalEntries.length - 1] = "Logical & all physicals";
+                singlePhysicalValues[singlePhysicalValues.length - 1] = LOGICAL_AND_PHYSICAL;
+                singlePhysicalCamera.setEntries(singlePhysicalEntries);
+                singlePhysicalCamera.setEntryValues(singlePhysicalValues);
                 initPhysicalSizePreference(mCharacteristics.get(cameraId).getPhysicalCameraIds());
             }
         }
@@ -2260,6 +2305,20 @@ public class SettingsManager implements ListMenu.SettingsListener {
         } catch (Exception e) {
         }
         return (result == 1);
+    }
+
+    public boolean isInSensorZoomSupported() {
+        int result = 0;
+        try {
+            result = mCharacteristics.get(getCurrentCameraId()).get(
+                    CaptureModule.support_insensor_zoom);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "cannot find vendor tag: " +
+                    CaptureModule.support_insensor_zoom.toString());
+        }
+        Log.v(TAG, " isInSensorZoomSupported result :" + result);
+        //return (result == 1);
+        return true;
     }
 
     public boolean isAutoExposureRegionSupported(int id) {
@@ -3302,6 +3361,14 @@ public class SettingsManager implements ListMenu.SettingsListener {
         if(mValuesMap != null) mValuesMap = null;
         mCaptureModule.restoreCameraIds();
         init();
+    }
+
+
+    public long geMinFrameDuration(int format, Size size){
+        StreamConfigurationMap map = mCharacteristics.get(getCurrentCameraId()).get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Long minFrameDuration = map.getOutputMinFrameDuration(format, size);
+        return minFrameDuration;
     }
 
     private void clearPerCameraPreferences() {

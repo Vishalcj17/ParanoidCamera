@@ -243,7 +243,10 @@
          "pref_camera2_noise_reduction_key":"high-quality",
          "pref_camera2_video_rotation_key":"0",
          "pref_camera2_flashmode_key":"off",
-         "pref_camera2_longshot_key":"off"},
+         "pref_camera2_longshot_key":"off",
+         "pref_camera2_hdr_key": "disable",
+         "pref_camera2_scenemode_key": "0",
+         "pref_camera2_timer_key": "0"},
     "0":{}
   },
   "pref_camera2_facedetection_key":
@@ -267,5 +270,10 @@
     "1": {"pref_camera2_longshot_key":"off",
           "pref_camera2_zsl_key":"hal-zsl"},
     "0":{}
+  },
+  "pref_camera2_select_mode_key":
+  {
+    "rtb": {"pref_camera2_touch_track_focus_key": "off"}
   }
+
 }

@@ -308,8 +308,7 @@ public class SettingsActivity extends PreferenceActivity {
         boolean isInSATOrRTBMode = false;
         CaptureModule.CameraMode mode =
                 (CaptureModule.CameraMode) getIntent().getSerializableExtra(CAMERA_MODULE);
-        boolean legacyRTB = mode == RTB && !CaptureModule.MCXMODE;
-        if (mode != null && (mode ==SAT || legacyRTB)){
+        if (mode != null && (mode == SAT || mode == RTB)){
             isInSATOrRTBMode = true;
         }
         ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
@@ -1141,6 +1140,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_FACIAL_CONTOUR);
                 add(SettingsManager.KEY_ZSL);
                 add(SettingsManager.KEY_TONE_MAPPING);
+                add(SettingsManager.KEY_ONCAPTUREBUFFERLOST_HINT);
                 add(SettingsManager.KEY_BURST_LIMIT);
             }
         };
@@ -1210,6 +1210,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.add(SettingsManager.KEY_PHYSICAL_CAMERA);
                         videoAddList.add(SettingsManager.KEY_MFHDR);
                         videoAddList.add(SettingsManager.KEY_GC_SHDR);
+                        videoAddList.add(SettingsManager.KEY_ONCAPTUREBUFFERLOST_HINT);
                         if (PersistUtil.enableMediaRecorder()) {
                             videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
                         }
@@ -1224,6 +1225,7 @@ public class SettingsActivity extends PreferenceActivity {
                     videoAddList.add(SettingsManager.KEY_SELECT_MODE);
                     videoAddList.add(SettingsManager.KEY_STATSNN_CONTROL);
                     videoAddList.add(SettingsManager.KEY_SWPDPC);
+                    videoAddList.add(SettingsManager.KEY_INSENSOR_ZOOM);
                     addDeveloperOptions(developer, videoAddList);
                 }
                 removePreference(mode == VIDEO ?
@@ -1243,7 +1245,7 @@ public class SettingsActivity extends PreferenceActivity {
                         RTBList = new ArrayList<>(multiCameraSettingList);
                         RTBList.add(SettingsManager.KEY_MULTI_CAMERA_MODE);
                         RTBList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
-
+                        RTBList.add(SettingsManager.KEY_INSENSOR_ZOOM);
                     }
                     addDeveloperOptions(developer, RTBList);
                 }
@@ -1372,6 +1374,7 @@ public class SettingsActivity extends PreferenceActivity {
     }
 
     private void initializePhysicalPreferences(){
+        updatePreference(SettingsManager.KEY_SINGLE_PHYSICAL_CAMERA);
         updatePreference(SettingsManager.KEY_MULTI_CAMERA_MODE);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMERA);
         updateMultiPreference(SettingsManager.KEY_PHYSICAL_CAMCORDER);
