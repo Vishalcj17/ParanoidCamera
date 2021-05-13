@@ -726,6 +726,13 @@
         camera:entryValues="@array/pref_camera2_hvx_shdr_entry_values" />
 
     <ListPreference
+        camera:key="pref_camera2_hvx_mfhdr_key"
+        camera:defaultValue="@string/pref_camera2_hvx_mfhdr_default"
+        camera:title="@string/pref_camera2_hvx_mfhdr_title"
+        camera:entries="@array/pref_camera2_hvx_mfhdr_entries"
+        camera:entryValues="@array/pref_camera2_hvx_mfhdr_entry_values" />
+
+    <ListPreference
         camera:key="pref_camera2_swpdpc_key"
         camera:defaultValue="@string/pref_camera2_swpdpc_default"
         camera:title="@string/pref_camera2_swpdpc_title"

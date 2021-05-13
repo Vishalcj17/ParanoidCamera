@@ -632,6 +632,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static final CameraCharacteristics.Key<Byte> heic_support_enable =
             new CameraCharacteristics.Key<>("org.quic.camera.HEICSupport.HEICEnabled",Byte.class);
 
+    public static final CameraCharacteristics.Key<Byte> hvxMFHDRSupported =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxMFHDRMode.hvxMFHDRSupported", Byte.class);
     // Touch Track Focus
     public static final CaptureRequest.Key<Byte> t2t_enable = new CaptureRequest.Key<>(
             "org.quic.camera2.objectTrackingConfig.Enable", Byte.class);
@@ -5419,6 +5421,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyHvxShdr(builder);
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
+        applyHVXMFHDRMode(builder);
         applyMctf(builder);
         applyQLL(builder);
         applySWPDPC(builder);
@@ -5427,12 +5430,31 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyInSensorZoom(builder);
     }
 
+    private void applyHVXMFHDRMode(CaptureRequest.Builder builder){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_MFHDR);
+        if (value != null ) {
+            Log.v(TAG, " applyHVXMFHDRMode value :" + value);
+            if (value.equals("1")) {
+                VendorTagUtil.enableHVXMFHDRMode(builder, (byte)0x01);
+            }
+        }
+    }
+
     private void applyMctf(CaptureRequest.Builder builder){
         //add for mctf tag
         if(mSettingsManager.isSwMctfSupported() && (mCurrentSceneMode.mode == CameraMode.VIDEO || mCurrentSceneMode.mode == CameraMode.HFR)){
             int mctfVaule = PersistUtil.mctfValue();
             try {
                 builder.set(CaptureModule.mctf, (byte)(mctfVaule == 1 ? 0x01 : 0x00));
+            } catch (IllegalArgumentException e) {
+                Log.d(TAG, "mctf no vendor tag");
+            }
+        }
+        String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_MFHDR);
+        if(value != null && value.equals("1")){
+            try {
+                builder.set(CaptureModule.mctf, (byte)(0x01));
+                Log.i(TAG,"set mctf 1");
             } catch (IllegalArgumentException e) {
                 Log.d(TAG, "mctf no vendor tag");
             }
