@@ -248,6 +248,8 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     private int mBottomMargin = 0;
     private ViewGroup mFilterLayout;
     private float mZoomFixedValue = 1.0f;
+    private float mZoomBarRatio = 0.2f;
+    private float mZoomMaxValue = 10.0f;
 
     private View mFilterModeSwitcher;
     private View mSceneModeSwitcher;
@@ -814,9 +816,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             if (zoomRatioRange[0] > zoomMin) {
                 zoomMin = zoomRatioRange[0];
             }
+            mZoomMaxValue = zoomRatioRange[1];
             mZoomRatioSupport = true;
         } else {
             mZoomFixedValue = 1.0f;
+            mZoomMaxValue = zoomMax;
             mZoomSeekBar.setMax(zoomMax.intValue() * 100 - 100);
             mZoomRatioSupport = false;
         }
@@ -833,13 +837,13 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         mZoomSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                float zoomValue = (progress + mZoomFixedValue * 100) / 100f;
+                float zoomValue = getZoomValue(progress,seekBar);
                 mModule.updateZoomChanged(zoomValue);
                 if (mZoomRenderer != null) {
                     mZoomRenderer.setZoom(zoomValue);
                 }
-                int zoomSig = Math.round((progress + mZoomFixedValue * 100)) / 100;
-                int zoomFraction = Math.round(progress + mZoomFixedValue * 100) % 100;
+                int zoomSig = Math.round(zoomValue*100) / 100;
+                int zoomFraction = Math.round(zoomValue*100) % 100;
                 String txt = "";
                 if (zoomFraction < 10) {
                     txt = zoomSig + "." + "0" + zoomFraction + "x";
@@ -857,16 +861,60 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                float zoomValue = (seekBar.getProgress() + mZoomFixedValue * 100) / 100f;
+                float zoomValue = getZoomValue(seekBar.getProgress(),seekBar);
                 mModule.updateZoomChanged(zoomValue);
                 if (mZoomRenderer != null) {
                     mZoomRenderer.setZoom(zoomValue);
                 }
+                int zoomSig = Math.round(zoomValue*100) / 100;
+                int zoomFraction = Math.round(zoomValue*100) % 100;
+                String txt = "";
+                if (zoomFraction < 10) {
+                    txt = zoomSig + "." + "0" + zoomFraction + "x";
+                } else {
+                    txt = zoomSig + "." + zoomFraction + "x";
+                }
                 if (mZoomValueText != null) {
-                    mZoomValueText.setText(zoomValue + "x");
+                    mZoomValueText.setText(txt);
                 }
             }
         });
+    }
+
+    private float getZoomValue(int progress,SeekBar seekBar){
+        float zoomProgress = progress + mZoomFixedValue * 100;
+        if (mZoomRatioSupport && mZoomFixedValue <1){
+            int max = seekBar.getMax();
+            int min = seekBar.getMin();
+            int range = max - min;
+            float delta = ((int)(range*mZoomBarRatio))*1.0f;
+            if (progress <= delta){
+                zoomProgress = (mZoomFixedValue + (1-mZoomFixedValue)*(progress/delta))*100f;
+            } else {
+                zoomProgress = 100f+((progress - delta)/(range-delta))*(mZoomMaxValue-1)*100f;
+            }
+        }
+
+        float zoomValue =zoomProgress / 100f;
+        return zoomValue;
+    }
+
+    private void setZoomBarProgress(float zoomValue,SeekBar seekBar){
+        int zoomSig = Math.round(zoomValue * 100) / 100;
+        int zoomFraction = Math.round(zoomValue * 100) % 100;
+        int  progress = zoomSig * 100 + zoomFraction - ((int)(100 * mZoomFixedValue));
+        if (mZoomRatioSupport && mZoomFixedValue <1){
+            int max = seekBar.getMax();
+            int min = seekBar.getMin();
+            int range = max - min;
+            float delta = ((int)(range*mZoomBarRatio))*1.0f;
+            if (zoomValue < 1.0){
+                progress = (int)((zoomValue-mZoomFixedValue)/(1.0f-mZoomFixedValue)*delta);
+            } else {
+                progress = (int)((zoomValue-1.0f)/(mZoomMaxValue - 1.0f)*(range-delta)+delta);
+            }
+        }
+        seekBar.setProgress(progress);
     }
 
     public void enableZoomSeekBar(boolean enable) {
@@ -944,7 +992,7 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
             mZoomValueText.setText(txt);
         }
         if (mZoomSeekBar != null) {
-            mZoomSeekBar.setProgress(zoomSig * 100 + zoomFraction - ((int)(100 * mZoomFixedValue)));
+            setZoomBarProgress(zoomValue,mZoomSeekBar);
         }
     }
 
@@ -2387,16 +2435,16 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
     }
 
     @Override
-    public void onFocusSucceeded(boolean timeout) {
-        FocusIndicator indicator = getFocusIndicator();
-        if (indicator != null) indicator.showSuccess(timeout);
-    }
-
-    @Override
     public void onFocusFailed(boolean timeOut) {
         FocusIndicator indicator = getFocusIndicator();
         if (indicator != null) indicator.showFail(timeOut);
 
+    }
+
+    @Override
+    public void onFocusSucceeded(boolean timeout) {
+        FocusIndicator indicator = getFocusIndicator();
+        if (indicator != null) indicator.showSuccess(timeout);
     }
 
     @Override
