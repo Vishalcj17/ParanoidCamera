@@ -818,8 +818,8 @@ public class CameraActivity extends Activity
     public void updateThumbnail(boolean videoOnly) {
         // Only handle OnDataInserted if it's video.
         // Photo and Panorama have their own way of updating thumbnail.
-        if (!videoOnly || (mCurrentModule instanceof VideoModule) ||
-                ((mCurrentModule instanceof CaptureModule) && videoOnly)) {
+        // Do not update thumbnail twice, already update at onImageAvailable
+        if (!videoOnly || (mCurrentModule instanceof VideoModule)) {
             (new UpdateThumbnailTask(null, true)).execute();
         }
     }
