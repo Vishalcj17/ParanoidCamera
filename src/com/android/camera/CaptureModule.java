@@ -3648,7 +3648,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 fs2Value = Integer.parseInt(valueFS2);
             }
             if (!mSettingsManager.isMultiCameraEnabled()) {
-                if (!(mIsSupportedQcfa || isDeepZoom() || (fs2Value ==1))) {
+                if (!(mIsSupportedQcfa || isDeepZoom() || (fs2Value ==1)) && mSettingsManager.getSinglePhysicalCamera() == null) {
                     addPreviewSurface(captureBuilder, null, id);
                 }
             }
