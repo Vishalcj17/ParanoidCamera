@@ -180,6 +180,10 @@ public class SettingsActivity extends PreferenceActivity {
                     key.equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE)) {
                 updateLongShotPreference();
             }
+            if(key.equals(SettingsManager.KEY_HVX_MFHDR)){
+                updateEISPreference();
+                updateHVXMFHDRDependcyPreference();
+            }
         }
     };
 
@@ -290,6 +294,16 @@ public class SettingsActivity extends PreferenceActivity {
                         pref.getKey().equals(SettingsManager.KEY_SELECT_MODE)) {
                     mSettingsManager.updatePictureAndVideoSize();
                     updatePreference(SettingsManager.KEY_VIDEO_QUALITY);
+                }
+                if(pref.getKey().equals(SettingsManager.KEY_CAPTURE_MFNR_VALUE) ||
+                        pref.getKey().equals(SettingsManager.KEY_AI_DENOISER) ||
+                        pref.getKey().equals(SettingsManager.KEY_ZSL)){
+                    update3AInfoPreference();
+                }
+
+                if(pref.getKey().equals(SettingsManager.KEY_HVX_MFHDR)){
+                    updateEISPreference();
+                    updateHVXMFHDRDependcyPreference();
                 }
             }
         }
@@ -1093,6 +1107,7 @@ public class SettingsActivity extends PreferenceActivity {
                 add(SettingsManager.KEY_VIDEO_HDR_VALUE);
                 add(SettingsManager.KEY_VIDEO_FLIP);
                 add(SettingsManager.KEY_HVX_SHDR);
+                add(SettingsManager.KEY_HVX_MFHDR);
                 add(SettingsManager.KEY_PHYSICAL_CAMCORDER);
                 add(SettingsManager.KEY_GC_SHDR);
                 for (String key: SettingsManager.KEY_PHYSICAL_VIDEO_SIZE)
@@ -1219,6 +1234,7 @@ public class SettingsActivity extends PreferenceActivity {
                         videoAddList.remove(SettingsManager.KEY_VIDEO_FLIP);
                         videoAddList.remove(SettingsManager.KEY_GC_SHDR);
                         videoAddList.remove(SettingsManager.KEY_HVX_SHDR);
+                        videoAddList.remove(SettingsManager.KEY_HVX_MFHDR);
                     }
                     videoAddList.add(SettingsManager.KEY_EXTENDED_MAX_ZOOM);
                     videoAddList.add(SettingsManager.KEY_TONE_MAPPING);
@@ -1501,6 +1517,8 @@ public class SettingsActivity extends PreferenceActivity {
         updateVideoFlipPreference();
         updateAIDEPreference();
         updateLongShotPreference();
+        update3AInfoPreference();
+        updateHVXMFHDRDependcyPreference();
     }
 
     private void updateAudioEncoderPreference() {
@@ -1607,6 +1625,34 @@ public class SettingsActivity extends PreferenceActivity {
         }
     }
 
+    private void update3AInfoPreference() {
+        ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_3A_DEBUG_INFO);
+        if (pref == null) {
+            return;
+        }
+        String mfnrValue = mSettingsManager.getValue(SettingsManager.KEY_CAPTURE_MFNR_VALUE);
+        boolean mfnrEnable = false;
+        if(mfnrValue != null && !mfnrValue.equals("disable")&& Integer.parseInt(mfnrValue) == 1 && mSettingsManager.isSWMFNRSupport()){
+            mfnrEnable = true;
+        }
+        String aideniserValue = mSettingsManager.getValue(SettingsManager.KEY_AI_DENOISER);
+        boolean aideEnable = false;
+        if(aideniserValue != null && !aideniserValue.equals("disable")&& Integer.parseInt(aideniserValue) == 1 && mSettingsManager.isAIDESupport()){
+            aideEnable = true;
+        }
+        ListPreference ZSLPref = (ListPreference) findPreference(SettingsManager.KEY_ZSL);
+        boolean appZsl = false;
+        if(ZSLPref != null && "app-zsl".equals(ZSLPref.getValue())){
+            appZsl = true;
+        }
+        if(mfnrEnable || aideEnable || appZsl){
+            pref.setEnabled(true);
+        } else {
+            pref.setValue("0");
+            pref.setEnabled(false);
+        }
+    }
+
     private void updateVideoMFHDRPreference() {
         ListPreference pref = (ListPreference)findPreference(SettingsManager.KEY_MFHDR);
         if (pref == null) {
@@ -1629,6 +1675,24 @@ public class SettingsActivity extends PreferenceActivity {
                     !selectModePref.getValue().equals("single_rear_cameraid")) {
                 pref.setEnabled(false);
             }
+        }
+    }
+
+    private void updateHVXMFHDRDependcyPreference() {
+        ListPreference hvx_mfhdr = (ListPreference)findPreference(SettingsManager.KEY_HVX_MFHDR);
+        if (hvx_mfhdr == null) {
+            return;
+        }
+        ListPreference videoPref = (ListPreference)findPreference(SettingsManager.KEY_VIDEO_QUALITY);
+        ListPreference selectModePref = (ListPreference)findPreference(SettingsManager.KEY_SELECT_MODE);
+        if(hvx_mfhdr != null && hvx_mfhdr.getValue().equals("1")){
+            selectModePref.setValue("single_rear_cameraid");
+            selectModePref.setEnabled(false);
+            videoPref.setValue("1920x1080");
+            videoPref.setEnabled(false);
+        }else{
+            selectModePref.setEnabled(true);
+            videoPref.setEnabled(true);
         }
     }
 
@@ -1732,9 +1796,14 @@ public class SettingsActivity extends PreferenceActivity {
             }
             ListPreference hvx_shdr = (ListPreference)findPreference(
                     SettingsManager.KEY_HVX_SHDR);
-            if(hvx_shdr != null && Integer.valueOf(hvx_shdr.getValue()) > 0) {
+            ListPreference hvx_mfhdr = (ListPreference)findPreference(
+                    SettingsManager.KEY_HVX_MFHDR);
+            if((hvx_shdr != null && Integer.valueOf(hvx_shdr.getValue()) > 0) ||
+                    (hvx_mfhdr != null && hvx_mfhdr.getValue().equals("1"))) {
                 eisPref.setValue("V3");
                 eisPref.setEnabled(false);
+            } else {
+                eisPref.setEnabled(true);
             }
         }
     }

@@ -389,7 +389,6 @@ public class PostProcessor{
     public void onMetaAvailable(TotalCaptureResult metadata) {
         if(mUseZSL && mZSLQueue != null) {
             mZSLQueue.add(metadata);
-            Log.d(TAG, "add meta of frame number " + metadata.getFrameNumber());
         }
         mLatestResultForLongShot = metadata;
     }
@@ -461,6 +460,10 @@ public class PostProcessor{
     public boolean takeZSLPicture() {
         if (mZSLQueue == null)
             return false;
+        if (mController.is3AdebugInfoOn()) {
+            VendorTagUtil.setDumpStart(mController.getCurrentPreviewRequest(), (byte)1);
+            mController.setRepeating();
+        }
         mController.setJpegImageData(null);
         ZSLQueue.ImageItem imageItem = mZSLQueue.tryToGetMatchingItem();
         if(mController.getPreviewCaptureResult() == null ||
@@ -591,7 +594,7 @@ public class PostProcessor{
                 } catch (IllegalStateException e) {
                     Log.e(TAG, "Queueing more than it can have");
                 }
-                Log.i(TAG, "reprocess capture request, send back frame: " + metadata.getFrameNumber());
+                if(mController.is3AdebugInfoOn()) Log.i(TAG, "reprocess capture request, send back frame: " + metadata.getFrameNumber());
                 mCaptureSession.capture(builder.build(), new CameraCaptureSession.CaptureCallback(){
                     @Override
                     public void onCaptureCompleted(CameraCaptureSession session,
@@ -621,6 +624,10 @@ public class PostProcessor{
                     public void onCaptureSequenceCompleted(CameraCaptureSession session, int
                             sequenceId, long frameNumber) {
                         Log.d(TAG, "reprocessImage onCaptureSequenceCompleted");
+                        if (mController.is3AdebugInfoOn()) {
+                           VendorTagUtil.setDumpStart(mController.getCurrentPreviewRequest(), (byte)0);
+                           mController.setRepeating();
+                        }
                     }
                 }, mHandler);
             } catch (CameraAccessException e) {

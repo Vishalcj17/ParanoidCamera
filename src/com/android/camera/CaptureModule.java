@@ -632,6 +632,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     public static final CameraCharacteristics.Key<Byte> heic_support_enable =
             new CameraCharacteristics.Key<>("org.quic.camera.HEICSupport.HEICEnabled",Byte.class);
 
+    public static final CameraCharacteristics.Key<Byte> hvxMFHDRSupported =
+            new CameraCharacteristics.Key<>("org.codeaurora.qcamera3.hvxMFHDRMode.hvxMFHDRSupported", Byte.class);
     // Touch Track Focus
     public static final CaptureRequest.Key<Byte> t2t_enable = new CaptureRequest.Key<>(
             "org.quic.camera2.objectTrackingConfig.Enable", Byte.class);
@@ -2346,6 +2348,8 @@ public class CaptureModule implements CameraModule, PhotoController,
                                     mUI.updateGridLine();
                                 }
                             });
+                            if(mSettingsManager.isZSLInHALEnabled() && !isSwMfnrEnabled()) VendorTagUtil.setDumpStart(mPreviewRequestBuilder[id], (byte)1);//hal-zsl always set 1
+                            if(mPostProcessor.isZSLEnabled()) VendorTagUtil.setDumpStart(mPreviewRequestBuilder[id], (byte)0); //app-zsl set 0, when capture set 1,capture done set 0 again
                             try {
                                 if (isBackCamera() && getCameraMode() == DUAL_MODE) {
                                     linkBayerMono(id);
@@ -3588,7 +3592,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         Log.d(TAG, "captureStillPicture " + id  + ",isSwMfnrEnabled():" + isSwMfnrEnabled()
                 + ",isAIDEEnabled:" + isAIDEEnabled());
         mGain = mAecFramecontrolLinearGain[2];
-        mActivity.getAIDenoiserService().setGain(mGain);
+        if(mActivity.getAIDenoiserService() != null) mActivity.getAIDenoiserService().setGain(mGain);
         mJpegImageData = null;
         mIsRefocus = false;
         if (isDeepZoom()) mSupportZoomCapture = false;
@@ -3998,7 +4002,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         public void onCaptureCompleted(CameraCaptureSession session,
                                        CaptureRequest request,
                                        TotalCaptureResult result) {
-            Log.d(TAG, "onCaptureCompleted");
+            if(is3AdebugInfoOn()) Log.d(TAG, "onCaptureCompleted, frame number:" + result.getFrameNumber());
             getSWMFandAIDETuningParams(result);
             mCaptureResult = result;
         }
@@ -4013,10 +4017,11 @@ public class CaptureModule implements CameraModule, PhotoController,
         @Override
         public void onCaptureSequenceCompleted(CameraCaptureSession session, int
                 sequenceId, long frameNumber) {
+            int id = getMainCameraId();
+            if(is3AdebugInfoOn()) VendorTagUtil.setDumpStart(mPreviewRequestBuilder[id], (byte)0);
             Log.d(TAG, "onCaptureSequenceCompleted");
             mCaptureStartTime = System.currentTimeMillis();
             mNamedImages.nameNewImage(mCaptureStartTime);
-            int id = getMainCameraId();
 
             int wantImagesNum = mActivity.getAIDenoiserService().getFrameNumbers(mGain);
             mActivity.getAIDenoiserService().wantImagesNum(wantImagesNum);
@@ -4114,6 +4119,7 @@ public class CaptureModule implements CameraModule, PhotoController,
             mCaptureSession[id].capture(captureBuilder.build(), mPostProcessor.getCaptureCallback(), mCaptureCallbackHandler);
         } else {
             if (isSwMfnrEnabled()){
+                if(is3AdebugInfoOn()) VendorTagUtil.setDumpStart(captureBuilder, (byte)1);//for mfnr,before capture set 1, capture done set 0 again
                 List<CaptureRequest> burstList = new ArrayList<>();
                 mActivity.getAIDenoiserService().resetImagesNum();
                 int captureNumbers = mActivity.getAIDenoiserService().getFrameNumbers(mGain);
@@ -5415,6 +5421,7 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyHvxShdr(builder);
         applyFaceContourVersion(builder);
         applyExtendMaxZoom(builder);
+        applyHVXMFHDRMode(builder);
         applyMctf(builder);
         applyQLL(builder);
         applySWPDPC(builder);
@@ -5423,12 +5430,31 @@ public class CaptureModule implements CameraModule, PhotoController,
         applyInSensorZoom(builder);
     }
 
+    private void applyHVXMFHDRMode(CaptureRequest.Builder builder){
+        String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_MFHDR);
+        if (value != null ) {
+            Log.v(TAG, " applyHVXMFHDRMode value :" + value);
+            if (value.equals("1")) {
+                VendorTagUtil.enableHVXMFHDRMode(builder, (byte)0x01);
+            }
+        }
+    }
+
     private void applyMctf(CaptureRequest.Builder builder){
         //add for mctf tag
         if(mSettingsManager.isSwMctfSupported() && (mCurrentSceneMode.mode == CameraMode.VIDEO || mCurrentSceneMode.mode == CameraMode.HFR)){
             int mctfVaule = PersistUtil.mctfValue();
             try {
                 builder.set(CaptureModule.mctf, (byte)(mctfVaule == 1 ? 0x01 : 0x00));
+            } catch (IllegalArgumentException e) {
+                Log.d(TAG, "mctf no vendor tag");
+            }
+        }
+        String value = mSettingsManager.getValue(SettingsManager.KEY_HVX_MFHDR);
+        if(value != null && value.equals("1")){
+            try {
+                builder.set(CaptureModule.mctf, (byte)(0x01));
+                Log.i(TAG,"set mctf 1");
             } catch (IllegalArgumentException e) {
                 Log.d(TAG, "mctf no vendor tag");
             }
@@ -5553,6 +5579,7 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     @Override
     public void onPauseBeforeSuper() {
+        if(is3AdebugInfoOn()) VendorTagUtil.setDumpStart(mPreviewRequestBuilder[getMainCameraId()], (byte)0);
         cancelTouchFocus();
         mPaused = true;
         mToast = null;
@@ -5584,6 +5611,19 @@ public class CaptureModule implements CameraModule, PhotoController,
         }
         resetScreenOn();
         mUI.stopSelfieFlash();
+    }
+
+    public CaptureRequest.Builder getCurrentPreviewRequest(){
+        return mPreviewRequestBuilder[getMainCameraId()];
+    }
+
+    public void setRepeating(){
+        Log.i(TAG,"jiao, set repeating ");
+        try{
+            mCaptureSession[getMainCameraId()].setRepeatingRequest(mPreviewRequestBuilder[getMainCameraId()]
+                .build(), mCaptureCallback, mCameraHandler);
+        }catch(CameraAccessException e){
+        }
     }
 
     @Override
@@ -5713,6 +5753,17 @@ public class CaptureModule implements CameraModule, PhotoController,
         try {
             String value = mSettingsManager.getValue(SettingsManager.KEY_TOUCH_TRACK_FOCUS);
             if (value != null && value.equals("on")) {
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
+
+    public boolean is3AdebugInfoOn() {
+        try {
+            String value = mSettingsManager.getValue(SettingsManager.KEY_3A_DEBUG_INFO);
+            if (value != null && Integer.parseInt(value) == 1) {
                 return true;
             }
         } catch (Exception e) {
@@ -7010,7 +7061,8 @@ public class CaptureModule implements CameraModule, PhotoController,
         mVideoSnapshotSize = getMaxPictureSizeLiveshot(getMainCameraId(),mVideoSize.getWidth(),
                 mVideoSize.getHeight());
         String hvx_shdr = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
-        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() || "1".equals(hvx_shdr)){
+        if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
+                (hvx_shdr != null && Integer.valueOf(hvx_shdr) > 0)){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();

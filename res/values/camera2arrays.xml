@@ -1492,6 +1492,16 @@ for time lapse recording -->
         <item>@string/pref_camera2_hvx_shdr_entry_value_recording</item>
     </string-array>
 
+    <string-array name="pref_camera2_hvx_mfhdr_entries" translatable="false">
+        <item>@string/pref_camera2_hvx_mfhdr_entry_enable</item>
+        <item>@string/pref_camera2_hvx_mfhdr_entry_disable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_hvx_mfhdr_entry_values" translatable="false">
+        <item>@string/pref_camera2_hvx_mfhdr_entry_value_enable</item>
+        <item>@string/pref_camera2_hvx_mfhdr_entry_value_disable</item>
+    </string-array>
+
     <string-array name="pref_camera2_swpdpc_entries" translatable="false">
         <item>@string/pref_camera2_swpdpc_entry_enable</item>
         <item>@string/pref_camera2_swpdpc_entry_disable</item>
@@ -1606,5 +1616,15 @@ for time lapse recording -->
     <string-array name="pref_camera2_insensor_zoom_entryvalues" translatable="false">
         <item>@string/pref_camera2_insensor_zoom_entry_value_disable</item>
         <item>@string/pref_camera2_insensor_zoom_entry_value_enable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_3A_debug_info_entries" translatable="false">
+        <item>disable</item>
+        <item>enable</item>
+    </string-array>
+
+    <string-array name="pref_camera2_3A_debug_info_entryvalues" translatable="false">
+        <item>0</item>
+        <item>1</item>
     </string-array>
 </resources>

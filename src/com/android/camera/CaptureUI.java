@@ -2200,10 +2200,11 @@ public class CaptureUI implements FocusOverlayManager.FocusUI,
         if (physical_id != null) {
             physicalIds = mSettingsManager.getAllPhysicalCameraId();
             mPreviewCount = mSettingsManager.getAllPhysicalCameraId().size()+1;
-            mSurfaceView.bringToFront();
+            mSurfaceView.setZOrderMediaOverlay(true);
         } else {
             physicalIds = mSettingsManager.getPhysicalCameraId();
             mPreviewCount = mSettingsManager.getPhysicalCameraId().size()+1;
+            mSurfaceView.setZOrderMediaOverlay(false);
         }
 
         Log.d(TAG,"initPhysicalSurfaces count="+mPreviewCount);

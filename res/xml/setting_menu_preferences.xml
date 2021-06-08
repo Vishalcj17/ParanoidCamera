@@ -663,6 +663,15 @@
             android:summary="%s"/>
 
         <ListPreference
+            android:key="pref_camera2_hvx_mfhdr_key"
+            android:defaultValue="@string/pref_camera2_hvx_mfhdr_default"
+            android:title="@string/pref_camera2_hvx_mfhdr_title"
+            android:entries="@array/pref_camera2_hvx_mfhdr_entries"
+            android:entryValues="@array/pref_camera2_hvx_mfhdr_entry_values"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
             android:key="pref_camera2_oncapturebufferlost_key"
             android:defaultValue="@string/pref_camera2_oncapturebufferlost_default"
             android:title="@string/pref_camera2_oncapturebufferlost_title"
@@ -873,6 +882,15 @@
             android:title="@string/pref_camera2_insensor_zoom_title"
             android:entries="@array/pref_camera2_insensor_zoom_entries"
             android:entryValues="@array/pref_camera2_insensor_zoom_entryvalues"
+            android:layout="@layout/preference"
+            android:summary="%s"/>
+
+        <ListPreference
+            android:key="pref_camera2_3A_debug_info_key"
+            android:defaultValue="@string/pref_camera2_3A_debug_info_default"
+            android:title="@string/pref_camera2_3A_debug_info_title"
+            android:entries="@array/pref_camera2_3A_debug_info_entries"
+            android:entryValues="@array/pref_camera2_3A_debug_info_entryvalues"
             android:layout="@layout/preference"
             android:summary="%s"/>
     </PreferenceCategory>

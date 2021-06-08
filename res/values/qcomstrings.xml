@@ -1456,6 +1456,13 @@
     <string name="pref_camera2_hvx_shdr_entry_value_enable" translatable="false">1</string>
     <string name="pref_camera2_hvx_shdr_entry_value_disable" translatable="false">0</string>
 
+    <string name="pref_camera2_hvx_mfhdr_title" translatable="true">Enable HVX MFHDR</string>
+    <string name="pref_camera2_hvx_mfhdr_default" translatable="true">0</string>
+    <string name="pref_camera2_hvx_mfhdr_entry_enable" translatable="true">enable</string>
+    <string name="pref_camera2_hvx_mfhdr_entry_disable" translatable="true">disable</string>
+    <string name="pref_camera2_hvx_mfhdr_entry_value_enable" translatable="false">1</string>
+    <string name="pref_camera2_hvx_mfhdr_entry_value_disable" translatable="false">0</string>
+
     <string name="pref_camera2_extended_max_zoom_title" translatable="true">Extended max zoom</string>
     <string name="pref_camera2_extended_max_zoom_default" translatable="false">0</string>
     <string name="pref_camera2_extended_max_zoom_entry_enable" translatable="true">enable</string>
@@ -1592,5 +1599,8 @@
     <string name="pref_camera2_insensor_zoom_entry_enable" translatable="true">enable</string>
     <string name="pref_camera2_insensor_zoom_entry_value_disable" translatable="false">0</string>
     <string name="pref_camera2_insensor_zoom_entry_value_enable" translatable="false">1</string>
+
+    <string name="pref_camera2_3A_debug_info_title">3A Debug Info</string>
+    <string name="pref_camera2_3A_debug_info_default" translatable="false">0</string>
 </resources>
 
