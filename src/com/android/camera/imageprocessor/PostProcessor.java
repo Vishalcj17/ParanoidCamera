@@ -457,13 +457,14 @@ public class PostProcessor{
         }
     }
 
+    public void delaySnapshot(){
+        VendorTagUtil.setDumpStart(mController.getCurrentPreviewRequest(), (byte)1);
+        mController.setRepeating();
+    }
+
     public boolean takeZSLPicture() {
         if (mZSLQueue == null)
             return false;
-        if (mController.is3AdebugInfoOn()) {
-            VendorTagUtil.setDumpStart(mController.getCurrentPreviewRequest(), (byte)1);
-            mController.setRepeating();
-        }
         mController.setJpegImageData(null);
         ZSLQueue.ImageItem imageItem = mZSLQueue.tryToGetMatchingItem();
         if(mController.getPreviewCaptureResult() == null ||

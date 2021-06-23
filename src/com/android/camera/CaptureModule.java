@@ -212,6 +212,7 @@ public class CaptureModule implements CameraModule, PhotoController,
     private static final int OPEN_CAMERA = 0;
     private static final int CANCEL_TOUCH_FOCUS = 1;
     private static final int MAX_NUM_CAM = 16;
+    private static final int MAX_DELAY_FRAME = 10;
     private static final int CONTOUR_POINTS_COUNT = 89;
     private String DEPTH_CAM_ID;
     private static final MeteringRectangle[] ZERO_WEIGHT_3A_REGION = new MeteringRectangle[]{
@@ -700,6 +701,8 @@ public class CaptureModule implements CameraModule, PhotoController,
     private StateNNTrackFocusRenderer mStateNNFocusRenderer;
     private boolean mIsDepthFocus = false;
     private boolean[] mTakingPicture = new boolean[MAX_NUM_CAM];
+    private int mDelayFrame = MAX_DELAY_FRAME + 1;
+    private boolean mDelayDone = false;
     private int mControlAFMode = CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE;
     private int mLastResultAFState = -1;
     private boolean isFlashRequiredInDriver = false;
@@ -1223,6 +1226,20 @@ public class CaptureModule implements CameraModule, PhotoController,
                                         CaptureResult partialResult) {
             if("preview".equals(String.valueOf(partialResult.getRequest().getTag()))){
                 return;
+            }
+            if(is3AdebugInfoOn()){
+                if(mDelayFrame < MAX_DELAY_FRAME){
+                    mDelayFrame ++;
+                }else if(mDelayFrame == MAX_DELAY_FRAME){
+                    mDelayFrame = MAX_DELAY_FRAME + 1;
+                    mDelayDone = true;
+                    mActivity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            takePicture();
+                            mDelayDone = false;
+                        }
+                    });
+                }
             }
             int id = (int) partialResult.getRequest().getTag();
             if (id == getMainCameraId()) {
@@ -3313,6 +3330,11 @@ public class CaptureModule implements CameraModule, PhotoController,
             takeZSLPictureInHAL();
         } else {
             int cameraId = getMainCameraId();
+            if(mPostProcessor.isZSLEnabled() & is3AdebugInfoOn() & !mDelayDone) {
+                mDelayFrame = 0;
+                mPostProcessor.delaySnapshot();
+                return;
+            }
             if (takeZSLPicture(cameraId)) {
                 return;
             }
@@ -3648,7 +3670,7 @@ public class CaptureModule implements CameraModule, PhotoController,
                 fs2Value = Integer.parseInt(valueFS2);
             }
             if (!mSettingsManager.isMultiCameraEnabled()) {
-                if (!(mIsSupportedQcfa || isDeepZoom() || (fs2Value ==1))) {
+                if (!(mIsSupportedQcfa || isDeepZoom() || (fs2Value ==1)) && mSettingsManager.getSinglePhysicalCamera() == null) {
                     addPreviewSurface(captureBuilder, null, id);
                 }
             }
@@ -6313,7 +6335,8 @@ public class CaptureModule implements CameraModule, PhotoController,
 
     public boolean updateZoomChanged(float requestedZoom) {
         Log.i(TAG,"updateZoomChanged,mPaused:" + mPaused + ",mResumed:" +mResumed);
-        if (mIsRTBCameraId || isTakingPicture() || !mResumed) return false;
+        if (mIsRTBCameraId || isTakingPicture() || (mCurrentSession == null)
+                || !mResumed) return false;
         float diff = Math.abs(mZoomValue - requestedZoom);
         if ((requestedZoom>=1.0 && diff> 0.05) || (requestedZoom < 1.0 && diff> 0.01)) {
             mZoomValue = requestedZoom;
@@ -7061,8 +7084,10 @@ public class CaptureModule implements CameraModule, PhotoController,
         mVideoSnapshotSize = getMaxPictureSizeLiveshot(getMainCameraId(),mVideoSize.getWidth(),
                 mVideoSize.getHeight());
         String hvx_shdr = mSettingsManager.getValue(SettingsManager.KEY_HVX_SHDR);
+        String hvx_mfhdr = mSettingsManager.getValue(SettingsManager.KEY_HVX_MFHDR);
         if(mSettingsManager.isLiveshotSizeSameAsVideoSize() ||
-                (hvx_shdr != null && Integer.valueOf(hvx_shdr) > 0)){
+                (hvx_shdr != null && Integer.valueOf(hvx_shdr) > 0) ||
+                (hvx_mfhdr != null && hvx_mfhdr.equals("1"))){
             mVideoSnapshotSize = mVideoSize;
         }
         String videoSnapshot = PersistUtil.getVideoSnapshotSize();
